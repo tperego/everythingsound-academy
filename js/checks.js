@@ -120,10 +120,14 @@ const CHECKS = {
   'progression-by-bar'({ sequence }, p) {
     const right = [];
     const wrong = [];
+    // Each bar is checked on beats 1 and 3; an entry like ['ii', 'V'] means two chords in that bar.
     sequence.forEach((want, b) => {
-      const ev = chordAtBeat(p, b * 4);
-      const got = ev ? strip7(chordInfo(p.key, p.mode, ev.chord).roman) : null;
-      (got === want ? right : wrong).push(b + 1);
+      const wants = Array.isArray(want) ? want : [want, want];
+      const ok = wants.every((w, half) => {
+        const ev = chordAtBeat(p, b * 4 + half * 2);
+        return ev && strip7(chordInfo(p.key, p.mode, ev.chord).roman) === w;
+      });
+      (ok ? right : wrong).push(b + 1);
     });
     return {
       label: 'Your chords match the recording',
@@ -167,46 +171,18 @@ const CHECKS = {
 
   // Composing in a given form: repeats must repeat, variations vary, new letters are new.
   'melody-form'({ form, phraseBars }, p) {
-    const n = Math.min(form.length, phraseCount(p, phraseBars));
-    const phrases = Array.from({ length: n }, (_, i) => phraseNotes(p, i, phraseBars));
-    const empty = phrases.map((ph, i) => (ph.length < 2 ? i + 1 : null)).filter(Boolean);
-    const out = [{
-      label: `Every phrase has a melody (${n} phrases of ${phraseBars} bars)`,
-      pass: empty.length === 0,
-      detail: empty.length ? `Phrase ${listBars(empty)} needs more notes.` : '',
-    }];
-    if (empty.length) return out;
-    for (let i = 1; i < n; i++) {
-      const label = form[i];
-      // Compare with an earlier phrase of the same label if there is one (A′ … A′), else the first of its letter.
-      let j = form.findIndex((l, k) => k < i && l === label);
-      if (j < 0) j = form.findIndex((l, k) => k < i && baseLetter(l) === baseLetter(label));
-      if (j < 0) {
-        const tooClose = phrases.slice(0, i).map((ph, k) => ({ k, c: comparePhrases(ph, phrases[i]) })).filter(({ c }) => (c.rhythm + c.pitch) / 2 >= 0.5);
-        out.push({
-          label: `Phrase ${i + 1} (${label}) is new material`,
-          pass: tooClose.length === 0,
-          detail: tooClose.length ? `It is too close to phrase ${tooClose[0].k + 1}. Change its rhythm and its pitches.` : '',
-        });
-        continue;
-      }
-      const c = comparePhrases(phrases[j], phrases[i]);
-      if (form[j] === label) {
-        out.push({
-          label: `Phrase ${i + 1} (${label}) repeats phrase ${j + 1}`,
-          pass: c.samePitch,
-          detail: c.samePitch ? '' : `Rhythm ${pct(c.rhythm)} and pitches ${pct(c.pitch)} the same. A repeat should be identical.`,
-        });
-      } else {
-        const pass = c.rhythm >= 0.75 && !c.samePitch && c.pitch >= 0.25;
-        out.push({
-          label: `Phrase ${i + 1} (${label}) is a variation of phrase ${j + 1}`,
-          pass,
-          detail: `Rhythm ${pct(c.rhythm)} the same, pitches ${pct(c.pitch)} the same.${pass ? '' : c.samePitch ? ' Change a few pitches, especially at the end.' : ' Keep more of the rhythm, change only some notes.'}`,
-        });
-      }
-    }
-    return out;
+    return formResults(form, phraseBars, p);
+  },
+
+  // Composing in a pattern the student chose from a list (e.g. one of the patterns heard in a song).
+  'melody-pattern'({ options = [] }, p, ctx) {
+    const pattern = ctx.answers?.pattern;
+    const phraseBars = ctx.answers?.phraseBars || 1;
+    if (!pattern || !options.includes(pattern)) return { label: 'Choose a pattern', pass: false, detail: 'Pick one of the patterns from the list.' };
+    return [
+      { label: `Your pattern: ${pattern}`, pass: true, detail: `${phraseBars} bar${phraseBars > 1 ? 's' : ''} per phrase` },
+      ...formResults(pattern.split(' '), phraseBars, p),
+    ];
   },
 
   // DAW round-trip checks use the attached files.
@@ -243,6 +219,49 @@ const CHECKS = {
     };
   },
 };
+
+function formResults(form, phraseBars, p) {
+  const n = Math.min(form.length, phraseCount(p, phraseBars));
+  const phrases = Array.from({ length: n }, (_, i) => phraseNotes(p, i, phraseBars));
+  const empty = phrases.map((ph, i) => (ph.length < 2 ? i + 1 : null)).filter(Boolean);
+  const out = [{
+    label: `Every phrase has a melody (${n} phrases of ${phraseBars} bar${phraseBars > 1 ? 's' : ''})`,
+    pass: empty.length === 0,
+    detail: empty.length ? `Phrase ${listBars(empty)} needs more notes.` : '',
+  }];
+  if (empty.length) return out;
+  for (let i = 1; i < n; i++) {
+    const label = form[i];
+    // Compare with an earlier phrase of the same label if there is one (A′ … A′), else the first of its letter.
+    let j = form.findIndex((l, k) => k < i && l === label);
+    if (j < 0) j = form.findIndex((l, k) => k < i && baseLetter(l) === baseLetter(label));
+    if (j < 0) {
+      const tooClose = phrases.slice(0, i).map((ph, k) => ({ k, c: comparePhrases(ph, phrases[i]) })).filter(({ c }) => (c.rhythm + c.pitch) / 2 >= 0.5);
+      out.push({
+        label: `Phrase ${i + 1} (${label}) is new material`,
+        pass: tooClose.length === 0,
+        detail: tooClose.length ? `It is too close to phrase ${tooClose[0].k + 1}. Change its rhythm and its pitches.` : '',
+      });
+      continue;
+    }
+    const c = comparePhrases(phrases[j], phrases[i]);
+    if (form[j] === label) {
+      out.push({
+        label: `Phrase ${i + 1} (${label}) repeats phrase ${j + 1}`,
+        pass: c.samePitch,
+        detail: c.samePitch ? '' : `Rhythm ${pct(c.rhythm)} and pitches ${pct(c.pitch)} the same. A repeat should be identical.`,
+      });
+    } else {
+      const pass = c.rhythm >= 0.75 && !c.samePitch && c.pitch >= 0.25;
+      out.push({
+        label: `Phrase ${i + 1} (${label}) is a variation of phrase ${j + 1}`,
+        pass,
+        detail: `Rhythm ${pct(c.rhythm)} the same, pitches ${pct(c.pitch)} the same.${pass ? '' : c.samePitch ? ' Change a few pitches, especially at the end.' : ' Keep more of the rhythm, change only some notes.'}`,
+      });
+    }
+  }
+  return out;
+}
 
 /**
  * ctx = { midi: {fileName, analysis} | null, audio: {fileName} | null,

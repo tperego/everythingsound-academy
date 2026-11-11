@@ -376,3 +376,5 @@ audio { width: 100%; margin-top: 6px; }
 .phrase-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
 .phrase-name { min-width: 150px; }
 .form-target { font: 800 1.2rem/1 Georgia, serif; color: var(--accent); }
+.field.inline { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0; }
+.pattern-choice select { font-weight: 600; }

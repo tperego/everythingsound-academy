@@ -10,14 +10,20 @@ export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
 const str = (v, max = 200) => (typeof v === 'string' ? v.slice(0, max) : '');
 
-/** Form-analysis answers: phrase labels and "same rhythm / same pitches" ticks. */
+/**
+ * Answers that aren't part of the music itself:
+ * form analysis (phrase labels, "same rhythm / same pitches" ticks) and a chosen pattern to compose in.
+ */
 export function parseAnswers(a) {
   if (!a || typeof a !== 'object') return null;
   const arr = (x) => (Array.isArray(x) ? x.slice(0, 32) : []);
+  const pattern = typeof a.pattern === 'string' && /^[A-Z′ ]{1,80}$/.test(a.pattern) ? a.pattern : '';
   return {
     formLabels: arr(a.formLabels).map((v) => (FORM_LABELS.includes(v) ? v : '')),
     sameRhythm: arr(a.sameRhythm).map(Boolean),
     samePitch: arr(a.samePitch).map(Boolean),
+    pattern,
+    phraseBars: a.phraseBars === 2 ? 2 : 1,
   };
 }
 

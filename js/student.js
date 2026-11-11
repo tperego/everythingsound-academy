@@ -5,8 +5,8 @@ import { FORM_LABELS } from './form.js';
 import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js';
 import { analyseMidi, projectToMidi, readMidi } from './midi.js';
 import { renderChecks, renderMidiAnalysis } from './panels.js';
-import { newProject, normalizeProject } from './project.js';
-import { MAX_ATTACHMENT_BYTES, makeSubmission, parseFeedback, submissionFileName } from './submission.js';
+import { newProject, normalizeProject, setBars } from './project.js';
+import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js';
 import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js';
 import { Workspace } from './workspace.js';
 
@@ -119,13 +119,13 @@ function selectExercise(id, { project = null, fromFeedback = false } = {}) {
   watch.hidden = !(lesson.youtubeId && exercise.videoAt != null);
   watch.onclick = () => { setVideo(exercise.videoAt); $('#video').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
 
+  answers = normalizeAnswers(feedback?.answers || store.get(answersKey(exercise), null));
   const saved = store.get(workKey(exercise));
-  const p = project || (saved ? normalizeProject(saved) : newProject(exercise.start));
-  ws.setProject(p, { lock: exercise.lock || {}, title: exercise.title.replace(/^\d+\s*·\s*/, ''), phraseBars: exercise.form?.phraseBars || 0 });
+  let p = project || (saved ? normalizeProject(saved) : newProject(exercise.start));
+  if (exercise.patternChoice && !project) p = setBars(p, patternBars());
+  ws.setProject(p, { lock: exercise.lock || {}, title: exerciseTitle(), phraseBars: currentPhraseBars() });
   melodyUnlocked = null;
   updateMelodyGate(p, { initial: true });
-  const savedAnswers = feedback?.answers || store.get(answersKey(exercise), null);
-  answers = normalizeAnswers(savedAnswers);
   renderListenBox();
   renderFormPanel();
 
@@ -146,7 +146,7 @@ $('#reset-btn').addEventListener('click', () => {
   if (!confirm('Start this exercise again? Your work on it will be cleared.')) return;
   store.remove(workKey(exercise));
   store.remove(answersKey(exercise));
-  selectExercise(exercise.id, { project: newProject(exercise.start) });
+  selectExercise(exercise.id);
 });
 
 // ---------- Listening clip ----------
@@ -176,7 +176,7 @@ function renderListenBox() {
     h('div', { class: 'listen-info' },
       h('p', { class: 'eyebrow' }, 'Listen'),
       h('h3', {}, l.label || 'Listening clip'),
-      h('p', { class: 'muted' }, `Clip ${mmss(l.start || 0)}${l.end ? `–${mmss(l.end)}` : ''}. Play it as many times as you like, then compare with your chords using the Play button below.`),
+      h('p', { class: 'muted' }, `${l.end ? `Clip ${mmss(l.start || 0)}–${mmss(l.end)}` : `From ${mmss(l.start || 0)}`}. Play it as many times as you like, then use the Play button below to hear your own work.`),
       h('div', { class: 'row wrap' },
         h('button', { type: 'button', class: 'btn', onclick: () => { frame.src = clipUrl(l, true); } }, '↺ Play the clip from the start'),
         h('a', { class: 'btn ghost', href: watchUrl, target: '_blank', rel: 'noopener' }, `Open on YouTube at ${mmss(l.start || 0)} ↗`)))));
@@ -185,12 +185,30 @@ function renderListenBox() {
 // ---------- Form panel (phrases) ----------
 
 function normalizeAnswers(a) {
-  const arr = (x) => (Array.isArray(x) ? x.slice(0, 32) : []);
-  return {
-    formLabels: arr(a?.formLabels).map((v) => (FORM_LABELS.includes(v) ? v : '')),
-    sameRhythm: arr(a?.sameRhythm).map(Boolean),
-    samePitch: arr(a?.samePitch).map(Boolean),
-  };
+  const out = parseAnswers(a) || parseAnswers({});
+  const pc = exercise?.patternChoice;
+  if (pc) {
+    if (!pc.options.includes(out.pattern)) out.pattern = pc.options[0];
+    if (!pc.phraseBars.includes(out.phraseBars)) out.phraseBars = pc.phraseBars[0];
+  }
+  return out;
+}
+
+const exerciseTitle = () => exercise.title.replace(/^\d+\s*·\s*/, '');
+const patternLabels = () => answers.pattern.split(' ');
+const patternBars = () => patternLabels().length * answers.phraseBars;
+function currentPhraseBars() {
+  if (exercise.patternChoice) return answers.phraseBars;
+  return exercise.form?.phraseBars || 0;
+}
+
+/** A new pattern or phrase length changes how many bars the piece has. */
+function applyPattern() {
+  saveAnswers();
+  const p = setBars(ws.getProject(), patternBars());
+  ws.setProject(p, { lock: exercise.lock || {}, title: exerciseTitle(), phraseBars: currentPhraseBars() });
+  if (!feedback) store.set(workKey(exercise), p);
+  renderFormPanel();
 }
 
 function saveAnswers() {
@@ -198,7 +216,8 @@ function saveAnswers() {
 }
 
 function renderFormPanel() {
-  const f = exercise.form;
+  const pc = exercise.patternChoice;
+  const f = pc ? { phraseBars: answers.phraseBars, show: patternLabels() } : exercise.form;
   const panel = $('#form-panel');
   if (!f) { panel.replaceChildren(); return; }
   const p = ws.getProject();
@@ -228,8 +247,17 @@ function renderFormPanel() {
     }
     return h('div', { class: 'phrase-row' }, ...cells);
   });
+  const chooser = pc ? h('div', { class: 'row wrap pattern-choice' },
+    h('label', { class: 'field inline' }, 'Pattern',
+      h('select', { onchange: (e) => { answers.pattern = e.target.value; applyPattern(); } },
+        pc.options.map((o) => h('option', { value: o, selected: o === answers.pattern }, o)))),
+    h('label', { class: 'field inline' }, 'Each phrase',
+      h('select', { onchange: (e) => { answers.phraseBars = Number(e.target.value); applyPattern(); } },
+        pc.phraseBars.map((n) => h('option', { value: n, selected: n === answers.phraseBars }, `${n} bar${n > 1 ? 's' : ''}`)))),
+    h('span', { class: 'muted small' }, `${patternLabels().length} phrases · ${patternBars()} bars`)) : '';
   panel.replaceChildren(h('div', { class: 'form-panel' },
-    h('h3', {}, analyse ? 'Your analysis' : 'The form'),
+    h('h3', {}, analyse ? 'Your analysis' : pc ? 'Your pattern' : 'The form'),
+    chooser,
     analyse ? h('p', { class: 'muted small' }, 'A = first idea · A′ = the same idea changed · B, C = new material.') : '',
     ...rows));
 }
@@ -363,7 +391,7 @@ function buildSubmission({ withFiles }) {
     project: ws.getProject(),
     checks: results,
     attachments: files,
-    answers: exercise.form?.answer ? answers : null,
+    answers: exercise.form?.answer || exercise.patternChoice ? answers : null,
   });
 }
 

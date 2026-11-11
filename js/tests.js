@@ -186,12 +186,38 @@ await test('form: composing A A′ B A′', () => {
 await test('listening: key, chords by bar, melody unlock', async () => {
   const { chordsFound } = await import('./checks.js');
   const e = LESSONS[1].exercises.find((x) => x.id === 'l2-listen');
-  const wrongKey = newProject({ key: 'C', bars: 4, progression: [1, 6, 2, 5] });
+  const wrongKey = newProject({ key: 'C', bars: 4, progression: [1, 6, 2, [2, 5]] });
   assert(!chordsFound(e, wrongKey), 'right chords in the wrong key stay locked');
   const half = newProject({ key: 'Bb', bars: 4, progression: [1, 6, 4, 4] });
   const r = runChecks(e, half)[1];
   assert(!r.pass && r.detail.includes('Right: bar 1, 2') && r.detail.includes('bar 3, 4'), r.detail);
-  assert(chordsFound(e, newProject({ key: 'Bb', bars: 4, progression: [1, 6, { deg: 2, seventh: true }, { deg: 5, seventh: true }] })), 'sevenths count');
+  assert(chordsFound(e, newProject({ key: 'Bb', bars: 4, progression: [1, 6, { deg: 2, seventh: true }, [2, { deg: 5, seventh: true }]] })), 'sevenths count');
+});
+
+await test('Bohemian: split last bar (Cm then F)', async () => {
+  const { chordsFound } = await import('./checks.js');
+  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-listen');
+  const right = newProject({ key: 'Bb', bars: 4, progression: [1, 6, 2, [2, 5]] });
+  assert(chordsFound(e, right), 'Bb Gm Cm Cm-F should be right');
+  const noSplit = newProject({ key: 'Bb', bars: 4, progression: [1, 6, 2, 5] });
+  const r = runChecks(e, noSplit)[1];
+  assert(!r.pass && r.detail.includes('bar 4'), r.detail);
+});
+
+await test('Sigur Rós: compose in a chosen pattern', () => {
+  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-pattern-compose');
+  const q = (start, deg, len = 2, oct = 0) => ({ start, len, deg, oct });
+  const bar = (b, notes) => notes.map(([st, deg, len = 2]) => q(b * 8 + st, deg, len));
+  // Pattern D G D G, one bar per phrase.
+  const D = [[0, 3], [2, 2], [4, 1, 4]];
+  const G = [[0, 5, 1], [1, 6, 1], [2, 7, 6]];
+  const melody = [...bar(0, D), ...bar(1, G), ...bar(2, D), ...bar(3, G)];
+  const p = newProject({ key: 'A', bars: 4, melody });
+  const ok = runChecks(e, p, { answers: { pattern: 'D G D G', phraseBars: 1 } });
+  assert(ok.every((r) => r.pass), JSON.stringify(ok.filter((r) => !r.pass)));
+  assert(!runChecks(e, p, { answers: { pattern: 'not a pattern', phraseBars: 1 } })[0].pass, 'unknown pattern fails');
+  const notRepeated = newProject({ key: 'A', bars: 4, melody: [...bar(0, D), ...bar(1, G), ...bar(2, G), ...bar(3, D)] });
+  assert(runChecks(e, notRepeated, { answers: { pattern: 'D G D G', phraseBars: 1 } }).some((r) => !r.pass), 'wrong order fails');
 });
 
 await test('lesson 1 is unchanged', () => {

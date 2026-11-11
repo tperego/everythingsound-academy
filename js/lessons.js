@@ -122,6 +122,21 @@ export const LESSONS = [
 
 // ---------- Lesson 2 ----------
 
+// The melodic patterns the class identified in the vocal parts of Sigur Rós, "Svefn-g-englar".
+// Students pick one and compose a new melody that follows it. Each letter is one phrase.
+export const SIGUR_ROS_PATTERNS = [
+  'A B A B A′ C A′ C',
+  'D D D D',
+  'A E A E',
+  'D D D F D D D F',
+  'D G D G',
+  'D G D G D G D G',
+  'A H',
+  'I L M L',
+  'N O N O′ N O N O′',
+  'D D D D D D',
+];
+
 // Beethoven, "Ode to Joy" (public domain), C major. Quarter note = 2 steps.
 const q = (start, deg, len = 2, oct = 0) => ({ start, len, deg, oct });
 const odeA = (o) => [
@@ -149,23 +164,22 @@ LESSONS.push({
   exercises: [
     {
       id: 'l2-listen',
-      title: '1 · Find the chords by ear, then write a melody',
+      title: '1 · Bohemian Rhapsody: find the chords, invent a melody',
       kind: 'listen',
       // The clip is the official video, embedded from YouTube (nothing is copied or hosted here).
-      // TEACHER: check the start/end seconds and the answer key below against your own analysis.
-      listen: { youtubeId: 'fJ9rUzIMcZQ', start: 48, end: 80, label: 'Queen – Bohemian Rhapsody: the “Mama…” verse' },
+      listen: { youtubeId: 'fJ9rUzIMcZQ', start: 50, end: 105, label: 'Queen – Bohemian Rhapsody: the “Mama…” verse' },
       brief: [
         'Play the clip. Find the key: which note feels like home? Set it in the Key menu.',
-        'Find the chord in each of the 4 bars and enter it in the chord lane. Press Play to compare with the recording. Check tells you which bars are right.',
-        'When the key and all four chords are right, the melody grid unlocks. Write your own new melody over these chords: don’t copy Freddie’s!',
-        'Check, then submit it for marking.',
+        'Find the 4-bar chord loop and enter it in the chord lane. Careful: the last bar has two chords (click beat 3 of bar 4 for the second one). Press Play to compare with the recording. Check tells you which bars are right.',
+        'When the key and all the chords are right, the melody grid unlocks. Invent a new melodic pattern over these chords: don’t copy Freddie’s!',
+        'In your message to your teacher, name your pattern (e.g. A A′ B A). Check, then submit it for marking.',
       ],
       start: { key: 'C', mode: 'major', bpm: 72, bars: 4 },
       lock: { bars: true },
       gateMelody: true,
       checks: [
         { type: 'key-is', key: 'Bb', mode: 'major' },
-        { type: 'progression-by-bar', sequence: ['I', 'vi', 'ii', 'V'] },
+        { type: 'progression-by-bar', sequence: ['I', 'vi', 'ii', ['ii', 'V']] }, // B♭ | Gm | Cm | Cm F
         { type: 'melody-fills', minNotes: 8 },
         { type: 'melody-chord-tones', minRatio: 0.6 },
       ],
@@ -176,8 +190,30 @@ LESSONS.push({
       ],
     },
     {
+      id: 'l2-pattern-compose',
+      title: '2 · Sigur Rós: compose in one of its patterns',
+      kind: 'creative',
+      listen: { youtubeId: 'rtemrZ7-pj0', start: 0, label: 'Sigur Rós – Svefn-g-englar: listen to the vocal patterns' },
+      brief: [
+        'Listen to the vocal parts of Svefn-g-englar and follow the patterns we found in class.',
+        'Choose one pattern from the list below, and how long each phrase is (1 or 2 bars). Each letter is one phrase.',
+        'Compose a new melody that follows your pattern: the same letter repeats exactly, a prime (′) is a variation (same rhythm, some notes changed), and a new letter is new material.',
+        'Choose your own key, tempo and chords. Use ▶ next to each phrase to compare them. Check, then submit it for marking.',
+      ],
+      start: { key: 'A', mode: 'major', bpm: 76, bars: 8 },
+      lock: { bars: true },
+      patternChoice: { options: SIGUR_ROS_PATTERNS, phraseBars: [1, 2] },
+      checks: [{ type: 'melody-pattern', options: SIGUR_ROS_PATTERNS }],
+      rubric: [
+        { label: 'The pattern is clear when you listen', max: 5 },
+        { label: 'Melodic invention', max: 5 },
+        { label: 'Atmosphere and character', max: 5 },
+        { label: 'Overall musicality', max: 5 },
+      ],
+    },
+    {
       id: 'l2-form-analyse',
-      title: '2 · Analyse the form of a melody',
+      title: '3 · Extra: analyse the form of Ode to Joy',
       kind: 'form',
       form: { phraseBars: 4, answer: ['A', 'A′', 'B', 'A′'], askRhythmPitch: true },
       brief: [
@@ -196,7 +232,7 @@ LESSONS.push({
     },
     {
       id: 'l2-form-compose',
-      title: '3 · Compose in the form A A′ B A′',
+      title: '4 · Extra: compose in the form A A′ B A′',
       kind: 'creative',
       form: { phraseBars: 2, show: ['A', 'A′', 'B', 'A′'] },
       brief: [
