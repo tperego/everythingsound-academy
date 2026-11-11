@@ -28,7 +28,7 @@ export function newProject({ key = 'C', mode = 'major', bpm = 90, bars = 4, prog
   const p = { v: 1, key, mode, bpm, bars, chords: Array(bars * SLOTS_PER_BAR).fill(null), melody: [] };
   if (progression) {
     // One entry per bar: a degree, {deg, seventh}, or an array of two for two chords in the bar.
-    const toChord = (c) => (typeof c === 'number' ? { deg: c, seventh: false } : { deg: c.deg, seventh: !!c.seventh });
+    const toChord = (c) => (typeof c === 'number' ? { deg: c, seventh: false } : { deg: c.deg, seventh: !!c.seventh, ...(c.bass ? { bass: c.bass } : {}) });
     progression.forEach((c, bar) => {
       if (c == null || bar >= bars) return;
       const parts = Array.isArray(c) ? c : [c];
@@ -62,7 +62,11 @@ export function normalizeProject(raw) {
     const c = Array.isArray(r.chords) ? r.chords[i] : null;
     if (!c || typeof c !== 'object') return null;
     const deg = clampInt(c.deg, 1, 7, null);
-    return deg ? { deg, seventh: !!c.seventh } : null;
+    if (!deg) return null;
+    const out = { deg, seventh: !!c.seventh };
+    const bd = clampInt(c.bass?.deg, 1, 7, null);
+    if (bd) out.bass = { deg: bd, acc: clampInt(c.bass.acc, -1, 1, 0) };
+    return out;
   });
   const steps = bars * STEPS_PER_BAR;
   const melody = (Array.isArray(r.melody) ? r.melody : [])

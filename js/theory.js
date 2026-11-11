@@ -100,7 +100,7 @@ export function chordInfo(key, mode, chord) {
     else if (quality === 'aug') { suffix = '+7'; symbol = names[0] + 'aug7'; }
   }
 
-  return {
+  const info = {
     deg,
     seventh,
     degs,
@@ -108,22 +108,85 @@ export function chordInfo(key, mode, chord) {
     names,
     quality,
     roman: roman + suffix,
+    // The chord's identity without 7ths or inversions: used when checking answers.
     baseRoman: roman + (quality === 'dim' ? '°' : quality === 'aug' ? '+' : ''),
     symbol,
     func: FUNCTION_OF_DEGREE[deg],
+    bassPc: pcs[0],
+    inversion: 0,
   };
+  return chord.bass ? withBass(info, key, mode, chord.bass) : info;
 }
 
-/** A simple playable voicing: close-position chord around C3–B3 plus a bass root. */
+// ---------- Bass notes: inversions and slash chords ----------
+
+const ACC_SIGN = { '-1': '♭', 0: '', 1: '♯' };
+
+/** bass = {deg: 1..7, acc: -1 | 0 | 1}: a scale degree, optionally flattened or sharpened. */
+export function bassPc(key, mode, bass) {
+  return (degreePc(key, mode, bass.deg) + (bass.acc || 0) + 12) % 12;
+}
+
+export function bassName(key, mode, bass) {
+  let n = degreeName(key, mode, bass.deg);
+  if (bass.acc === 1) n = n.endsWith('b') ? n.slice(0, -1) : n + '#';
+  if (bass.acc === -1) n = n.endsWith('#') ? n.slice(0, -1) : n + 'b';
+  return n;
+}
+
+export const bassDegreeLabel = (bass) => `${ACC_SIGN[bass.acc || 0]}${bass.deg}`;
+
+/** The bass note that puts a chord tone (0 root, 1 third, 2 fifth, 3 seventh) in the bass. */
+export function bassForChordTone(key, mode, chord, tone) {
+  const info = chordInfo(key, mode, { deg: chord.deg, seventh: chord.seventh });
+  const deg = info.degs[tone];
+  let acc = ((info.pcs[tone] - degreePc(key, mode, deg)) % 12 + 12) % 12;
+  if (acc > 6) acc -= 12;
+  return { deg, acc };
+}
+
+/** The 12 possible bass notes in a key, named as scale degrees (diatonic first, then ♭ and ♯). */
+export function bassOptions(key, mode) {
+  const seen = new Set();
+  const out = [];
+  const add = (deg, acc) => {
+    const b = { deg, acc };
+    const pc = bassPc(key, mode, b);
+    if (seen.has(pc)) return;
+    seen.add(pc);
+    out.push({ ...b, pc, label: `${bassDegreeLabel(b)} · ${bassName(key, mode, b)}` });
+  };
+  for (let d = 1; d <= 7; d++) add(d, 0);
+  for (let d = 1; d <= 7; d++) add(d, -1);
+  for (let d = 1; d <= 7; d++) add(d, 1);
+  return out;
+}
+
+function withBass(info, key, mode, bass) {
+  const bpc = bassPc(key, mode, bass);
+  const idx = info.pcs.indexOf(bpc);
+  if (idx === 0) return info;
+  const slash = `${info.symbol}/${bassName(key, mode, bass)}`;
+  if (idx > 0) {
+    // Inversion: figured-bass numbers (I6, I64, V65, V43, V42).
+    const fig = info.seventh ? ['', '65', '43', '42'][idx] : ['', '6', '64'][idx];
+    const core = info.seventh ? info.roman.replace(/7$/, '') : info.roman;
+    return { ...info, roman: core + fig, symbol: slash, bassPc: bpc, inversion: idx };
+  }
+  // A bass note outside the chord (e.g. E/D = I/♭7).
+  return { ...info, roman: `${info.roman}/${bassDegreeLabel(bass)}`, symbol: slash, bassPc: bpc, inversion: -1 };
+}
+
+/** A simple playable voicing: close-position chord around C3–B4 plus the bass note. Inversions are voiced from the bass up. */
 export function chordVoicing(info) {
-  const root = 48 + info.pcs[0];
-  const chord = [root];
-  for (let i = 1; i < info.pcs.length; i++) {
-    let m = 48 + info.pcs[i];
+  const order = info.inversion > 0 ? [...info.pcs.slice(info.inversion), ...info.pcs.slice(0, info.inversion)] : info.pcs;
+  const chord = [48 + order[0]];
+  for (let i = 1; i < order.length; i++) {
+    let m = 48 + order[i];
     while (m <= chord[chord.length - 1]) m += 12;
     chord.push(m);
   }
-  return { chord, bass: 36 + info.pcs[0] };
+  return { chord, bass: 36 + (info.bassPc ?? info.pcs[0]) };
 }
 
 /** Key signature as number of sharps (+) or flats (-), for MIDI and notation. */

@@ -53,6 +53,33 @@ await test('chord numerals and symbols', () => {
   assertEq(r('A', 'minor', 7, true).roman, 'vii°7');
 });
 
+await test('inversions and slash chords', async () => {
+  const { bassForChordTone, chordVoicing } = await import('./theory.js');
+  const c = (k, m, chord) => chordInfo(k, m, chord);
+  const first = { deg: 1, bass: bassForChordTone('C', 'major', { deg: 1 }, 1) };
+  assertEq([c('C', 'major', first).roman, c('C', 'major', first).symbol], ['I6', 'C/E']);
+  const second = { deg: 1, bass: bassForChordTone('C', 'major', { deg: 1 }, 2) };
+  assertEq(c('C', 'major', second).roman, 'I64');
+  const v65 = { deg: 5, seventh: true, bass: bassForChordTone('C', 'major', { deg: 5, seventh: true }, 1) };
+  assertEq([c('C', 'major', v65).roman, c('C', 'major', v65).symbol], ['V65', 'G7/B']);
+  // Minor key: V6 has the raised leading tone in the bass.
+  const minorV6 = { deg: 5, bass: bassForChordTone('A', 'minor', { deg: 5 }, 1) };
+  assertEq(c('A', 'minor', minorV6).symbol, 'E/G#');
+  // Sigur Rós: E/D in E major is I with ♭7 in the bass.
+  const eOverD = { deg: 1, bass: { deg: 7, acc: -1 } };
+  assertEq([c('E', 'major', eOverD).roman, c('E', 'major', eOverD).symbol], ['I/♭7', 'E/D']);
+  assertEq(chordVoicing(c('E', 'major', eOverD)).bass % 12, 2);
+  assertEq(chordVoicing(c('C', 'major', first)).chord[0] % 12, 4);
+  // Inversions still count as the same chord in checks.
+  const p = newProject({ key: 'G', bars: 4, progression: [1, { deg: 5, bass: bassForChordTone('G', 'major', { deg: 5 }, 1) }, 6, 4] });
+  assert(runChecks(LESSONS[0].exercises[0], p)[0].pass, 'V6 counts as V');
+  // Bass survives save/load and MIDI export.
+  const n = normalizeProject(JSON.parse(JSON.stringify(newProject({ key: 'E', bars: 1, progression: [eOverD] }))));
+  assertEq(n.chords[0].bass, { deg: 7, acc: -1 });
+  const bassTrack = readMidi(projectToMidi(n, { only: 'bass' })).tracks[1].notes;
+  assertEq(bassTrack[0].pitch % 12, 2);
+});
+
 await test('project model', () => {
   const p = newProject({ key: 'G', bars: 4, progression: [1, 5, 6, 4] });
   assertEq(chordEvents(p).map((e) => [e.start, e.len, e.chord.deg]), [[0, 4, 1], [4, 4, 5], [8, 4, 6], [12, 4, 4]]);

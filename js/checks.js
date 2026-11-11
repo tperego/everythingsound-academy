@@ -20,7 +20,8 @@ const CHECKS = {
     const got = evs.map((e) => e.info.roman);
     const okCount = evs.length === sequence.length;
     const perBar = evs.every((e, i) => e.start === i * 4 && e.len === 4);
-    const match = okCount && sequence.every((want, i) => (want.includes('7') ? got[i] === want : strip7(got[i]) === want));
+    const base = evs.map((e) => e.info.baseRoman);
+    const match = okCount && sequence.every((want, i) => (want.includes('7') ? got[i] === want : base[i] === want));
     return {
       label: `Chords are ${sequence.join(' – ')}, one per bar`,
       pass: match && perBar,
@@ -125,7 +126,7 @@ const CHECKS = {
       const wants = Array.isArray(want) ? want : [want, want];
       const ok = wants.every((w, half) => {
         const ev = chordAtBeat(p, b * 4 + half * 2);
-        return ev && strip7(chordInfo(p.key, p.mode, ev.chord).roman) === w;
+        return ev && chordInfo(p.key, p.mode, ev.chord).baseRoman === w;
       });
       (ok ? right : wrong).push(b + 1);
     });

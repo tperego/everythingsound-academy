@@ -1,7 +1,7 @@
 // The composer grid: a chord lane (half-bar slots) and a scale-degree melody grid (8th-note steps).
 
 import { MELODY_ROWS, SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, removeOverlaps } from './project.js';
-import { FUNCTION_NAMES, chordDegrees, chordInfo, chordVoicing, degreeName, midiForDegree } from './theory.js';
+import { FUNCTION_NAMES, bassForChordTone, bassOptions, chordDegrees, chordInfo, chordVoicing, degreeName, midiForDegree } from './theory.js';
 import { h } from './util.js';
 
 const ROW_H = 22;
@@ -204,11 +204,36 @@ export class Composer {
       h('input', { type: 'checkbox', checked: this.seventh, onchange: (e) => { this.seventh = e.target.checked; this.renderPalette(); } }),
       ' Add 7th');
     const clear = h('button', { type: 'button', class: 'btn ghost small', onclick: () => this.clearSlot(this.selected) }, 'Clear slot');
+
+    // Bass: inversions (3rd/5th/7th in the bass) or any other bass note (slash chords like E/D).
+    const t = this.bassTarget();
+    const tc = t != null ? p.chords[t] : null;
+    const ti = tc ? chordInfo(p.key, p.mode, tc) : null;
+    const opts = bassOptions(p.key, p.mode);
+    const toneBtn = (label, tone) => h('button', {
+      type: 'button',
+      class: `btn small${ti && ti.inversion === tone ? ' on' : ''}`,
+      disabled: !tc || (tone === 3 && !tc.seventh),
+      onclick: () => this.setBass(tone === 0 ? null : bassForChordTone(p.key, p.mode, tc, tone)),
+    }, label);
+    const bassRow = h('div', { class: 'palette-row small bass-row' },
+      h('span', { class: 'tb-label' }, 'Bass'),
+      toneBtn('Root', 0), toneBtn('3rd in bass', 1), toneBtn('5th in bass', 2), toneBtn('7th in bass', 3),
+      h('select', {
+        'aria-label': 'Other bass note',
+        disabled: !tc,
+        onchange: (e) => {
+          const o = opts[Number(e.target.value)];
+          if (o) this.setBass(o.pc === ti.pcs[0] ? null : { deg: o.deg, acc: o.acc });
+        },
+      }, h('option', { value: '' }, 'Any bass note…'), opts.map((o, i) => h('option', { value: i, selected: !!ti && ti.inversion === -1 && ti.bassPc === o.pc }, o.label))),
+      h('span', { class: 'hint' }, tc ? `Changing: ${ti.symbol} (${ti.roman}), bar ${Math.floor(t / 2) + 1}${t % 2 ? ', beat 3' : ''}` : 'Pick a chord first, then its bass.'));
     const legend = h('div', { class: 'legend' },
       h('span', { class: 'dot fn-T' }), 'Tonic ', h('span', { class: 'dot fn-PD' }), 'Pre-dominant ', h('span', { class: 'dot fn-D' }), 'Dominant');
     this.palette.replaceChildren(
       note,
       h('div', { class: 'palette-row' }, ...buttons),
+      bassRow,
       h('div', { class: 'palette-row small' }, seventh, clear, legend,
         h('span', { class: 'hint' }, `Selected: bar ${Math.floor(this.selected / 2) + 1}${this.selected % 2 ? ', beat 3' : ''}. An empty slot keeps the chord before it.`)),
     );
@@ -237,9 +262,28 @@ export class Composer {
     else if (e.key === 'Backspace' || e.key === 'Delete') { this.clearSlot(this.selected); e.preventDefault(); }
   }
 
+  /** The chord the Bass buttons change: the selected one, or the one just entered. */
+  bassTarget() {
+    if (this.project.chords[this.selected]) return this.selected;
+    const l = this.lastAssigned;
+    return l != null && this.project.chords[l] ? l : null;
+  }
+
+  setBass(bass) {
+    const t = this.bassTarget();
+    if (t == null) return;
+    const c = { ...this.project.chords[t] };
+    if (bass) c.bass = bass;
+    else delete c.bass;
+    this.project.chords[t] = c;
+    this.previewChord(c);
+    this.emit();
+  }
+
   assign(deg) {
     const chord = { deg, seventh: this.seventh };
     this.project.chords[this.selected] = chord;
+    this.lastAssigned = this.selected;
     this.previewChord(chord);
     // Jump to the next bar so a progression can be typed quickly.
     const next = this.selected % 2 === 0 ? this.selected + 2 : this.selected + 1;
