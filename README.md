@@ -21,6 +21,14 @@ Then open:
 
 It has to be served over http(s); opening `index.html` as a file won't load the modules. Any static host works for putting it online (GitHub Pages, Netlify, your own site).
 
+## Live site
+
+- **Students:** <https://practice.everythingsoundacademy.com/>
+- **Marking:** <https://practice.everythingsoundacademy.com/mark.html>
+- Hosted for free on GitHub Pages from the public repository `tperego/everythingsound-practice`. Only the app's code is in it; no student data is ever uploaded.
+- Domain: Squarespace DNS has a CNAME record `practice` → `tperego.github.io`. The `CNAME` file in this folder tells GitHub Pages the domain name.
+- **Publishing a change:** commit it, then `git push`. The site updates within a minute or two.
+
 ## What students do
 
 1. Watch the lesson video at the top of the page.
