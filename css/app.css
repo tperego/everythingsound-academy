@@ -378,3 +378,15 @@ audio { width: 100%; margin-top: 6px; }
 .form-target { font: 800 1.2rem/1 Georgia, serif; color: var(--accent); }
 .field.inline { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0; }
 .pattern-choice select { font-weight: 600; }
+.sections:focus { outline: none; }
+.letter-pad { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0 12px; position: sticky; top: 60px; z-index: 5; background: var(--surface); padding: 6px 0; }
+.letter-btn { font: 800 1rem/1 Georgia, serif; width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+.letter-btn:hover { border-color: var(--accent); }
+.letter-btn.prime { background: var(--fn-PD-soft); }
+.sec-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.slots { display: flex; flex-wrap: wrap; gap: 6px; }
+.slot-btn { font: 800 1rem/1 Georgia, serif; min-width: 40px; height: 40px; border-radius: 8px; border: 2px dashed var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.slot-btn.filled { border-style: solid; color: var(--ink); background: var(--surface-2); }
+.slot-btn.on { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+@media (max-width: 860px) { .letter-pad { top: 0; } }
+.phrase-letter { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 5px; background: var(--accent); color: var(--accent-ink); font: 800 0.8rem/1.4 Georgia, serif; }

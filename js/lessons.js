@@ -190,8 +190,26 @@ LESSONS.push({
       ],
     },
     {
+      id: 'l2-sigur-analyse',
+      title: '2 · Sigur Rós: label the vocal patterns',
+      kind: 'form',
+      noComposer: true,
+      listen: { youtubeId: 'rtemrZ7-pj0', start: 0, label: 'Sigur Rós – Svefn-g-englar: the vocal parts' },
+      brief: [
+        'Listen to the vocal parts of Svefn-g-englar. The singing is split into 10 sections, in order, and each box is one phrase.',
+        'Click a box, then a letter (or type it). Use the same letter whenever a phrase comes back, and a new letter for something new. Add ′ when a phrase comes back changed.',
+        'Letters carry on through the whole song: if a phrase from section 1 returns in section 3, it gets the same letter.',
+        'Press Check to see which sections are right, listen again, then submit.',
+      ],
+      start: { key: 'C', mode: 'major', bpm: 80, bars: 4 },
+      sections: SIGUR_ROS_PATTERNS,
+      sectionNotes: { 9: 'sung twice' },
+      checks: [{ type: 'section-labels', sections: SIGUR_ROS_PATTERNS }],
+      rubric: [],
+    },
+    {
       id: 'l2-pattern-compose',
-      title: '2 · Sigur Rós: compose in one of its patterns',
+      title: '3 · Sigur Rós: compose in one of its patterns',
       kind: 'creative',
       listen: { youtubeId: 'rtemrZ7-pj0', start: 0, label: 'Sigur Rós – Svefn-g-englar: listen to the vocal patterns' },
       brief: [
@@ -213,7 +231,7 @@ LESSONS.push({
     },
     {
       id: 'l2-form-analyse',
-      title: '3 · Extra: analyse the form of Ode to Joy',
+      title: '4 · Extra: analyse the form of Ode to Joy',
       kind: 'form',
       form: { phraseBars: 4, answer: ['A', 'A′', 'B', 'A′'], askRhythmPitch: true },
       brief: [
@@ -232,7 +250,7 @@ LESSONS.push({
     },
     {
       id: 'l2-form-compose',
-      title: '4 · Extra: compose in the form A A′ B A′',
+      title: '5 · Extra: compose in the form A A′ B A′',
       kind: 'creative',
       form: { phraseBars: 2, show: ['A', 'A′', 'B', 'A′'] },
       brief: [

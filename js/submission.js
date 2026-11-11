@@ -24,6 +24,8 @@ export function parseAnswers(a) {
     samePitch: arr(a.samePitch).map(Boolean),
     pattern,
     phraseBars: a.phraseBars === 2 ? 2 : 1,
+    // Letters per section for whole-song labelling: [['A','B',…], …]
+    sectionLabels: arr(a.sectionLabels).map((sec) => arr(sec).map((v) => (typeof v === 'string' && /^[A-Z]′?$/.test(v) ? v : ''))),
   };
 }
 

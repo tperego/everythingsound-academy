@@ -220,6 +220,25 @@ await test('Sigur Rós: compose in a chosen pattern', () => {
   assert(runChecks(e, notRepeated, { answers: { pattern: 'D G D G', phraseBars: 1 } }).some((r) => !r.pass), 'wrong order fails');
 });
 
+await test('Sigur Rós: labelling sections, any consistent letters', () => {
+  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-sigur-analyse');
+  const teacher = e.sections.map((s) => s.split(' '));
+  assert(runChecks(e, null, { answers: { sectionLabels: teacher } })[0].pass, 'teacher answer passes');
+  // Same structure with different letters (A<->D swapped everywhere) still passes.
+  const swap = { A: 'D', D: 'A' };
+  const renamed = teacher.map((sec) => sec.map((l) => (swap[l[0]] || l[0]) + l.slice(1)));
+  assert(runChecks(e, null, { answers: { sectionLabels: renamed } })[0].pass, 'consistent renaming passes');
+  // One wrong section is reported by number.
+  const oneWrong = teacher.map((sec) => [...sec]);
+  oneWrong[2] = ['A', 'E', 'E', 'A'];
+  const r = runChecks(e, null, { answers: { sectionLabels: oneWrong } })[0];
+  assert(!r.pass && r.detail.includes('Listen again to section 3'), r.detail);
+  // Missing prime is wrong.
+  const noPrime = teacher.map((sec) => sec.map((l) => l.replace('′', '')));
+  const r2 = runChecks(e, null, { answers: { sectionLabels: noPrime } })[0];
+  assert(!r2.pass && r2.detail.includes('section 1'), r2.detail);
+});
+
 await test('lesson 1 is unchanged', () => {
   assertEq(LESSONS[0].exercises.map((x) => x.id), ['p1-build', 'p1-cadence', 'p1-melody', 'p1-daw']);
 });

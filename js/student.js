@@ -123,7 +123,11 @@ function selectExercise(id, { project = null, fromFeedback = false } = {}) {
   const saved = store.get(workKey(exercise));
   let p = project || (saved ? normalizeProject(saved) : newProject(exercise.start));
   if (exercise.patternChoice && !project) p = setBars(p, patternBars());
-  ws.setProject(p, { lock: exercise.lock || {}, title: exerciseTitle(), phraseBars: currentPhraseBars() });
+  ws.setProject(p, { lock: exercise.lock || {}, title: exerciseTitle(), phraseBars: currentPhraseBars(), phraseLabels: currentPhraseLabels() });
+  // Pure listening/labelling exercises don't need the composer or the DAW panel.
+  $('#workspace').hidden = !!exercise.noComposer;
+  $('#daw-panel').hidden = !!exercise.noComposer;
+  selSlot = { i: 0, k: 0 };
   melodyUnlocked = null;
   updateMelodyGate(p, { initial: true });
   renderListenBox();
@@ -197,6 +201,11 @@ function normalizeAnswers(a) {
 const exerciseTitle = () => exercise.title.replace(/^\d+\s*·\s*/, '');
 const patternLabels = () => answers.pattern.split(' ');
 const patternBars = () => patternLabels().length * answers.phraseBars;
+/** Letters shown on the grid's phrase markers: the chosen pattern, or the form to compose in. */
+function currentPhraseLabels() {
+  if (exercise.patternChoice) return patternLabels();
+  return exercise.form?.show || [];
+}
 function currentPhraseBars() {
   if (exercise.patternChoice) return answers.phraseBars;
   return exercise.form?.phraseBars || 0;
@@ -206,7 +215,7 @@ function currentPhraseBars() {
 function applyPattern() {
   saveAnswers();
   const p = setBars(ws.getProject(), patternBars());
-  ws.setProject(p, { lock: exercise.lock || {}, title: exerciseTitle(), phraseBars: currentPhraseBars() });
+  ws.setProject(p, { lock: exercise.lock || {}, title: exerciseTitle(), phraseBars: currentPhraseBars(), phraseLabels: currentPhraseLabels() });
   if (!feedback) store.set(workKey(exercise), p);
   renderFormPanel();
 }
@@ -215,7 +224,85 @@ function saveAnswers() {
   if (!feedback) store.set(answersKey(exercise), answers);
 }
 
-function renderFormPanel() {
+// ---------- Whole-song labelling (click a box, then a letter) ----------
+
+let selSlot = { i: 0, k: 0 };
+const LETTERS = 'ABCDEFGHIJKLMNO'.split('');
+
+function setSlot(value) {
+  const secs = answers.sectionLabels;
+  secs[selSlot.i][selSlot.k] = value;
+  saveAnswers();
+}
+function advanceSlot() {
+  const secs = answers.sectionLabels;
+  if (selSlot.k + 1 < secs[selSlot.i].length) selSlot.k++;
+  else if (selSlot.i + 1 < secs.length) selSlot = { i: selSlot.i + 1, k: 0 };
+}
+function pickLetter(letter) {
+  setSlot(letter);
+  advanceSlot();
+  renderFormPanel(true);
+}
+/** ′ applies to the selected box, or (if it's empty) to the box just filled, so "A then ′" gives A′. */
+function togglePrime() {
+  const secs = answers.sectionLabels;
+  let t = { ...selSlot };
+  if (!secs[t.i][t.k]) {
+    if (t.k > 0) t.k--;
+    else if (t.i > 0) t = { i: t.i - 1, k: secs[t.i - 1].length - 1 };
+  }
+  const cur = secs[t.i][t.k];
+  if (!cur) return;
+  secs[t.i][t.k] = cur.endsWith('′') ? cur.slice(0, -1) : `${cur}′`;
+  saveAnswers();
+  renderFormPanel(true);
+}
+
+function renderSections(panel, refocus) {
+  const notes = exercise.sectionNotes || {};
+  answers.sectionLabels = exercise.sections.map((sec, i) => {
+    const cur = answers.sectionLabels?.[i] || [];
+    return sec.split(' ').map((_, k) => cur[k] || '');
+  });
+  const rows = exercise.sections.map((_, i) => h('div', { class: 'sec-row' },
+    h('span', { class: 'phrase-name' }, h('strong', {}, `Section ${i + 1}`), notes[i] ? h('span', { class: 'muted small' }, ` (${notes[i]})`) : ''),
+    h('div', { class: 'slots' }, answers.sectionLabels[i].map((v, k) => h('button', {
+      type: 'button',
+      class: `slot-btn${selSlot.i === i && selSlot.k === k ? ' on' : ''}${v ? ' filled' : ''}`,
+      'aria-label': `Section ${i + 1}, phrase ${k + 1}: ${v || 'empty'}`,
+      onclick: () => { selSlot = { i, k }; renderFormPanel(true); },
+    }, v || '·')))));
+  const pad = h('div', { class: 'letter-pad' },
+    LETTERS.map((l) => h('button', { type: 'button', class: 'letter-btn', onclick: () => pickLetter(l) }, l)),
+    h('button', { type: 'button', class: 'letter-btn prime', title: 'Changed version (prime)', onclick: togglePrime }, '′'),
+    h('button', { type: 'button', class: 'btn ghost small', onclick: () => { setSlot(''); renderFormPanel(true); } }, 'Clear box'));
+  const box = h('div', { class: 'form-panel sections', tabindex: '0', 'aria-label': 'Pattern labels. Type a letter, an apostrophe for prime, Backspace to clear, arrow keys to move.' },
+    h('h3', {}, 'Your analysis'),
+    h('p', { class: 'muted small' }, `Selected: section ${selSlot.i + 1}, phrase ${selSlot.k + 1}. Type letters too: ' adds a prime, Backspace clears, arrow keys move.`),
+    pad,
+    ...rows);
+  panel.replaceChildren(box);
+  if (refocus) box.focus({ preventScroll: true });
+}
+
+$('#form-panel').addEventListener('keydown', (e) => {
+  if (!exercise?.sections || e.target.closest('input, select, textarea')) return;
+  const key = e.key;
+  if (/^[a-oA-O]$/.test(key)) { pickLetter(key.toUpperCase()); e.preventDefault(); }
+  else if (key === "'" || key === '′') { togglePrime(); e.preventDefault(); }
+  else if (key === 'Backspace' || key === 'Delete') { setSlot(''); renderFormPanel(true); e.preventDefault(); }
+  else if (key === 'ArrowRight') { advanceSlot(); renderFormPanel(true); e.preventDefault(); }
+  else if (key === 'ArrowLeft') {
+    if (selSlot.k > 0) selSlot.k--;
+    else if (selSlot.i > 0) selSlot = { i: selSlot.i - 1, k: answers.sectionLabels[selSlot.i - 1].length - 1 };
+    renderFormPanel(true);
+    e.preventDefault();
+  }
+});
+
+function renderFormPanel(refocus = false) {
+  if (exercise.sections) { renderSections($('#form-panel'), refocus); return; }
   const pc = exercise.patternChoice;
   const f = pc ? { phraseBars: answers.phraseBars, show: patternLabels() } : exercise.form;
   const panel = $('#form-panel');
@@ -391,7 +478,7 @@ function buildSubmission({ withFiles }) {
     project: ws.getProject(),
     checks: results,
     attachments: files,
-    answers: exercise.form?.answer || exercise.patternChoice ? answers : null,
+    answers: exercise.form?.answer || exercise.patternChoice || exercise.sections ? answers : null,
   });
 }
 

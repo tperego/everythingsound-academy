@@ -109,10 +109,11 @@ function open(id) {
 
   // Composer (read-only)
   const wsEl = h('div');
-  detail.append(h('section', { class: 'card' }, h('h3', {}, 'Their piece'), wsEl));
+  detail.append(h('section', { class: 'card', hidden: !!exercise?.noComposer }, h('h3', {}, 'Their piece'), wsEl));
   ws?.destroy();
   ws = new Workspace(wsEl, { readOnly: true, player });
-  ws.setProject(sub.project, { title: `${sub.student.name}: ${sub.exerciseTitle}`, phraseBars: exercise?.patternChoice ? (sub.answers?.phraseBars || 1) : (exercise?.form?.phraseBars || 0) });
+  ws.setProject(sub.project, { title: `${sub.student.name}: ${sub.exerciseTitle}`, phraseBars: exercise?.patternChoice ? (sub.answers?.phraseBars || 1) : (exercise?.form?.phraseBars || 0),
+    phraseLabels: exercise?.patternChoice && sub.answers?.pattern ? sub.answers.pattern.split(' ') : (exercise?.form?.show || []) });
 
   // Checks + attachments
   const attach = h('div', {});
@@ -135,6 +136,14 @@ function open(id) {
     h('section', { class: 'card' }, h('h3', {}, 'Automatic checks'), renderChecks(checks),
       sub.answers?.formLabels?.some(Boolean)
         ? h('p', { class: 'muted small' }, `Their form labels: ${sub.answers.formLabels.map((l) => l || '–').join(' ')}${exercise?.form?.answer ? ` · answer: ${exercise.form.answer.join(' ')}` : ''}`)
+        : '',
+      exercise?.sections && sub.answers?.sectionLabels?.length
+        ? h('table', { class: 'tbl' },
+          h('thead', {}, h('tr', {}, h('th', {}, 'Section'), h('th', {}, 'Their letters'), h('th', {}, 'Your analysis'))),
+          h('tbody', {}, exercise.sections.map((sec, i) => h('tr', {},
+            h('td', {}, String(i + 1)),
+            h('td', {}, (sub.answers.sectionLabels[i] || []).map((l) => l || '·').join(' ')),
+            h('td', {}, sec)))))
         : '',
       sub.answers?.pattern && exercise?.patternChoice
         ? h('p', { class: 'muted small' }, `Pattern they chose: ${sub.answers.pattern} (${sub.answers.phraseBars} bar${sub.answers.phraseBars > 1 ? 's' : ''} per phrase)`)

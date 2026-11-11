@@ -43,13 +43,14 @@ export class Workspace {
     document.addEventListener('keydown', this.onKey);
   }
 
-  setProject(project, { lock = {}, title = '', phraseBars = 0 } = {}) {
+  setProject(project, { lock = {}, title = '', phraseBars = 0, phraseLabels = [] } = {}) {
     this.player.stop();
     this.project = normalizeProject(project);
     this.lock = lock;
     this.title = title;
     this.phraseBars = phraseBars;
-    this.composer.setProject(this.project, lock, phraseBars);
+    this.phraseLabels = phraseLabels;
+    this.composer.setProject(this.project, lock, phraseBars, phraseLabels);
     this.renderToolbar();
     this.renderView();
   }
@@ -57,7 +58,7 @@ export class Workspace {
   /** Change what is locked without resetting the piece (e.g. unlock the melody once the chords are right). */
   setLock(lock) {
     this.lock = lock;
-    this.composer.setProject(this.project, lock, this.phraseBars);
+    this.composer.setProject(this.project, lock, this.phraseBars, this.phraseLabels);
     this.renderToolbar();
   }
 
@@ -85,7 +86,7 @@ export class Workspace {
   update(p, { fromComposer = false, rebuild = false } = {}) {
     this.project = normalizeProject(p);
     if (!fromComposer) {
-      if (rebuild) this.composer.setProject(this.project, this.lock, this.phraseBars);
+      if (rebuild) this.composer.setProject(this.project, this.lock, this.phraseBars, this.phraseLabels);
       else { this.composer.project = cloneProject(this.project); this.composer.renderLayers(); }
       this.renderToolbar();
     }

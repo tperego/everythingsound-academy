@@ -169,6 +169,48 @@ const CHECKS = {
     };
   },
 
+  // Labelling a whole song section by section (e.g. the vocal phrases of a recording).
+  // Students may use different letters from the teacher, as long as they use them consistently:
+  // the same idea must always get the same letter, and a prime (′) must match a prime.
+  'section-labels'({ sections }, p, ctx) {
+    const got = ctx.answers?.sectionLabels || [];
+    if (!got.flat().some(Boolean)) return { label: 'Every phrase has a letter', pass: false, detail: 'Click a box, then a letter.' };
+    const map = new Map(); // student letter -> teacher letter
+    const rev = new Map(); // teacher letter -> student letter
+    const right = [];
+    const wrong = [];
+    const missing = [];
+    sections.forEach((sec, i) => {
+      const want = sec.split(' ');
+      const g = got[i] || [];
+      if (want.some((_, k) => !g[k])) { missing.push(i + 1); return; }
+      const m = new Map(map);
+      const r = new Map(rev);
+      const ok = want.every((w, k) => {
+        const s = g[k];
+        if (s.endsWith('′') !== w.endsWith('′')) return false;
+        const sb = baseLetter(s);
+        const wb = baseLetter(w);
+        if (m.has(sb) || r.has(wb)) return m.get(sb) === wb && r.get(wb) === sb;
+        m.set(sb, wb);
+        r.set(wb, sb);
+        return true;
+      });
+      if (ok) {
+        right.push(i + 1);
+        m.forEach((v, k) => map.set(k, v));
+        r.forEach((v, k) => rev.set(k, v));
+      } else {
+        wrong.push(i + 1);
+      }
+    });
+    const parts = [];
+    if (right.length) parts.push(`Right: section ${listBars(right)}.`);
+    if (wrong.length) parts.push(`Listen again to section ${listBars(wrong)}.`);
+    if (missing.length) parts.push(`Not finished: section ${listBars(missing)}.`);
+    return { label: 'Your letters match the patterns in the song', pass: right.length === sections.length, detail: parts.join(' ') };
+  },
+
   // Composing in a given form: repeats must repeat, variations vary, new letters are new.
   'melody-form'({ form, phraseBars }, p) {
     return formResults(form, phraseBars, p);

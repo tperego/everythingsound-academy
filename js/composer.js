@@ -20,10 +20,11 @@ export class Composer {
     root.classList.add('composer');
   }
 
-  setProject(project, lock = this.lock, phraseBars = this.phraseBars) {
+  setProject(project, lock = this.lock, phraseBars = this.phraseBars, phraseLabels = this.phraseLabels) {
     this.project = cloneProject(project);
     this.lock = lock || {};
     this.phraseBars = phraseBars || 0;
+    this.phraseLabels = phraseLabels || [];
     this.selected = Math.min(this.selected, this.project.chords.length - 1);
     this.build();
   }
@@ -55,7 +56,8 @@ export class Composer {
     const ruler = h('div', { class: 'ruler', 'aria-hidden': 'true' }, Array.from({ length: p.bars }, (_, b) => {
       const phraseStart = pb && b % pb === 0;
       return h('span', { class: phraseStart ? `phrase-start${(b / pb) % 2 ? ' alt' : ''}` : (pb && Math.floor(b / pb) % 2 ? 'alt' : '') },
-        String(b + 1), phraseStart ? h('b', {}, ` Phrase ${b / pb + 1}`) : '');
+        String(b + 1), phraseStart ? h('b', {}, ` Phrase ${b / pb + 1}`) : '',
+        phraseStart && this.phraseLabels[b / pb] ? h('span', { class: 'phrase-letter' }, this.phraseLabels[b / pb]) : '');
     }));
 
     // Chord lane
