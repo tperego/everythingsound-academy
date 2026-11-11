@@ -3,6 +3,7 @@
 import { chordsFound, runChecks } from './checks.js';
 import { FORM_LABELS } from './form.js';
 import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js';
+import { COURSE, lessonNeighbours } from './course.js';
 import { analyseMidi, projectToMidi, readMidi } from './midi.js';
 import { renderChecks, renderMidiAnalysis } from './panels.js';
 import { newProject, normalizeProject, setBars } from './project.js';
@@ -58,17 +59,20 @@ function updateMelodyGate(p, { initial = false } = {}) {
 // ---------- Lesson ----------
 
 function renderLesson() {
-  $('#lesson-nav').replaceChildren(...(LESSONS.length > 1 ? LESSONS.map((l, i) => h('button', {
-    type: 'button',
-    class: `lesson-link${l.id === lesson.id ? ' on' : ''}`,
-    'aria-current': l.id === lesson.id ? 'page' : null,
-    onclick: () => { if (l.id !== lesson.id) { closeFeedback(false); lesson = l; renderLesson(); selectExercise(l.exercises[0].id); } },
-  }, `Lesson ${i + 1}`)) : []));
+  // Course navigation: back to all lessons, position in the course, previous / next lesson.
+  const nb = lessonNeighbours(lesson.id);
+  const link = (l, text) => h('a', { class: 'btn small', href: `lesson.html?lesson=${encodeURIComponent(l.id)}` }, text);
+  $('#lesson-nav').replaceChildren(
+    h('a', { class: 'lesson-link', href: 'index.html' }, `← ${COURSE.title}`),
+    nb.index >= 0 ? h('span', { class: 'muted small' }, `Lesson ${nb.index + 1} of ${nb.total}`) : '');
+  $('#lesson-pager').replaceChildren(
+    nb.prev ? link(nb.prev, `← ${nb.prev.title}`) : h('span'),
+    nb.next ? link(nb.next, `Next lesson: ${nb.next.title} →`) : h('a', { class: 'btn small', href: 'index.html' }, 'Back to the course'));
   $('#crumb').textContent = lesson.course;
   $('#lesson-course').textContent = lesson.course;
   $('#lesson-title').textContent = lesson.title;
   $('#lesson-intro').textContent = lesson.intro;
-  document.title = `${lesson.title} · EverythingSound`;
+  document.title = `${lesson.title} · EverythingSound Academy`;
   setVideo();
   renderTabs();
 }

@@ -3,125 +3,44 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EverythingSound · Practice</title>
+  <title>Music Theory · EverythingSound Academy</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e8743b'/%3E%3Cpath d='M12 22V9l11-2v13' stroke='white' stroke-width='2.5' fill='none'/%3E%3Ccircle cx='9.5' cy='22' r='3' fill='white'/%3E%3Ccircle cx='20.5' cy='20' r='3' fill='white'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/app.css">
-  <script src="https://cdn.jsdelivr.net/npm/tone@15.0.4/build/Tone.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/abcjs/6.4.4/abcjs-basic-min.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="index.html"><span class="logo" aria-hidden="true">♪</span> EverythingSound</a>
-    <span class="crumb" id="crumb"></span>
+    <a class="brand" href="index.html"><span class="logo" aria-hidden="true">♪</span> EverythingSound Academy</a>
+    <span class="crumb">Music Theory</span>
     <span class="spacer"></span>
-    <label class="student-name">Your name <input id="student-name" type="text" autocomplete="name" placeholder="First and last name"></label>
+    <a class="btn small" href="sandbox.html">Sandbox</a>
     <a class="btn ghost small" href="mark.html">Teacher</a>
   </header>
 
-  <div id="feedback-banner" hidden></div>
-
-  <main class="page">
-    <section class="lesson">
-      <div class="video" id="video"></div>
-      <div class="lesson-info">
-        <nav class="lesson-nav" id="lesson-nav" aria-label="Lessons"></nav>
-        <p class="eyebrow" id="lesson-course"></p>
-        <h1 id="lesson-title"></h1>
-        <p id="lesson-intro"></p>
-        <nav class="ex-tabs" id="ex-tabs" aria-label="Exercises"></nav>
+  <main class="page home">
+    <section class="hero">
+      <p class="eyebrow" id="academy"></p>
+      <h1 id="course-title"></h1>
+      <p id="course-intro" class="lead"></p>
+      <div class="row wrap">
+        <a class="btn primary" id="continue-btn" href="#">Start the course</a>
+        <a class="btn" href="sandbox.html">Open the Sandbox</a>
       </div>
+      <p class="muted small" id="device-note">Your work and progress are saved in this browser for now. Student accounts, where your work and your teacher’s feedback are kept in your profile, are coming soon.</p>
     </section>
 
-    <section class="card exercise">
-      <div class="ex-head">
-        <div>
-          <span class="badge" id="ex-kind"></span>
-          <h2 id="ex-title"></h2>
-        </div>
-        <div class="ex-actions">
-          <button type="button" class="btn ghost small" id="watch-btn" hidden>▶ Watch this part</button>
-          <button type="button" class="btn ghost small" id="reset-btn">Reset exercise</button>
-        </div>
+    <div id="modules"></div>
+
+    <section class="card sandbox-card">
+      <div>
+        <p class="eyebrow">Sandbox</p>
+        <h2>Make your own music</h2>
+        <p class="muted">Everything unlocked: any key, as many bars as you like, chords with inversions, melody, piano view, staff, chord sheet, MIDI export to Ableton, Logic or Pro Tools. Save as many pieces as you want.</p>
       </div>
-      <ol class="brief" id="ex-brief"></ol>
-      <div id="listen-box"></div>
-      <div id="workspace"></div>
-      <div id="form-panel"></div>
-    </section>
-
-    <div class="cols">
-      <section class="card">
-        <h3>Check your work</h3>
-        <p class="muted">Instant feedback on the parts that have a right answer. Your teacher marks the rest.</p>
-        <button type="button" class="btn primary" id="check-btn">Check</button>
-        <div id="check-results"></div>
-      </section>
-
-      <section class="card">
-        <h3>Submit to your teacher</h3>
-        <p class="muted">Download your submission file and send it to your teacher, or upload it wherever your course asks. A link is quicker but can’t carry audio or MIDI files.</p>
-        <label class="field">Message to your teacher <span class="muted">(optional)</span>
-          <textarea id="message" rows="3" placeholder="What did you try? Anything you’re unsure about?"></textarea>
-        </label>
-        <div class="row">
-          <button type="button" class="btn primary" id="submit-file">Download submission file</button>
-          <button type="button" class="btn" id="submit-link">Copy submission link</button>
-        </div>
-        <p class="status" id="submit-status" role="status"></p>
-      </section>
-    </div>
-
-    <section class="card daw" id="daw-panel">
-      <details id="daw-details">
-        <summary><h3>Take it into your DAW</h3><span class="muted">Ableton Live · Logic Pro · Pro Tools</span></summary>
-        <div class="cols">
-          <div>
-            <h4>1 · Export MIDI</h4>
-            <p class="muted">“All tracks” makes one file with Chords, Bass and Melody on separate tracks, with tempo and key included.</p>
-            <div class="row wrap">
-              <button type="button" class="btn primary" data-export="all">All tracks (.mid)</button>
-              <button type="button" class="btn" data-export="chords">Chords</button>
-              <button type="button" class="btn" data-export="bass">Bass</button>
-              <button type="button" class="btn" data-export="melody">Melody</button>
-            </div>
-            <details class="tips">
-              <summary>How to open it in your DAW</summary>
-              <dl>
-                <dt>Ableton Live</dt>
-                <dd>Drag the .mid file from Finder or Explorer into the Arrangement View: each track becomes its own MIDI track. Drop an instrument on each (e.g. Grand Piano, a pad, Operator for bass). Set the project tempo to match.</dd>
-                <dt>Logic Pro</dt>
-                <dd>Drag the file into the Tracks area, or use File → Import → MIDI File. Logic asks whether to import the tempo: say yes. Choose a Software Instrument for each track.</dd>
-                <dt>Pro Tools</dt>
-                <dd>File → Import → MIDI. Choose “New track” and the Instrument track type, and import the tempo map. Insert a virtual instrument on each track.</dd>
-              </dl>
-              <p class="muted"><strong>Bringing it back:</strong> export the MIDI of each part. You can attach several .mid files at once.</p>
-              <dl>
-                <dt>Ableton Live</dt>
-                <dd>Select a clip, then File → Export MIDI Clip. Repeat for each track (consolidate long arrangements into one clip per track first). Export the mix with File → Export Audio/Video.</dd>
-                <dt>Logic Pro</dt>
-                <dd>Select the regions, then File → Export → Selection as MIDI File. Bounce with File → Bounce → Project or Section.</dd>
-                <dt>Pro Tools</dt>
-                <dd>File → Export → MIDI. Bounce with File → Bounce Mix.</dd>
-              </dl>
-            </details>
-          </div>
-          <div>
-            <h4>2 · Attach what you made</h4>
-            <label class="field">MIDI exported from your DAW (one or more .mid files)
-              <input type="file" id="daw-midi" multiple accept=".mid,.midi,audio/midi,audio/x-midi">
-            </label>
-            <div id="daw-midi-info"></div>
-            <label class="field">Your bounce (MP3 or WAV)
-              <input type="file" id="daw-audio" accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/aac,audio/mp4,.mp3,.wav,.m4a">
-            </label>
-            <div id="daw-audio-info"></div>
-          </div>
-        </div>
-      </details>
+      <a class="btn primary" href="sandbox.html">Open the Sandbox</a>
     </section>
   </main>
 
-  <footer class="foot">EverythingSound practice · prototype</footer>
-  <script type="module" src="js/student.js"></script>
+  <footer class="foot">EverythingSound Academy · Music Theory</footer>
+  <script type="module" src="js/home.js"></script>
 </body>
 </html>

@@ -183,7 +183,7 @@ function open(id) {
 
   const feedbackUrl = async () => {
     const fb = makeFeedback({ submission: sub, scores: allScores(), comment: comment.value.trim(), checks });
-    const url = new URL('index.html', location.href);
+    const url = new URL('lesson.html', location.href);
     url.search = new URLSearchParams({ feedback: await pack(fb) }).toString();
     return url.href;
   };

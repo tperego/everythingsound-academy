@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sandbox · EverythingSound Academy</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e8743b'/%3E%3Cpath d='M12 22V9l11-2v13' stroke='white' stroke-width='2.5' fill='none'/%3E%3Ccircle cx='9.5' cy='22' r='3' fill='white'/%3E%3Ccircle cx='20.5' cy='20' r='3' fill='white'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/tone@15.0.4/build/Tone.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/abcjs/6.4.4/abcjs-basic-min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="logo" aria-hidden="true">♪</span> EverythingSound Academy</a>
+    <span class="crumb">Sandbox</span>
+    <span class="spacer"></span>
+    <a class="btn ghost small" href="index.html">Course</a>
+  </header>
+
+  <main class="page">
+    <section class="card">
+      <div class="sandbox-bar">
+        <label class="field inline piece-title">Piece
+          <input type="text" id="piece-title" maxlength="80" placeholder="Untitled piece">
+        </label>
+        <label class="field inline">My pieces
+          <select id="piece-list" aria-label="Open one of your pieces"></select>
+        </label>
+        <div class="row wrap">
+          <button type="button" class="btn primary small" id="new-btn">+ New piece</button>
+          <button type="button" class="btn small" id="dup-btn">Duplicate</button>
+          <button type="button" class="btn ghost small" id="del-btn">Delete</button>
+        </div>
+      </div>
+      <p class="muted small">Everything is unlocked. Pick chords from the palette (or type 1–7), set the bass for inversions, draw a melody in the grid, and turn on Piano, Staff or Chord sheet. Your pieces are saved in this browser as you work.</p>
+      <div id="workspace"></div>
+    </section>
+
+    <div class="cols">
+      <section class="card">
+        <h3>Export to your DAW</h3>
+        <p class="muted">MIDI with tempo and key, for Ableton Live, Logic Pro or Pro Tools. “All tracks” puts Chords, Bass and Melody on separate tracks.</p>
+        <div class="row wrap">
+          <button type="button" class="btn primary" data-export="all">All tracks (.mid)</button>
+          <button type="button" class="btn" data-export="chords">Chords</button>
+          <button type="button" class="btn" data-export="bass">Bass</button>
+          <button type="button" class="btn" data-export="melody">Melody</button>
+        </div>
+      </section>
+      <section class="card">
+        <h3>Share</h3>
+        <p class="muted">A link that opens a copy of this piece in anyone’s Sandbox: send it to your teacher or a friend.</p>
+        <button type="button" class="btn" id="share-btn">Copy share link</button>
+        <p class="status" id="share-status" role="status"></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="foot">EverythingSound Academy · Sandbox</footer>
+  <script type="module" src="js/sandbox.js"></script>
+</body>
+</html>

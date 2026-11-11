@@ -436,3 +436,33 @@ audio { width: 100%; margin-top: 6px; }
   body.printing-sheet .print-target button.btn { display: none; }
   body.printing-sheet .chord-card { break-inside: avoid; box-shadow: none; color: #000; background: #fff; }
 }
+
+/* ---------- Academy: course home, lesson pager, sandbox ---------- */
+.home { max-width: 980px; }
+.hero { padding: 28px 0 8px; }
+.hero h1 { font-size: 2.3rem; letter-spacing: -0.02em; }
+.lead { font-size: 1.08rem; max-width: 680px; color: var(--ink-2); }
+.module { margin-top: 10px; }
+.module-head h2 { margin-bottom: 4px; }
+.lesson-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.lesson-card {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px; text-decoration: none;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow);
+}
+.lesson-card:hover { border-color: var(--accent); }
+.lesson-num { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--surface-2); font-weight: 800; flex: none; }
+.lesson-card.done .lesson-num { background: var(--ok); color: #fff; }
+.lesson-card.started .lesson-num { background: var(--accent); color: var(--accent-ink); }
+.lesson-text { display: grid; flex: 1; min-width: 0; }
+.lesson-progress { font-size: 0.85rem; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
+.lesson-progress.done { color: var(--ok); }
+.sandbox-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+.sandbox-card > div { flex: 1; min-width: 240px; }
+.lesson-pager { max-width: 1280px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.lesson-nav { align-items: center; }
+a.lesson-link { text-decoration: none; }
+.sandbox-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-bottom: 4px; }
+.piece-title input { width: 240px; font-weight: 700; }
+@media (max-width: 600px) { .piece-title input { width: 160px; } .hero h1 { font-size: 1.8rem; } }
+
+a.btn { text-decoration: none; display: inline-block; }

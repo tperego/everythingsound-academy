@@ -1,33 +1,36 @@
-# EverythingSound · practice prototype
+# EverythingSound Academy · Music Theory
 
-A browser practice space for the music theory course. Each lesson page has its YouTube video, the exercises, a composer, automatic checks, a link out to and back from the DAW, and submission. A separate page lets the teacher mark work and send feedback.
+The course platform: a course home with modules and lessons, lesson pages (video and exercises), a Sandbox where everything is unlocked, and the teacher's marking page. Student accounts come next.
+
+The class version of the app stays separately, frozen, at practice.everythingsoundacademy.com (folder `EverythingSound`, tag `practice-v1`).
 
 There is no build step and nothing to install: plain HTML, CSS and JavaScript modules. Tone.js (audio) and abcjs (staff notation) load from a CDN.
 
 ## Run it
 
-Double-click **`start.command`** in Finder. It starts the app and opens your browser. If the app is already running, it just opens the browser. You can also run it from a terminal:
+Double-click **`start.command`** in Finder. It starts the site at <http://127.0.0.1:5174/> and opens your browser.
 
-```bash
-~/Documents/MusicTheoryCourse/EverythingSound/start.command
-```
+## Pages
 
-If you see `Address already in use`, the app is already running: open the address below instead.
-
-Then open:
-- <http://127.0.0.1:5173/>: the student lesson page
-- <http://127.0.0.1:5173/mark.html>: the teacher marking page
-- <http://127.0.0.1:5173/tests.html>: logic tests (should show "all passed")
-
-It has to be served over http(s); opening `index.html` as a file won't load the modules. Any static host works for putting it online (GitHub Pages, Netlify, your own site).
+| Page | What it is |
+|---|---|
+| `index.html` | Course home: modules, lessons, progress, Continue button |
+| `lesson.html?lesson=…` | A lesson: video, exercises, checks, DAW round-trip, submit; previous/next lesson |
+| `sandbox.html` | Everything unlocked; several named pieces saved in the browser; MIDI export; share link |
+| `mark.html` | Teacher marking and feedback links |
+| `tests.html` | Logic tests |
 
 ## Live site
 
-- **Students:** <https://practice.everythingsoundacademy.com/>
-- **Marking:** <https://practice.everythingsoundacademy.com/mark.html>
-- Hosted for free on GitHub Pages from the public repository `tperego/everythingsound-practice`. Only the app's code is in it; no student data is ever uploaded.
-- Domain: Squarespace DNS has a CNAME record `practice` → `tperego.github.io`. The `CNAME` file in this folder tells GitHub Pages the domain name.
-- **Publishing a change:** commit it, then `git push`. The site updates within a minute or two.
+- <https://theory.everythingsoundacademy.com/>, hosted on GitHub Pages from `tperego/everythingsound-academy`.
+- Squarespace DNS: CNAME `theory` → `tperego.github.io`.
+- **Publishing a change:** commit, then `git push`.
+
+## Adding lessons
+
+1. Fill in `content/Lesson Template.xlsx`: one row per lesson, one per exercise. It isn't published, because `content/` is in `.gitignore`.
+2. Each lesson becomes an entry in `js/lessons.js`.
+3. List it in its module in `js/course.js`, in the order students should take it.
 
 ## What students do
 

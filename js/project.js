@@ -10,7 +10,7 @@ import { KEY_OPTIONS, chordInfo, chordVoicing, midiForDegree } from './theory.js
 
 export const STEPS_PER_BAR = 8;
 export const SLOTS_PER_BAR = 2;
-export const BAR_OPTIONS = [4, 8, 12, 16];
+export const BAR_OPTIONS = [4, 8, 12, 16, 24, 32];
 
 /** Melody rows from top to bottom: 3 above the octave down to 5 below the tonic. */
 export const MELODY_ROWS = [
