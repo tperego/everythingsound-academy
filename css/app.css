@@ -358,3 +358,21 @@ audio { width: 100%; margin-top: 6px; }
   transition: opacity 0.2s, transform 0.2s; z-index: 50;
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Lesson 2: lessons nav, listening clip, form panel ---------- */
+.lesson-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.lesson-link { font: inherit; font-size: 0.82rem; padding: 4px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.lesson-link.on { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 600; }
+.listen { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; margin: 0 0 16px; padding: 14px; border-radius: var(--radius); background: var(--surface-2); }
+.listen-video { aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: #000; }
+.listen-video iframe { width: 100%; height: 100%; border: 0; display: block; }
+.listen-info h3 { margin-bottom: 6px; }
+@media (max-width: 700px) { .listen { grid-template-columns: 1fr; } }
+.lock-note { margin: 0 0 10px; padding: 8px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--warn-ink); font-size: 0.88rem; }
+.ruler span.alt { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.ruler span.phrase-start { border-left: 2px solid var(--accent); }
+.ruler span.phrase-start b { color: var(--accent); font-weight: 700; }
+.form-panel { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.phrase-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.phrase-name { min-width: 150px; }
+.form-target { font: 800 1.2rem/1 Georgia, serif; color: var(--accent); }

@@ -20,15 +20,20 @@ export class Composer {
     root.classList.add('composer');
   }
 
-  setProject(project, lock = this.lock) {
+  setProject(project, lock = this.lock, phraseBars = this.phraseBars) {
     this.project = cloneProject(project);
     this.lock = lock || {};
+    this.phraseBars = phraseBars || 0;
     this.selected = Math.min(this.selected, this.project.chords.length - 1);
     this.build();
   }
 
   get chordsEditable() {
     return !this.readOnly && !this.lock.chords;
+  }
+
+  get melodyEditable() {
+    return !this.readOnly && !this.lock.melody;
   }
 
   emit() {
@@ -45,7 +50,13 @@ export class Composer {
     this.root.style.setProperty('--slots', p.bars * SLOTS_PER_BAR);
 
     // Ruler with bar numbers
-    const ruler = h('div', { class: 'ruler', 'aria-hidden': 'true' }, Array.from({ length: p.bars }, (_, b) => h('span', {}, String(b + 1))));
+    // (phrase starts are marked when the exercise is about melodic form)
+    const pb = this.phraseBars;
+    const ruler = h('div', { class: 'ruler', 'aria-hidden': 'true' }, Array.from({ length: p.bars }, (_, b) => {
+      const phraseStart = pb && b % pb === 0;
+      return h('span', { class: phraseStart ? `phrase-start${(b / pb) % 2 ? ' alt' : ''}` : (pb && Math.floor(b / pb) % 2 ? 'alt' : '') },
+        String(b + 1), phraseStart ? h('b', {}, ` Phrase ${b / pb + 1}`) : '');
+    }));
 
     // Chord lane
     this.chordLane = h('div', {
@@ -67,7 +78,7 @@ export class Composer {
 
     // Melody grid
     this.melodyGrid = h('div', {
-      class: 'melody-grid' + (this.readOnly ? '' : ' editable'),
+      class: 'melody-grid' + (this.melodyEditable ? ' editable' : ''),
       style: { height: `${MELODY_ROWS.length * ROW_H}px` },
       'aria-label': 'Melody grid',
     });
@@ -79,7 +90,7 @@ export class Composer {
     this.melodyPlayhead = h('div', { class: 'playhead', hidden: true });
     this.chordPlayhead = h('div', { class: 'playhead', hidden: true });
     this.melodyGrid.append(this.guideLayer, this.noteLayer, this.melodyPlayhead);
-    if (!this.readOnly) {
+    if (this.melodyEditable) {
       this.melodyGrid.addEventListener('pointerdown', (e) => this.onMelodyDown(e));
       this.melodyGrid.addEventListener('pointermove', (e) => this.onMelodyMove(e));
       this.melodyGrid.addEventListener('pointerup', (e) => this.onMelodyUp(e));
@@ -169,9 +180,11 @@ export class Composer {
 
   renderPalette() {
     const p = this.project;
+    // An exercise can explain why something is locked (e.g. "the melody unlocks when the chords are right").
+    const note = this.lock.note && !this.readOnly ? h('p', { class: 'lock-note' }, this.lock.note) : '';
     if (!this.chordsEditable) {
       this.palette.replaceChildren(
-        this.lock.chords && !this.readOnly ? h('p', { class: 'hint' }, 'The chords are given in this exercise. Write your melody over them.') : '',
+        note || (this.lock.chords && !this.readOnly ? h('p', { class: 'hint' }, 'The chords are given in this exercise. Write your melody over them.') : ''),
       );
       return;
     }
@@ -192,6 +205,7 @@ export class Composer {
     const legend = h('div', { class: 'legend' },
       h('span', { class: 'dot fn-T' }), 'Tonic ', h('span', { class: 'dot fn-PD' }), 'Pre-dominant ', h('span', { class: 'dot fn-D' }), 'Dominant');
     this.palette.replaceChildren(
+      note,
       h('div', { class: 'palette-row' }, ...buttons),
       h('div', { class: 'palette-row small' }, seventh, clear, legend,
         h('span', { class: 'hint' }, `Selected: bar ${Math.floor(this.selected / 2) + 1}${this.selected % 2 ? ', beat 3' : ''}. An empty slot keeps the chord before it.`)),

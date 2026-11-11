@@ -2,6 +2,10 @@
 
 import { chordAtBeat, chordEvents } from './project.js';
 import { chordDegrees, chordInfo } from './theory.js';
+import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js';
+
+const pct = (x) => `${Math.round(x * 100)}%`;
+const listBars = (arr) => arr.join(', ');
 
 const strip7 = (r) => r.replace(/(maj7|\(maj7\)|ø7|°7|\+7|7)$/, (m) => (m === 'ø7' || m === '°7' ? '°' : m === '+7' ? '+' : ''));
 
@@ -106,6 +110,105 @@ const CHECKS = {
     return { label: 'Melody stays within a singable range', pass: span <= maxRows, detail: `Spans ${span} scale steps.` };
   },
 
+  // ----- Listening: find the key and the chords of a recording -----
+  'key-is'({ key, mode }, p) {
+    const pass = p.key === key && p.mode === mode;
+    return { label: 'You found the key', pass, detail: pass ? `${key} ${mode} ✓` : `You chose ${p.key} ${p.mode}. Listen for the note that feels like home.` };
+  },
+
+  // Like 'progression' but says which bars are right, without giving the answer away.
+  'progression-by-bar'({ sequence }, p) {
+    const right = [];
+    const wrong = [];
+    sequence.forEach((want, b) => {
+      const ev = chordAtBeat(p, b * 4);
+      const got = ev ? strip7(chordInfo(p.key, p.mode, ev.chord).roman) : null;
+      (got === want ? right : wrong).push(b + 1);
+    });
+    return {
+      label: 'Your chords match the recording',
+      pass: wrong.length === 0,
+      detail: wrong.length === 0 ? 'Every bar is right.' : `${right.length ? `Right: bar ${listBars(right)}. ` : ''}Listen again to bar ${listBars(wrong)}.`,
+    };
+  },
+
+  // ----- Melodic form -----
+  // The student's phrase labels (A, A′, B…) against the answer.
+  'form-labels'({ answer }, p, ctx) {
+    const labels = ctx.answers?.formLabels || [];
+    if (!labels.some(Boolean)) return { label: 'Each phrase is labelled (A, A′, B…)', pass: false, detail: 'Label each phrase first.' };
+    const right = [];
+    const wrong = [];
+    answer.forEach((want, i) => (labels[i] === want ? right : wrong).push(i + 1));
+    return {
+      label: 'Your form labels are right',
+      pass: wrong.length === 0,
+      detail: wrong.length === 0 ? `Form: ${answer.join(' ')}` : `${right.length ? `Right: phrase ${listBars(right)}. ` : ''}Look again at phrase ${listBars(wrong)}.`,
+    };
+  },
+
+  // The "same rhythm / same pitches as phrase 1" ticks, checked against the melody itself.
+  'form-rhythm-pitch'({ phraseBars }, p, ctx) {
+    const n = phraseCount(p, phraseBars);
+    const first = phraseNotes(p, 0, phraseBars);
+    const wrong = [];
+    for (let i = 1; i < n; i++) {
+      const c = comparePhrases(first, phraseNotes(p, i, phraseBars));
+      const r = !!ctx.answers?.sameRhythm?.[i];
+      const s = !!ctx.answers?.samePitch?.[i];
+      if (r !== c.sameRhythm || s !== c.samePitch) wrong.push(i + 1);
+    }
+    return {
+      label: 'Your rhythm and pitch comparisons are right',
+      pass: wrong.length === 0,
+      detail: wrong.length === 0 ? '' : `Compare phrase ${listBars(wrong)} with phrase 1 again: play them one after the other.`,
+    };
+  },
+
+  // Composing in a given form: repeats must repeat, variations vary, new letters are new.
+  'melody-form'({ form, phraseBars }, p) {
+    const n = Math.min(form.length, phraseCount(p, phraseBars));
+    const phrases = Array.from({ length: n }, (_, i) => phraseNotes(p, i, phraseBars));
+    const empty = phrases.map((ph, i) => (ph.length < 2 ? i + 1 : null)).filter(Boolean);
+    const out = [{
+      label: `Every phrase has a melody (${n} phrases of ${phraseBars} bars)`,
+      pass: empty.length === 0,
+      detail: empty.length ? `Phrase ${listBars(empty)} needs more notes.` : '',
+    }];
+    if (empty.length) return out;
+    for (let i = 1; i < n; i++) {
+      const label = form[i];
+      // Compare with an earlier phrase of the same label if there is one (A′ … A′), else the first of its letter.
+      let j = form.findIndex((l, k) => k < i && l === label);
+      if (j < 0) j = form.findIndex((l, k) => k < i && baseLetter(l) === baseLetter(label));
+      if (j < 0) {
+        const tooClose = phrases.slice(0, i).map((ph, k) => ({ k, c: comparePhrases(ph, phrases[i]) })).filter(({ c }) => (c.rhythm + c.pitch) / 2 >= 0.5);
+        out.push({
+          label: `Phrase ${i + 1} (${label}) is new material`,
+          pass: tooClose.length === 0,
+          detail: tooClose.length ? `It is too close to phrase ${tooClose[0].k + 1}. Change its rhythm and its pitches.` : '',
+        });
+        continue;
+      }
+      const c = comparePhrases(phrases[j], phrases[i]);
+      if (form[j] === label) {
+        out.push({
+          label: `Phrase ${i + 1} (${label}) repeats phrase ${j + 1}`,
+          pass: c.samePitch,
+          detail: c.samePitch ? '' : `Rhythm ${pct(c.rhythm)} and pitches ${pct(c.pitch)} the same. A repeat should be identical.`,
+        });
+      } else {
+        const pass = c.rhythm >= 0.75 && !c.samePitch && c.pitch >= 0.25;
+        out.push({
+          label: `Phrase ${i + 1} (${label}) is a variation of phrase ${j + 1}`,
+          pass,
+          detail: `Rhythm ${pct(c.rhythm)} the same, pitches ${pct(c.pitch)} the same.${pass ? '' : c.samePitch ? ' Change a few pitches, especially at the end.' : ' Keep more of the rhythm, change only some notes.'}`,
+        });
+      }
+    }
+    return out;
+  },
+
   // DAW round-trip checks use the attached files.
   'daw-midi-attached'(_, p, ctx) {
     return { label: 'MIDI exported from your DAW is attached', pass: !!ctx.midi, detail: ctx.midi ? ctx.midi.fileName : 'Attach the .mid file you exported.' };
@@ -141,15 +244,26 @@ const CHECKS = {
   },
 };
 
-/** ctx = { midi: {fileName, analysis} | null, audio: {fileName} | null } */
+/**
+ * ctx = { midi: {fileName, analysis} | null, audio: {fileName} | null,
+ *         answers: {formLabels: [], sameRhythm: [], samePitch: []} | null }
+ * A check may return one result or a list of results.
+ */
 export function runChecks(exercise, project, ctx = {}) {
-  return (exercise.checks || []).map((c) => {
+  return (exercise.checks || []).flatMap((c) => {
     const fn = CHECKS[c.type];
-    if (!fn) return { label: `Unknown check "${c.type}"`, pass: false, detail: '' };
+    if (!fn) return [{ label: `Unknown check "${c.type}"`, pass: false, detail: '' }];
     try {
       return fn(c, project, ctx);
     } catch (err) {
-      return { label: c.type, pass: false, detail: String(err.message || err) };
+      return [{ label: c.type, pass: false, detail: String(err.message || err) }];
     }
   });
+}
+
+/** True when the chord-finding part of a listening exercise is right (used to unlock the melody). */
+export function chordsFound(exercise, project) {
+  const types = new Set(['key-is', 'progression-by-bar']);
+  const relevant = (exercise.checks || []).filter((c) => types.has(c.type));
+  return relevant.length > 0 && runChecks({ checks: relevant }, project).every((r) => r.pass);
 }

@@ -2,7 +2,7 @@
 
 import { Player, listMidiOutputs } from './audio.js';
 import { Composer } from './composer.js';
-import { BAR_OPTIONS, cloneProject, normalizeProject, setBars } from './project.js';
+import { BAR_OPTIONS, cloneProject, normalizeProject, setBars, sliceProject } from './project.js';
 import { renderStaff } from './staff.js';
 import { KEY_OPTIONS } from './theory.js';
 import { h, store, toast } from './util.js';
@@ -29,7 +29,8 @@ export class Workspace {
       readOnly,
       onChange: (p) => this.update(p, { fromComposer: true }),
     });
-    this.player.onStep = (s) => this.composer.setPlayhead(s);
+    this.stepOffset = 0; // when playing a single phrase, where it starts in the full piece
+    this.player.onStep = (s) => this.composer.setPlayhead(s < 0 ? -1 : s + this.stepOffset);
     this.player.onStop = () => this.renderToolbar();
 
     this.onKey = (e) => {
@@ -42,14 +43,34 @@ export class Workspace {
     document.addEventListener('keydown', this.onKey);
   }
 
-  setProject(project, { lock = {}, title = '' } = {}) {
+  setProject(project, { lock = {}, title = '', phraseBars = 0 } = {}) {
     this.player.stop();
     this.project = normalizeProject(project);
     this.lock = lock;
     this.title = title;
-    this.composer.setProject(this.project, lock);
+    this.phraseBars = phraseBars;
+    this.composer.setProject(this.project, lock, phraseBars);
     this.renderToolbar();
     this.renderView();
+  }
+
+  /** Change what is locked without resetting the piece (e.g. unlock the melody once the chords are right). */
+  setLock(lock) {
+    this.lock = lock;
+    this.composer.setProject(this.project, lock, this.phraseBars);
+    this.renderToolbar();
+  }
+
+  /** Play only some bars, once (e.g. one phrase). */
+  async playRange(fromBar, nBars) {
+    this.player.stop();
+    this.stepOffset = fromBar * 8;
+    try {
+      await this.player.play(sliceProject(this.project, fromBar, nBars), { once: true });
+    } catch (err) {
+      toast('Could not start audio: ' + (err.message || err));
+    }
+    this.renderToolbar();
   }
 
   destroy() {
@@ -64,11 +85,11 @@ export class Workspace {
   update(p, { fromComposer = false, rebuild = false } = {}) {
     this.project = normalizeProject(p);
     if (!fromComposer) {
-      if (rebuild) this.composer.setProject(this.project, this.lock);
+      if (rebuild) this.composer.setProject(this.project, this.lock, this.phraseBars);
       else { this.composer.project = cloneProject(this.project); this.composer.renderLayers(); }
       this.renderToolbar();
     }
-    if (this.player.playing) this.player.schedule(this.project);
+    if (this.player.playing && !this.player.once) this.player.schedule(this.project);
     this.renderView();
     this.onChange(this.getProject());
   }
@@ -76,6 +97,7 @@ export class Workspace {
   async togglePlay() {
     if (this.player.playing) this.player.stop();
     else {
+      this.stepOffset = 0;
       try {
         await this.player.play(this.project);
       } catch (err) {

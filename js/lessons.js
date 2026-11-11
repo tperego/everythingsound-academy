@@ -120,6 +120,109 @@ export const LESSONS = [
   },
 ];
 
+// ---------- Lesson 2 ----------
+
+// Beethoven, "Ode to Joy" (public domain), C major. Quarter note = 2 steps.
+const q = (start, deg, len = 2, oct = 0) => ({ start, len, deg, oct });
+const odeA = (o) => [
+  q(o, 3), q(o + 2, 3), q(o + 4, 4), q(o + 6, 5),
+  q(o + 8, 5), q(o + 10, 4), q(o + 12, 3), q(o + 14, 2),
+  q(o + 16, 1), q(o + 18, 1), q(o + 20, 2), q(o + 22, 3),
+];
+const ODE_TO_JOY = [
+  ...odeA(0), q(24, 3, 3), q(27, 2, 1), q(28, 2, 4), // A: ends E. D D
+  ...odeA(32), q(56, 2, 3), q(59, 1, 1), q(60, 1, 4), // A′: ends D. C C
+  q(64, 2), q(66, 2), q(68, 3), q(70, 1), // B
+  q(72, 2), q(74, 3, 1), q(75, 4, 1), q(76, 3), q(78, 1),
+  q(80, 2), q(82, 3, 1), q(83, 4, 1), q(84, 3), q(86, 2),
+  q(88, 1), q(90, 2), q(92, 5, 4, -1),
+  ...odeA(96), q(120, 2, 3), q(123, 1, 1), q(124, 1, 4), // A′
+];
+
+LESSONS.push({
+  id: 'listen-form-1',
+  course: 'Music Theory · Listening & Form',
+  title: 'Hear it, name it, use it',
+  youtubeId: '',
+  intro:
+    'Train your ears and your eyes. Find the chords of a real recording and write your own melody over them, then discover how melodies are built from repeating and changing phrases, and use that form in your own tune.',
+  exercises: [
+    {
+      id: 'l2-listen',
+      title: '1 · Find the chords by ear, then write a melody',
+      kind: 'listen',
+      // The clip is the official video, embedded from YouTube (nothing is copied or hosted here).
+      // TEACHER: check the start/end seconds and the answer key below against your own analysis.
+      listen: { youtubeId: 'fJ9rUzIMcZQ', start: 48, end: 80, label: 'Queen – Bohemian Rhapsody: the “Mama…” verse' },
+      brief: [
+        'Play the clip. Find the key: which note feels like home? Set it in the Key menu.',
+        'Find the chord in each of the 4 bars and enter it in the chord lane. Press Play to compare with the recording. Check tells you which bars are right.',
+        'When the key and all four chords are right, the melody grid unlocks. Write your own new melody over these chords: don’t copy Freddie’s!',
+        'Check, then submit it for marking.',
+      ],
+      start: { key: 'C', mode: 'major', bpm: 72, bars: 4 },
+      lock: { bars: true },
+      gateMelody: true,
+      checks: [
+        { type: 'key-is', key: 'Bb', mode: 'major' },
+        { type: 'progression-by-bar', sequence: ['I', 'vi', 'ii', 'V'] },
+        { type: 'melody-fills', minNotes: 8 },
+        { type: 'melody-chord-tones', minRatio: 0.6 },
+      ],
+      rubric: [
+        { label: 'Chords found by ear', max: 5 },
+        { label: 'Melody fits the harmony', max: 5 },
+        { label: 'Melody has its own character', max: 5 },
+      ],
+    },
+    {
+      id: 'l2-form-analyse',
+      title: '2 · Analyse the form of a melody',
+      kind: 'form',
+      form: { phraseBars: 4, answer: ['A', 'A′', 'B', 'A′'], askRhythmPitch: true },
+      brief: [
+        'This is Beethoven’s “Ode to Joy”: 16 bars, four phrases of four bars.',
+        'Play each phrase with its ▶ button and compare it with phrase 1.',
+        'Label each phrase: the same letter for the same idea, a prime (A′) when it comes back changed, and a new letter (B) for new material.',
+        'Tick whether each phrase has the same rhythm and the same pitches as phrase 1, then press Check.',
+      ],
+      start: { key: 'C', mode: 'major', bpm: 116, bars: 16, progression: [1, 5, 1, 5, 1, 5, 1, [5, 1], 5, 1, 5, 5, 1, 5, 1, [5, 1]], melody: ODE_TO_JOY },
+      lock: { key: true, bars: true, chords: true, melody: true, note: 'This melody is for listening and analysis. Use the phrase buttons below the grid.' },
+      checks: [
+        { type: 'form-labels', answer: ['A', 'A′', 'B', 'A′'] },
+        { type: 'form-rhythm-pitch', phraseBars: 4 },
+      ],
+      rubric: [],
+    },
+    {
+      id: 'l2-form-compose',
+      title: '3 · Compose in the form A A′ B A′',
+      kind: 'creative',
+      form: { phraseBars: 2, show: ['A', 'A′', 'B', 'A′'] },
+      brief: [
+        'Now use the same form yourself: 8 bars, four phrases of two bars, over the given chords.',
+        'Phrase 1 (A): write a short, catchy idea.',
+        'Phrase 2 (A′): copy phrase 1 with the same rhythm, then change the last notes so it lands on the tonic.',
+        'Phrase 3 (B): something new, with a different rhythm and shape. Phrase 4 (A′): bring phrase 2 back exactly.',
+        'Check, then submit it for marking.',
+      ],
+      start: { key: 'C', mode: 'major', bpm: 100, bars: 8, progression: [1, 5, 1, [5, 1], 4, 5, 1, [5, 1]] },
+      lock: { key: true, bars: true, chords: true },
+      checks: [
+        { type: 'melody-form', form: ['A', 'A′', 'B', 'A′'], phraseBars: 2 },
+        { type: 'melody-ends-on-tonic' },
+        { type: 'melody-chord-tones', minRatio: 0.5 },
+      ],
+      rubric: [
+        { label: 'A: a clear, memorable idea', max: 5 },
+        { label: 'A′: a convincing variation', max: 5 },
+        { label: 'B: real contrast', max: 5 },
+        { label: 'Overall musicality', max: 5 },
+      ],
+    },
+  ],
+});
+
 export function findLesson(id) {
   return LESSONS.find((l) => l.id === id) || null;
 }
@@ -134,4 +237,6 @@ export const KIND_LABELS = {
   auto: 'Checked instantly',
   creative: 'Marked by your teacher',
   daw: 'DAW project · marked by your teacher',
+  listen: 'Listening · chords checked, melody marked by your teacher',
+  form: 'Analysis · checked instantly',
 };

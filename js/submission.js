@@ -2,6 +2,7 @@
 
 import { normalizeProject } from './project.js';
 import { slug, uid } from './util.js';
+import { FORM_LABELS } from './form.js';
 
 export const SUBMISSION_FORMAT = 'everythingsound-submission';
 export const FEEDBACK_FORMAT = 'everythingsound-feedback';
@@ -9,7 +10,18 @@ export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
 const str = (v, max = 200) => (typeof v === 'string' ? v.slice(0, max) : '');
 
-export function makeSubmission({ lessonId, exerciseId, exerciseTitle, student, message, project, checks, attachments = [] }) {
+/** Form-analysis answers: phrase labels and "same rhythm / same pitches" ticks. */
+export function parseAnswers(a) {
+  if (!a || typeof a !== 'object') return null;
+  const arr = (x) => (Array.isArray(x) ? x.slice(0, 32) : []);
+  return {
+    formLabels: arr(a.formLabels).map((v) => (FORM_LABELS.includes(v) ? v : '')),
+    sameRhythm: arr(a.sameRhythm).map(Boolean),
+    samePitch: arr(a.samePitch).map(Boolean),
+  };
+}
+
+export function makeSubmission({ lessonId, exerciseId, exerciseTitle, student, message, project, checks, attachments = [], answers = null }) {
   return {
     format: SUBMISSION_FORMAT,
     version: 1,
@@ -23,6 +35,7 @@ export function makeSubmission({ lessonId, exerciseId, exerciseTitle, student, m
     project,
     checks: checks.map((c) => ({ label: c.label, pass: !!c.pass, detail: c.detail || '' })),
     attachments, // [{kind: 'midi'|'audio', fileName, type, size, data: base64}]
+    answers,
   };
 }
 
@@ -43,6 +56,7 @@ export function parseSubmission(raw) {
     attachments: (Array.isArray(raw.attachments) ? raw.attachments : []).slice(0, 6)
       .filter((a) => (a?.kind === 'midi' || a?.kind === 'audio') && typeof a.data === 'string')
       .map((a) => ({ kind: a.kind, fileName: str(a.fileName, 160) || a.kind, type: str(a.type, 80), size: Number(a.size) || 0, data: a.data })),
+    answers: parseAnswers(raw.answers),
   };
 }
 
@@ -61,6 +75,7 @@ export function makeFeedback({ submission, scores, comment, checks }) {
     exerciseTitle: submission.exerciseTitle,
     student: submission.student,
     project: submission.project,
+    answers: submission.answers || null,
     scores, // [{label, score, max}]
     comment,
     checks: checks.map((c) => ({ label: c.label, pass: !!c.pass })),
@@ -77,6 +92,7 @@ export function parseFeedback(raw) {
     exerciseTitle: str(raw.exerciseTitle, 200),
     student: { name: str(raw.student?.name, 120) },
     project: normalizeProject(raw.project),
+    answers: parseAnswers(raw.answers),
     scores: (Array.isArray(raw.scores) ? raw.scores : []).slice(0, 20).map((s) => ({
       label: str(s?.label), max: Math.max(0, Math.min(100, Number(s?.max) || 0)), score: Math.max(0, Math.min(100, Number(s?.score) || 0)),
     })),

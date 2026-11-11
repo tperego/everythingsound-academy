@@ -27,9 +27,14 @@ export function rowIndexOf(deg, oct) {
 export function newProject({ key = 'C', mode = 'major', bpm = 90, bars = 4, progression = null, melody = [] } = {}) {
   const p = { v: 1, key, mode, bpm, bars, chords: Array(bars * SLOTS_PER_BAR).fill(null), melody: [] };
   if (progression) {
+    // One entry per bar: a degree, {deg, seventh}, or an array of two for two chords in the bar.
+    const toChord = (c) => (typeof c === 'number' ? { deg: c, seventh: false } : { deg: c.deg, seventh: !!c.seventh });
     progression.forEach((c, bar) => {
       if (c == null || bar >= bars) return;
-      p.chords[bar * SLOTS_PER_BAR] = typeof c === 'number' ? { deg: c, seventh: false } : { deg: c.deg, seventh: !!c.seventh };
+      const parts = Array.isArray(c) ? c : [c];
+      parts.slice(0, SLOTS_PER_BAR).forEach((part, i) => {
+        if (part != null) p.chords[bar * SLOTS_PER_BAR + i] = toChord(part);
+      });
     });
   }
   p.melody = melody.map((n) => ({ start: n.start, len: n.len, deg: n.deg, oct: n.oct ?? 0 }));
@@ -133,4 +138,22 @@ export function buildEvents(p) {
     });
   }
   return events.sort((a, b) => a.start - b.start);
+}
+
+/** A few bars cut out of a project (used to play one phrase). The chord sounding at the cut carries over. */
+export function sliceProject(p, fromBar, nBars) {
+  const s = fromBar * SLOTS_PER_BAR;
+  const chords = p.chords.slice(s, s + nBars * SLOTS_PER_BAR);
+  if (!chords[0]) {
+    const ev = chordAtBeat(p, fromBar * 4);
+    if (ev) chords[0] = ev.chord;
+  }
+  const from = fromBar * STEPS_PER_BAR;
+  const to = (fromBar + nBars) * STEPS_PER_BAR;
+  return normalizeProject({
+    ...p,
+    bars: nBars,
+    chords,
+    melody: p.melody.filter((n) => n.start >= from && n.start < to).map((n) => ({ ...n, start: n.start - from })),
+  });
 }

@@ -55,8 +55,10 @@ export class Player {
     this._sendNow(MIDI_CHANNEL.melody, [midi], 300);
   }
 
-  async play(project) {
+  /** once: play through a single time, ignoring the Loop setting (used for single phrases). */
+  async play(project, { once = false } = {}) {
     await this.ensure();
+    this.once = once;
     const tr = Tone.getTransport();
     tr.stop();
     tr.position = 0;
@@ -87,10 +89,11 @@ export class Player {
       '8n',
       0,
     );
-    tr.loop = this.loop;
+    const loop = this.loop && !this.once;
+    tr.loop = loop;
     tr.loopStart = 0;
     tr.loopEnd = at(project.bars * 4);
-    if (!this.loop) {
+    if (!loop) {
       tr.schedule((time) => Tone.getDraw().schedule(() => this.stop(), time), at(project.bars * 4));
     }
   }
@@ -109,6 +112,7 @@ export class Player {
     this.synths.bass.triggerRelease();
     this.synths.melody.triggerRelease();
     this.playing = false;
+    this.once = false;
     this._allNotesOff();
     this.onStep?.(-1);
     this.onStop?.();

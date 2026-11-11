@@ -88,7 +88,7 @@ function open(id) {
   const { lesson, exercise } = findExercise(sub.lessonId, sub.exerciseId);
   const mctx = midiContext(sub);
   const audio = sub.attachments.find((a) => a.kind === 'audio');
-  const ctx = { midi: mctx.midi, audio: audio ? { fileName: audio.fileName } : null };
+  const ctx = { midi: mctx.midi, audio: audio ? { fileName: audio.fileName } : null, answers: sub.answers };
   const checks = exercise ? runChecks(exercise, sub.project, ctx) : sub.checks;
   const rubric = exercise?.rubric?.length ? exercise.rubric : [{ label: 'Overall', max: 10 }];
   const saved = store.get(marksKey(sub.id), {});
@@ -112,7 +112,7 @@ function open(id) {
   detail.append(h('section', { class: 'card' }, h('h3', {}, 'Their piece'), wsEl));
   ws?.destroy();
   ws = new Workspace(wsEl, { readOnly: true, player });
-  ws.setProject(sub.project, { title: `${sub.student.name}: ${sub.exerciseTitle}` });
+  ws.setProject(sub.project, { title: `${sub.student.name}: ${sub.exerciseTitle}`, phraseBars: exercise?.form?.phraseBars || 0 });
 
   // Checks + attachments
   const attach = h('div', {});
@@ -132,7 +132,10 @@ function open(id) {
     attach.append(h('p', { class: 'muted' }, 'No files attached.'));
   }
   detail.append(h('div', { class: 'cols' },
-    h('section', { class: 'card' }, h('h3', {}, 'Automatic checks'), renderChecks(checks)),
+    h('section', { class: 'card' }, h('h3', {}, 'Automatic checks'), renderChecks(checks),
+      sub.answers?.formLabels?.some(Boolean)
+        ? h('p', { class: 'muted small' }, `Their form labels: ${sub.answers.formLabels.map((l) => l || '–').join(' ')}${exercise?.form?.answer ? ` · answer: ${exercise.form.answer.join(' ')}` : ''}`)
+        : ''),
     h('section', { class: 'card' }, h('h3', {}, 'Attachments'), attach)));
 
   // Marking

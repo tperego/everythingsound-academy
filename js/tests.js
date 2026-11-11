@@ -151,6 +151,53 @@ await test('submission + link packing', async () => {
   assert(threw, 'wrong format should throw');
 });
 
+await test('form: phrase comparison + Ode to Joy analysis', async () => {
+  const { comparePhrases, phraseNotes } = await import('./form.js');
+  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-form-analyse');
+  const p = newProject(e.start);
+  const ph = [0, 1, 2, 3].map((i) => phraseNotes(p, i, 4));
+  const c1 = comparePhrases(ph[0], ph[1]);
+  assert(c1.sameRhythm && !c1.samePitch, 'A vs A′: same rhythm, different pitches ' + JSON.stringify(c1));
+  assert(!comparePhrases(ph[0], ph[2]).sameRhythm, 'B has a different rhythm');
+  assert(comparePhrases(ph[1], ph[3]).samePitch, 'last phrase repeats A′');
+  const right = { formLabels: ['A', 'A′', 'B', 'A′'], sameRhythm: [false, true, false, true], samePitch: [false, false, false, false] };
+  assert(runChecks(e, p, { answers: right }).every((r) => r.pass), JSON.stringify(runChecks(e, p, { answers: right })));
+  const wrong = { formLabels: ['A', 'B', 'B', 'A′'], sameRhythm: [false, true, true, true], samePitch: [] };
+  const res = runChecks(e, p, { answers: wrong });
+  assert(!res[0].pass && res[0].detail.includes('phrase 2'), res[0].detail);
+  assert(!res[1].pass && res[1].detail.includes('phrase 3'), res[1].detail);
+});
+
+await test('form: composing A A′ B A′', () => {
+  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-form-compose');
+  const A = [q(0, 1), q(2, 3), q(4, 5), q(6, 3), q(8, 2), q(10, 7, 2, -1), q(12, 5, 4, -1)];
+  const Ap = [q(16, 1), q(18, 3), q(20, 5), q(22, 3), q(24, 2), q(26, 2), q(28, 1, 4)];
+  const B = [q(32, 4, 1), q(33, 5, 1), q(34, 6, 4), q(38, 4, 2), q(40, 5, 6), q(46, 7, 2, -1)];
+  const shift = (notes, by) => notes.map((n) => ({ ...n, start: n.start + by }));
+  const good = newProject({ ...e.start, melody: [...A, ...Ap, ...B, ...shift(Ap, 32)] });
+  const res = runChecks(e, good);
+  assert(res.every((r) => r.pass), JSON.stringify(res.filter((r) => !r.pass)));
+  // Phrase 4 not repeating phrase 2 should fail.
+  const bad = newProject({ ...e.start, melody: [...A, ...Ap, ...B, ...shift(B, 16)] });
+  assert(runChecks(e, bad).some((r) => !r.pass), 'wrong form should fail');
+  function q(start, deg, len = 2, oct = 0) { return { start, len, deg, oct }; }
+});
+
+await test('listening: key, chords by bar, melody unlock', async () => {
+  const { chordsFound } = await import('./checks.js');
+  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-listen');
+  const wrongKey = newProject({ key: 'C', bars: 4, progression: [1, 6, 2, 5] });
+  assert(!chordsFound(e, wrongKey), 'right chords in the wrong key stay locked');
+  const half = newProject({ key: 'Bb', bars: 4, progression: [1, 6, 4, 4] });
+  const r = runChecks(e, half)[1];
+  assert(!r.pass && r.detail.includes('Right: bar 1, 2') && r.detail.includes('bar 3, 4'), r.detail);
+  assert(chordsFound(e, newProject({ key: 'Bb', bars: 4, progression: [1, 6, { deg: 2, seventh: true }, { deg: 5, seventh: true }] })), 'sevenths count');
+});
+
+await test('lesson 1 is unchanged', () => {
+  assertEq(LESSONS[0].exercises.map((x) => x.id), ['p1-build', 'p1-cadence', 'p1-melody', 'p1-daw']);
+});
+
 const failed = results.filter((r) => !r.ok);
 window.__testResults = { passed: results.length - failed.length, failed: failed.length, results };
 const out = document.getElementById('out');

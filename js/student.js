@@ -1,6 +1,7 @@
 // Student lesson page: video, exercises, composer, checks, DAW round-trip, submission, feedback.
 
-import { runChecks } from './checks.js';
+import { chordsFound, runChecks } from './checks.js';
+import { FORM_LABELS } from './form.js';
 import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js';
 import { analyseMidi, projectToMidi, readMidi } from './midi.js';
 import { renderChecks, renderMidiAnalysis } from './panels.js';
@@ -18,6 +19,8 @@ let feedback = null; // when viewing a teacher's feedback link
 const attachments = {}; // exerciseId -> { midi: [{fileName, size, bytes, parsed}], audio: {fileName, size, type, bytes, url} }
 
 const workKey = (ex) => `es.work.${lesson.id}.${ex.id}`;
+const answersKey = (ex) => `es.answers.${lesson.id}.${ex.id}`;
+let answers = { formLabels: [], sameRhythm: [], samePitch: [] }; // form-analysis answers for the open exercise
 const midiKey = (ex) => `es.midi.${lesson.id}.${ex.id}`;
 const statusAll = () => store.get(`es.status.${lesson.id}`, {});
 function setStatus(exId, status) {
@@ -33,12 +36,34 @@ function setStatus(exId, status) {
 const ws = new Workspace($('#workspace'), {
   onChange: (p) => {
     if (!feedback && exercise) store.set(workKey(exercise), p);
+    updateMelodyGate(p);
   },
 });
+
+// Listening exercises: the melody grid unlocks once the key and chords are right.
+let melodyUnlocked = null;
+function gateLock(unlocked) {
+  return { ...(exercise.lock || {}), melody: !unlocked, note: unlocked ? null : 'Find the key and the chords first: the melody grid unlocks when they’re right.' };
+}
+function updateMelodyGate(p, { initial = false } = {}) {
+  if (!exercise?.gateMelody) { melodyUnlocked = null; return; }
+  const unlocked = chordsFound(exercise, p) || (feedback != null);
+  if (unlocked === melodyUnlocked && !initial) return;
+  const wasLocked = melodyUnlocked === false;
+  melodyUnlocked = unlocked;
+  ws.setLock(gateLock(unlocked));
+  if (unlocked && wasLocked) toast('Key and chords are right! The melody grid is unlocked.');
+}
 
 // ---------- Lesson ----------
 
 function renderLesson() {
+  $('#lesson-nav').replaceChildren(...(LESSONS.length > 1 ? LESSONS.map((l, i) => h('button', {
+    type: 'button',
+    class: `lesson-link${l.id === lesson.id ? ' on' : ''}`,
+    'aria-current': l.id === lesson.id ? 'page' : null,
+    onclick: () => { if (l.id !== lesson.id) { closeFeedback(false); lesson = l; renderLesson(); selectExercise(l.exercises[0].id); } },
+  }, `Lesson ${i + 1}`)) : []));
   $('#crumb').textContent = lesson.course;
   $('#lesson-course').textContent = lesson.course;
   $('#lesson-title').textContent = lesson.title;
@@ -66,6 +91,7 @@ function setVideo(startAt = null) {
     allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
     allowfullscreen: true,
     loading: 'lazy',
+    referrerpolicy: 'strict-origin-when-cross-origin',
   }));
 }
 
@@ -95,7 +121,13 @@ function selectExercise(id, { project = null, fromFeedback = false } = {}) {
 
   const saved = store.get(workKey(exercise));
   const p = project || (saved ? normalizeProject(saved) : newProject(exercise.start));
-  ws.setProject(p, { lock: exercise.lock || {}, title: exercise.title.replace(/^\d+\s*·\s*/, '') });
+  ws.setProject(p, { lock: exercise.lock || {}, title: exercise.title.replace(/^\d+\s*·\s*/, ''), phraseBars: exercise.form?.phraseBars || 0 });
+  melodyUnlocked = null;
+  updateMelodyGate(p, { initial: true });
+  const savedAnswers = feedback?.answers || store.get(answersKey(exercise), null);
+  answers = normalizeAnswers(savedAnswers);
+  renderListenBox();
+  renderFormPanel();
 
   $('#check-results').replaceChildren();
   $('#submit-status').replaceChildren();
@@ -113,8 +145,94 @@ function selectExercise(id, { project = null, fromFeedback = false } = {}) {
 $('#reset-btn').addEventListener('click', () => {
   if (!confirm('Start this exercise again? Your work on it will be cleared.')) return;
   store.remove(workKey(exercise));
+  store.remove(answersKey(exercise));
   selectExercise(exercise.id, { project: newProject(exercise.start) });
 });
+
+// ---------- Listening clip ----------
+
+function clipUrl(l, autoplay) {
+  const q = new URLSearchParams({ rel: '0', start: String(Math.floor(l.start || 0)) });
+  if (l.end) q.set('end', String(Math.floor(l.end)));
+  if (autoplay) q.set('autoplay', '1');
+  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(l.youtubeId)}?${q}`;
+}
+const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+
+function renderListenBox() {
+  const l = exercise.listen;
+  const box = $('#listen-box');
+  if (!l) { box.replaceChildren(); return; }
+  const frame = h('iframe', {
+    src: clipUrl(l, false),
+    title: l.label || 'Listening clip',
+    allow: 'autoplay; encrypted-media; picture-in-picture',
+    allowfullscreen: true,
+    referrerpolicy: 'strict-origin-when-cross-origin',
+  });
+  const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(l.youtubeId)}&t=${Math.floor(l.start || 0)}s`;
+  box.replaceChildren(h('div', { class: 'listen' },
+    h('div', { class: 'listen-video' }, frame),
+    h('div', { class: 'listen-info' },
+      h('p', { class: 'eyebrow' }, 'Listen'),
+      h('h3', {}, l.label || 'Listening clip'),
+      h('p', { class: 'muted' }, `Clip ${mmss(l.start || 0)}${l.end ? `–${mmss(l.end)}` : ''}. Play it as many times as you like, then compare with your chords using the Play button below.`),
+      h('div', { class: 'row wrap' },
+        h('button', { type: 'button', class: 'btn', onclick: () => { frame.src = clipUrl(l, true); } }, '↺ Play the clip from the start'),
+        h('a', { class: 'btn ghost', href: watchUrl, target: '_blank', rel: 'noopener' }, `Open on YouTube at ${mmss(l.start || 0)} ↗`)))));
+}
+
+// ---------- Form panel (phrases) ----------
+
+function normalizeAnswers(a) {
+  const arr = (x) => (Array.isArray(x) ? x.slice(0, 32) : []);
+  return {
+    formLabels: arr(a?.formLabels).map((v) => (FORM_LABELS.includes(v) ? v : '')),
+    sameRhythm: arr(a?.sameRhythm).map(Boolean),
+    samePitch: arr(a?.samePitch).map(Boolean),
+  };
+}
+
+function saveAnswers() {
+  if (!feedback) store.set(answersKey(exercise), answers);
+}
+
+function renderFormPanel() {
+  const f = exercise.form;
+  const panel = $('#form-panel');
+  if (!f) { panel.replaceChildren(); return; }
+  const p = ws.getProject();
+  const n = Math.floor(p.bars / f.phraseBars);
+  const analyse = Array.isArray(f.answer);
+  const rows = Array.from({ length: n }, (_, i) => {
+    const a = i * f.phraseBars + 1;
+    const b = a + f.phraseBars - 1;
+    const cells = [
+      h('button', { type: 'button', class: 'btn small', onclick: () => ws.playRange(i * f.phraseBars, f.phraseBars), 'aria-label': `Play phrase ${i + 1}` }, '▶'),
+      h('span', { class: 'phrase-name' }, h('strong', {}, `Phrase ${i + 1}`), h('span', { class: 'muted small' }, ` bars ${a}–${b}`)),
+    ];
+    if (analyse) {
+      cells.push(h('select', {
+        'aria-label': `Label for phrase ${i + 1}`,
+        onchange: (e) => { answers.formLabels[i] = e.target.value; saveAnswers(); },
+      }, h('option', { value: '' }, 'Label…'), FORM_LABELS.map((l) => h('option', { value: l, selected: answers.formLabels[i] === l }, l))));
+      if (f.askRhythmPitch && i > 0) {
+        const tick = (field, text) => h('label', { class: 'toggle' }, h('input', {
+          type: 'checkbox', checked: !!answers[field][i],
+          onchange: (e) => { answers[field][i] = e.target.checked; saveAnswers(); },
+        }), ` ${text}`);
+        cells.push(tick('sameRhythm', 'Same rhythm as phrase 1'), tick('samePitch', 'Same pitches as phrase 1'));
+      }
+    } else if (f.show) {
+      cells.push(h('span', { class: 'form-target' }, f.show[i] || ''));
+    }
+    return h('div', { class: 'phrase-row' }, ...cells);
+  });
+  panel.replaceChildren(h('div', { class: 'form-panel' },
+    h('h3', {}, analyse ? 'Your analysis' : 'The form'),
+    analyse ? h('p', { class: 'muted small' }, 'A = first idea · A′ = the same idea changed · B, C = new material.') : '',
+    ...rows));
+}
 
 // ---------- Checks ----------
 
@@ -126,7 +244,7 @@ function checkContext() {
     const merged = { tracks: a.midi.flatMap((m) => m.parsed.tracks), bpm: a.midi[0].parsed.bpm, keySig: a.midi[0].parsed.keySig };
     midi = { fileName: a.midi.map((m) => m.fileName).join(', '), analysis: analyseMidi(merged, p.key, p.mode) };
   }
-  return { midi, audio: a.audio ? { fileName: a.audio.fileName } : null };
+  return { midi, audio: a.audio ? { fileName: a.audio.fileName } : null, answers };
 }
 
 function check() {
@@ -245,6 +363,7 @@ function buildSubmission({ withFiles }) {
     project: ws.getProject(),
     checks: results,
     attachments: files,
+    answers: exercise.form?.answer ? answers : null,
   });
 }
 
