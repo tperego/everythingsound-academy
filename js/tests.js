@@ -80,6 +80,16 @@ await test('inversions and slash chords', async () => {
   assertEq(bassTrack[0].pitch % 12, 2);
 });
 
+await test('Sigur Rós chord loop: E | E/D | A/C# | A', () => {
+  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-pattern-compose');
+  const p = newProject({ key: 'E', mode: 'major', bars: 4, progression: e.chordTemplate.progression });
+  const infos = chordEvents(p).map((ev) => chordInfo('E', 'major', ev.chord));
+  assertEq(infos.map((i) => i.symbol), ['E', 'E/D', 'A/C#', 'A']);
+  assertEq(infos.map((i) => i.roman), ['I', 'I/♭7', 'IV6', 'IV']);
+  const bass = readMidi(projectToMidi(p, { only: 'bass' })).tracks[1].notes.map((n) => n.pitch % 12);
+  assertEq(bass, [4, 2, 1, 9]); // E D C# A
+});
+
 await test('project model', () => {
   const p = newProject({ key: 'G', bars: 4, progression: [1, 5, 6, 4] });
   assertEq(chordEvents(p).map((e) => [e.start, e.len, e.chord.deg]), [[0, 4, 1], [4, 4, 5], [8, 4, 6], [12, 4, 4]]);

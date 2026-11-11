@@ -71,6 +71,8 @@ Everything lives in [`js/lessons.js`](js/lessons.js):
 | `js/midi.js` | MIDI file writer and reader, and DAW MIDI analysis |
 | `js/checks.js` | Automatic checks |
 | `js/staff.js` | Staff notation (ABC → abcjs) |
+| `js/piano.js` | Piano keyboard (hands, finger numbers, follows playback) and the printable chord sheet |
+| `js/form.js` | Melodic form: splitting a melody into phrases and comparing them |
 | `js/submission.js` | Submission and feedback formats |
 | `js/student.js`, `js/teacher.js` | The two pages |
 

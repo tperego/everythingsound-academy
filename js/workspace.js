@@ -4,6 +4,7 @@ import { Player, listMidiOutputs } from './audio.js';
 import { Composer } from './composer.js';
 import { BAR_OPTIONS, cloneProject, normalizeProject, setBars, sliceProject } from './project.js';
 import { renderStaff } from './staff.js';
+import { ChordSheet, PianoView } from './piano.js';
 import { KEY_OPTIONS } from './theory.js';
 import { h, store, toast } from './util.js';
 
@@ -13,7 +14,10 @@ export class Workspace {
     this.readOnly = readOnly;
     this.onChange = onChange;
     this.player = player || new Player();
-    this.view = store.get('es.view', 'grid');
+    // Extra views shown with the grid: staff, piano keyboard, chord sheet.
+    const oldView = store.get('es.view', 'grid');
+    this.views = { staff: oldView === 'staff', piano: false, sheet: false, ...store.get('es.views', {}) };
+    this.cursorStep = 0; // where the piano looks when not playing (the selected chord)
     this.title = '';
     this.lock = {};
     this.project = null;
@@ -21,16 +25,33 @@ export class Workspace {
     this.toolbar = h('div', { class: 'toolbar' });
     this.composerEl = h('div');
     this.staffEl = h('div', { class: 'staff', hidden: true });
+    this.pianoEl = h('div', { hidden: true });
+    this.sheetEl = h('div', { hidden: true });
     root.classList.add('workspace');
-    root.append(this.toolbar, this.composerEl, this.staffEl);
+    root.append(this.toolbar, this.composerEl, this.pianoEl, this.staffEl, this.sheetEl);
+    this.piano = new PianoView(this.pianoEl);
+    this.sheet = new ChordSheet(this.sheetEl, {
+      title: () => this.title,
+      onPick: (ev) => { this.cursorStep = ev.start * 2; if (!this.views.piano) this.toggleView('piano', true); else this.renderPiano(); },
+    });
 
     this.composer = new Composer(this.composerEl, {
       player: this.player,
       readOnly,
       onChange: (p) => this.update(p, { fromComposer: true }),
+      onSelect: (slot) => {
+        if (this.player.playing) return;
+        this.cursorStep = slot * 4;
+        this.renderPiano();
+      },
     });
     this.stepOffset = 0; // when playing a single phrase, where it starts in the full piece
-    this.player.onStep = (s) => this.composer.setPlayhead(s < 0 ? -1 : s + this.stepOffset);
+    this.player.onStep = (s) => {
+      const step = s < 0 ? -1 : s + this.stepOffset;
+      this.composer.setPlayhead(step);
+      this.renderPiano(step < 0 ? this.cursorStep : step);
+      if (this.views.sheet) this.sheet.highlight(step);
+    };
     this.player.onStop = () => this.renderToolbar();
 
     this.onKey = (e) => {
@@ -109,9 +130,26 @@ export class Workspace {
   }
 
   renderView() {
-    const staff = this.view === 'staff';
-    this.staffEl.hidden = !staff;
-    if (staff) renderStaff(this.staffEl, this.project, this.title);
+    if (!this.project) return;
+    this.staffEl.hidden = !this.views.staff;
+    if (this.views.staff) renderStaff(this.staffEl, this.project, this.title);
+    this.sheetEl.hidden = !this.views.sheet;
+    if (this.views.sheet) this.sheet.render(this.project);
+    this.renderPiano();
+  }
+
+  renderPiano(step = this.cursorStep) {
+    this.pianoEl.hidden = !this.views.piano;
+    if (!this.views.piano || !this.project) return;
+    const max = this.project.bars * 8 - 1;
+    this.piano.show(this.project, Math.max(0, Math.min(max, step)));
+  }
+
+  toggleView(name, on = !this.views[name]) {
+    this.views[name] = on;
+    store.set('es.views', this.views);
+    this.renderView();
+    this.renderToolbar();
   }
 
   renderToolbar() {
@@ -143,11 +181,11 @@ export class Workspace {
     const barsSel = h('select', { 'aria-label': 'Bars', disabled: ro || this.lock.bars, onchange: (e) => this.update(setBars(this.project, Number(e.target.value)), { rebuild: true }) },
       [...new Set([...BAR_OPTIONS, p.bars])].sort((a, b) => a - b).map((n) => h('option', { value: n, selected: n === p.bars }, `${n} bars`)));
 
-    const viewSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'View' },
-      ['grid', 'staff'].map((v) => h('button', {
-        type: 'button', class: this.view === v ? 'on' : '', 'aria-pressed': String(this.view === v),
-        onclick: () => { this.view = v; store.set('es.view', v); this.renderView(); this.renderToolbar(); },
-      }, v === 'grid' ? 'Grid only' : 'Grid + staff')));
+    const viewSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Show alongside the grid' },
+      [['piano', 'Piano'], ['staff', 'Staff'], ['sheet', 'Chord sheet']].map(([v, label]) => h('button', {
+        type: 'button', class: this.views[v] ? 'on' : '', 'aria-pressed': String(!!this.views[v]),
+        onclick: () => this.toggleView(v),
+      }, label)));
 
     const mutes = h('div', { class: 'seg mutes', role: 'group', 'aria-label': 'Tracks' },
       ['chords', 'bass', 'melody'].map((t) => h('button', {
@@ -162,7 +200,7 @@ export class Workspace {
       h('div', { class: 'tb-group' }, playBtn, loop),
       h('div', { class: 'tb-group' }, h('span', { class: 'tb-label' }, 'Key'), keySel, modeSel),
       h('div', { class: 'tb-group' }, h('span', { class: 'tb-label' }, 'BPM'), tempo, barsSel),
-      h('div', { class: 'tb-group' }, viewSeg),
+      h('div', { class: 'tb-group' }, h('span', { class: 'tb-label' }, 'Show'), viewSeg),
       h('div', { class: 'tb-group' }, mutes, midiBtn),
     );
   }

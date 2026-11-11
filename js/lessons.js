@@ -216,12 +216,18 @@ LESSONS.push({
         'Listen to the vocal parts of Svefn-g-englar and follow the patterns we found in class.',
         'Choose one pattern from the list below, and how long each phrase is (1 or 2 bars). Each letter is one phrase.',
         'Compose a new melody that follows your pattern: the same letter repeats exactly, a prime (′) is a variation (same rhythm, some notes changed), and a new letter is new material.',
-        'Choose your own key, tempo and chords. To start from the song’s harmony, try E – E/D – C♯ in the bass – A: pick I, then use the Bass row (“Any bass note…” → ♭7 · D) for E/D.',
+        'Choose your own key, tempo and chords, or press “Use the song’s chords” for the Svefn-g-englar loop: E | E/D | A/C♯ | A. The bass walks E – D – C♯ – A.',
         'Use ▶ next to each phrase to compare them. Check, then submit it for marking.',
       ],
       start: { key: 'E', mode: 'major', bpm: 76, bars: 8 },
       lock: { bars: true },
       patternChoice: { options: SIGUR_ROS_PATTERNS, phraseBars: [1, 2] },
+      // The song's harmony (in E major): E | E/D | A/C♯ | A = I | I/♭7 | IV6 | IV.
+      // E lasts two bars (the D is a passing bass note), then A lasts two bars (first over C♯, then on A).
+      chordTemplate: {
+        label: 'E | E/D | A/C♯ | A',
+        progression: [1, { deg: 1, bass: { deg: 7, acc: -1 } }, { deg: 4, bass: { deg: 6, acc: 0 } }, 4],
+      },
       checks: [{ type: 'melody-pattern', options: SIGUR_ROS_PATTERNS }],
       rubric: [
         { label: 'The pattern is clear when you listen', max: 5 },

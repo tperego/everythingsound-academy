@@ -334,6 +334,20 @@ function renderFormPanel(refocus = false) {
     }
     return h('div', { class: 'phrase-row' }, ...cells);
   });
+  const tpl = exercise.chordTemplate;
+  const chordsBtn = tpl ? h('button', {
+    type: 'button',
+    class: 'btn small',
+    title: 'Fill the chord lane with the song’s chord loop, repeated to the end',
+    onclick: () => {
+      const cur = ws.getProject();
+      if (cur.chords.some(Boolean) && !confirm('Replace your chords with the song’s chords?')) return;
+      const loop = newProject({ key: cur.key, mode: cur.mode, bars: tpl.progression.length, progression: tpl.progression }).chords;
+      const chords = cur.chords.map((_, i) => loop[i % loop.length]);
+      ws.update({ ...cur, chords }, { rebuild: true });
+      toast(`Chords set: ${tpl.label}`);
+    },
+  }, `Use the song’s chords (${tpl.label})`) : '';
   const chooser = pc ? h('div', { class: 'row wrap pattern-choice' },
     h('label', { class: 'field inline' }, 'Pattern',
       h('select', { onchange: (e) => { answers.pattern = e.target.value; applyPattern(); } },
@@ -341,7 +355,7 @@ function renderFormPanel(refocus = false) {
     h('label', { class: 'field inline' }, 'Each phrase',
       h('select', { onchange: (e) => { answers.phraseBars = Number(e.target.value); applyPattern(); } },
         pc.phraseBars.map((n) => h('option', { value: n, selected: n === answers.phraseBars }, `${n} bar${n > 1 ? 's' : ''}`)))),
-    h('span', { class: 'muted small' }, `${patternLabels().length} phrases · ${patternBars()} bars`)) : '';
+    h('span', { class: 'muted small' }, `${patternLabels().length} phrases · ${patternBars()} bars`), chordsBtn) : '';
   panel.replaceChildren(h('div', { class: 'form-panel' },
     h('h3', {}, analyse ? 'Your analysis' : pc ? 'Your pattern' : 'The form'),
     chooser,

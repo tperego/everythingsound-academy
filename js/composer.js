@@ -7,10 +7,11 @@ import { h } from './util.js';
 const ROW_H = 22;
 
 export class Composer {
-  constructor(root, { player, onChange = () => {}, readOnly = false } = {}) {
+  constructor(root, { player, onChange = () => {}, onSelect = () => {}, readOnly = false } = {}) {
     this.root = root;
     this.player = player;
     this.onChange = onChange;
+    this.onSelect = onSelect;
     this.readOnly = readOnly;
     this.project = null;
     this.lock = {};
@@ -178,6 +179,7 @@ export class Composer {
     );
 
     this.renderPalette();
+    this.onSelect(this.selected);
   }
 
   renderPalette() {

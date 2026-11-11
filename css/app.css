@@ -392,3 +392,47 @@ audio { width: 100%; margin-top: 6px; }
 .phrase-letter { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 5px; background: var(--accent); color: var(--accent-ink); font: 800 0.8rem/1.4 Georgia, serif; }
 .bass-row .btn.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
 .bass-row select { font-size: 0.85rem; }
+
+/* ---------- Piano view & chord sheet ---------- */
+:root { --key-white: #fffdf8; --key-black: #26231e; --key-line: #b9b2a5; --hand-lh: #2a9d8f; --hand-rh: #e8743b; --hand-mel: #8a5cc2; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --key-white: #ece7dc; --key-black: #0f0e0b; --key-line: #6d675c; } }
+.piano-view, .chord-sheet { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--grid-bg); }
+.piano-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 8px; }
+.piano-chord { font: 800 1.15rem/1.2 Georgia, serif; }
+.piano-hands { margin: 8px 0 0; }
+.kbd-scroll { overflow-x: auto; }
+.kbd { display: block; width: 100%; min-width: 620px; height: auto; }
+.chord-card .kbd { min-width: 0; }
+.kbd .wk { fill: var(--key-white); stroke: var(--key-line); stroke-width: 1; }
+.kbd .bk { fill: var(--key-black); }
+.kbd .lh { fill: var(--hand-lh); }
+.kbd .rh { fill: var(--hand-rh); }
+.kbd .mel { fill: var(--hand-mel); }
+.kbd .rh.mel, .kbd .lh.mel { stroke: var(--hand-mel); stroke-width: 4; }
+.kbd .fbadge { fill: rgba(0, 0, 0, 0.35); }
+.kbd .ftext { fill: #fff; font-weight: 800; text-anchor: middle; font-family: system-ui, sans-serif; }
+.kbd .clabel { fill: #8b8478; text-anchor: middle; font-family: system-ui, sans-serif; }
+.dot.lh { background: var(--hand-lh); } .dot.rh { background: var(--hand-rh); } .dot.mel { background: var(--hand-mel); }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.sheet-head h4 { margin: 0; }
+.sheet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.chord-card {
+  display: grid; gap: 6px; text-align: left; padding: 10px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--line); border-top: 4px solid var(--fn-T); background: var(--surface); color: var(--ink); font: inherit;
+}
+.chord-card.fn-PD { border-top-color: var(--fn-PD); } .chord-card.fn-D { border-top-color: var(--fn-D); }
+.chord-card.now { box-shadow: 0 0 0 3px var(--accent); }
+.cc-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.cc-sym { font: 800 1.35rem/1 Georgia, serif; }
+.cc-roman { font: 700 0.95rem Georgia, serif; color: var(--ink-2); }
+.cc-fing, .cc-bar { font-size: 0.78rem; color: var(--ink-2); }
+
+/* Printing the chord sheet only */
+@media print {
+  body.printing-sheet * { visibility: hidden !important; }
+  body.printing-sheet .print-target, body.printing-sheet .print-target * { visibility: visible !important; }
+  body.printing-sheet .print-target { position: absolute; left: 0; top: 0; width: 100%; border: 0; background: #fff; }
+  body.printing-sheet .print-target::before { content: attr(data-print-title); visibility: visible; display: block; font: 700 18px Georgia, serif; margin-bottom: 8px; color: #000; }
+  body.printing-sheet .print-target button.btn { display: none; }
+  body.printing-sheet .chord-card { break-inside: avoid; box-shadow: none; color: #000; background: #fff; }
+}
