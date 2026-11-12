@@ -532,6 +532,7 @@ async function setupAccount() {
   const signed = !!profile;
   $('#name-label').hidden = signed;
   $('#submit-online').hidden = !signed;
+  $('#ask-teacher').hidden = !signed || profile.role === 'teacher';
   const link = $('#signin-to-submit');
   link.hidden = signed;
   link.href = `account.html?next=${encodeURIComponent(`lesson.html?lesson=${lesson.id}&ex=${exercise?.id || ''}`)}`;
@@ -550,6 +551,13 @@ async function setupAccount() {
     }
   }
 }
+
+// "Ask your teacher" opens the private chat with a first line saying which exercise it's about.
+$('#ask-teacher').addEventListener('click', (e) => {
+  e.preventDefault();
+  const about = `About “${lesson.title}”, exercise “${exercise.title}”:`;
+  location.href = `chat.html?dm=me&about=${encodeURIComponent(about)}`;
+});
 
 $('#submit-online').addEventListener('click', async () => {
   const btn = $('#submit-online');

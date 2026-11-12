@@ -95,10 +95,15 @@ export async function renderAccountWidget(el) {
     el.replaceChildren(h('a', { class: 'btn small primary', href: 'account.html' }, 'Sign in'));
     return;
   }
+  const badge = h('span', { class: 'chat-badge', hidden: true });
   el.replaceChildren(
+    h('a', { class: 'btn small', href: 'chat.html', title: 'Course chat and messages with your teacher' }, '💬 Chat', badge),
     h('a', { class: 'btn small', href: 'account.html', title: 'My profile: your work and your teacher’s feedback' }, `👤 ${p.full_name || 'My profile'}`),
     p.role === 'teacher' ? h('a', { class: 'btn small ghost', href: 'mark.html' }, 'Inbox') : '',
   );
+  unreadChatCount().then((n) => {
+    if (n > 0) { badge.textContent = n > 9 ? '9+' : String(n); badge.hidden = false; }
+  }).catch(() => {});
 }
 
 // ---------- Progress ----------
@@ -212,4 +217,82 @@ export async function deletePiece(id) {
   const user = await currentUser();
   if (!user) return;
   await sb().from('pieces').delete().eq('id', id);
+}
+
+// ---------- Chat ----------
+
+const MSG_FIELDS = 'id, channel, author_id, author_name, author_role, body, created_at, deleted';
+
+export const dmChannel = (studentId) => `dm:${studentId}`;
+
+export async function chatFetch(channel, limit = 150) {
+  const { data, error } = await sb().from('messages').select(MSG_FIELDS).eq('channel', channel).order('created_at', { ascending: false }).limit(limit);
+  if (error) throw new Error(friendly(error));
+  return data.reverse();
+}
+
+export async function chatSend(channel, body) {
+  const { data, error } = await sb().from('messages').insert({ channel, body }).select(MSG_FIELDS).single();
+  if (error) throw new Error(friendly(error));
+  return data;
+}
+
+export async function chatDelete(id) {
+  const { error } = await sb().from('messages').update({ deleted: true }).eq('id', id);
+  if (error) throw new Error(friendly(error));
+}
+
+/** Recent messages across every channel this person can read (for unread counts and the teacher's list). */
+export async function chatRecent(limit = 500) {
+  const { data, error } = await sb().from('messages').select('id, channel, author_id, author_name, author_role, body, created_at, deleted').order('created_at', { ascending: false }).limit(limit);
+  if (error) throw new Error(friendly(error));
+  return data;
+}
+
+export async function chatReads() {
+  const { data, error } = await sb().from('chat_reads').select('channel, last_read_at');
+  if (error) return {};
+  return Object.fromEntries(data.map((r) => [r.channel, r.last_read_at]));
+}
+
+export async function chatMarkRead(channel) {
+  const user = await currentUser();
+  if (!user) return;
+  await sb().from('chat_reads').upsert({ user_id: user.id, channel, last_read_at: new Date().toISOString() });
+}
+
+/** Unread messages per channel (messages by others, after the last time this person looked). */
+export function unreadByChannel(recent, reads, myId) {
+  const out = {};
+  for (const m of recent) {
+    if (m.deleted || m.author_id === myId) continue;
+    const seen = reads[m.channel];
+    if (!seen || m.created_at > seen) out[m.channel] = (out[m.channel] || 0) + 1;
+  }
+  return out;
+}
+
+export async function unreadChatCount() {
+  const user = await currentUser();
+  if (!user) return 0;
+  const [recent, reads] = await Promise.all([chatRecent(300), chatReads()]);
+  return Object.values(unreadByChannel(recent, reads, user.id)).reduce((a, b) => a + b, 0);
+}
+
+/** Live updates: calls onChange(message) for new and deleted messages. Returns a function to stop. */
+export function chatSubscribe(onChange) {
+  const c = sb();
+  if (!c) return () => {};
+  const ch = c.channel(`messages-${Math.random().toString(36).slice(2)}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (p) => onChange(p.new))
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (p) => onChange(p.new))
+    .subscribe();
+  return () => c.removeChannel(ch);
+}
+
+/** Teacher: everyone in the course, for starting a private chat. */
+export async function listStudents() {
+  const { data, error } = await sb().from('profiles').select('id, full_name, role').eq('role', 'student').order('full_name');
+  if (error) throw new Error(friendly(error));
+  return data;
 }

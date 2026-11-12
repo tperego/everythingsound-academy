@@ -10,6 +10,13 @@ export const COURSE = {
   title: 'Music Theory',
   intro:
     'Learn music theory by doing it. Each lesson has a short video and exercises you play, build and compose in the browser, with instant feedback where there is a right answer and personal feedback from your teacher where there isn’t.',
+  // Chat channels everyone in the course can see. "Announcements" is for the teacher only.
+  chatChannels: [
+    { id: 'course:announcements', name: 'Announcements', icon: '📢', about: 'News and tips from your teacher.', teacherOnly: true },
+    { id: 'course:general', name: 'General', icon: '#', about: 'Say hello, share what you’re working on, ask anything.' },
+    { id: 'course:foundations', name: 'Foundations Q&A', icon: '#', about: 'Questions about Module 1: pitch, the keyboard, intervals, the major scale.' },
+    { id: 'course:class-lessons', name: 'Chords & form Q&A', icon: '#', about: 'Questions about the lessons from class.' },
+  ],
   modules: [
     {
       title: 'Foundations',
