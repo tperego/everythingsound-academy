@@ -83,6 +83,14 @@ Everything lives in [`js/lessons.js`](js/lessons.js):
 
 Student accounts and an online inbox (instead of files and links), video cue points that open an exercise automatically, TikTok 60-second challenge pages, Ableton template sets, and more exercise types (ear training, intervals, minor keys, rhythm).
 
+## Database scripts (Supabase → SQL Editor → New query → paste → Run)
+
+Run in this order, once each (all are safe to run again): `supabase/schema.sql` (accounts, submissions, progress, Sandbox), `supabase/teacher-setup.sql` (class code and teacher, with your own values), `supabase/chat.sql` (chat), `supabase/game.sql` (XP, levels, badges, leaderboard).
+
+## XP and badges
+
+Students earn XP for real practice: passing an exercise's checks (20), sending it (30), finishing a lesson (50), your feedback (10 + up to 40 for the score), quick-fire rounds (with daily limits) and their first practice each day (5). The database decides the amounts, so XP can't be typed in from the browser. Levels, streaks and badges are worked out in `js/game.js`. The leaderboard is opt-in for students; your profile shows every student's XP and when they last practised.
+
 ## Publishing an update
 
 1. `python3 tools/stamp-version.py`: gives every file a new version so browsers never mix old and new code.

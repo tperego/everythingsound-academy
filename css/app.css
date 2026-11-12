@@ -553,3 +553,60 @@ a.btn { text-decoration: none; display: inline-block; }
   .chat-item { width: auto; flex: none; }
   .chat-preview { display: none; }
 }
+
+/* ---------- XP, levels, streaks, badges, leaderboard ---------- */
+.xp-chip { gap: 6px; font-weight: 700; }
+.xp-chip .lvl { color: var(--accent); }
+.lvl-badge { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 800; flex: none; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15); }
+.lvl-badge.big { width: 60px; height: 60px; font-size: 1.5rem; }
+.xp-bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin-top: 6px; min-width: 140px; }
+.xp-bar span { display: block; height: 100%; background: var(--accent); border-radius: inherit; transition: width 0.6s; }
+.journey-strip { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 14px 0 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: inherit; text-decoration: none; max-width: 640px; }
+.journey-strip:hover { border-color: var(--accent); }
+.journey-text { display: grid; flex: 1 1 200px; }
+.journey-stat { display: grid; text-align: center; min-width: 70px; }
+.journey-top { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.lvl-big { display: flex; gap: 12px; align-items: center; flex: 1 1 240px; }
+.lvl-big > div { flex: 1; }
+.journey-stats { display: flex; gap: 8px; }
+.stat { display: grid; text-align: center; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); min-width: 74px; }
+.stat strong { font-size: 1.15rem; }
+.badge-grid { list-style: none; padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.badge-tile { display: grid; gap: 2px; justify-items: center; text-align: center; padding: 10px 8px; border: 1px dashed var(--line); border-radius: 10px; opacity: 0.7; }
+.badge-tile.got { border-style: solid; border-color: var(--accent); background: var(--grid-tonic); opacity: 1; }
+.badge-icon { font-size: 1.6rem; line-height: 1.2; }
+.badge-tile strong { font-size: 0.85rem; }
+.xp-log { list-style: none; padding: 0; margin: 6px 0 0; }
+.xp-log li { display: grid; grid-template-columns: 1fr auto 3.5em; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.xp-log strong { text-align: right; color: var(--ok); }
+.board { list-style: none; padding: 0; margin: 10px 0; }
+.board li { display: grid; grid-template-columns: 2.2em 1fr auto auto; gap: 10px; align-items: center; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+.board li.me { background: var(--grid-tonic); border-radius: 8px; }
+.board .rank { text-align: center; font-weight: 700; }
+.board .lvl { font-size: 0.78rem; color: var(--ink-2); }
+.board .pts { text-align: right; white-space: nowrap; }
+.check-row { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9rem; margin-top: 8px; }
+#xp-pop {
+  position: fixed; right: 20px; bottom: 80px; z-index: 60; pointer-events: none; opacity: 0;
+  background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 1.1rem; padding: 8px 16px; border-radius: 99px; box-shadow: var(--shadow);
+}
+#xp-pop.show { animation: xp-pop 2.2s ease-out forwards; }
+@keyframes xp-pop {
+  0% { opacity: 0; transform: translateY(16px) scale(0.8); }
+  12% { opacity: 1; transform: translateY(0) scale(1.08); }
+  20% { transform: scale(1); }
+  80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-14px); }
+}
+.xp-banner {
+  position: fixed; left: 50%; top: 16px; transform: translate(-50%, -120%); transition: transform 0.35s; z-index: 61;
+  display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); width: 420px;
+  background: var(--surface); color: var(--ink); border: 2px solid var(--accent); border-radius: var(--radius); padding: 12px 14px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+}
+.xp-banner.show { transform: translate(-50%, 0); }
+.xp-banner > div { flex: 1; }
+.xp-banner-icon { font-size: 2rem; }
+@media (prefers-reduced-motion: reduce) {
+  #xp-pop.show { animation: none; opacity: 1; }
+  .xp-banner { transition: none; }
+}

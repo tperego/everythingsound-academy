@@ -1,7 +1,7 @@
 // Standard MIDI File writer and reader. Works with Ableton Live, Logic Pro and Pro Tools.
 
-import { buildEvents } from './project.js?v=202611120105';
-import { detectChord, inKeyPcs, keySignatureSf } from './theory.js?v=202611120105';
+import { buildEvents } from './project.js?v=202611122344';
+import { detectChord, inKeyPcs, keySignatureSf } from './theory.js?v=202611122344';
 
 export const PPQ = 480;
 

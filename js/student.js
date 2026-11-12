@@ -1,17 +1,17 @@
 // Student lesson page: video, exercises, composer, checks, DAW round-trip, submission, feedback.
 
-import { chordsFound, runChecks } from './checks.js?v=202611120105';
-import { FORM_LABELS } from './form.js?v=202611120105';
-import { QuizView } from './quiz.js?v=202611120105';
-import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js?v=202611120105';
-import { COURSE, courseLessons, lessonNeighbours } from './course.js?v=202611120105';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611120105';
-import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611120105';
-import { newProject, normalizeProject, setBars } from './project.js?v=202611120105';
-import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js?v=202611120105';
-import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js?v=202611120105';
-import { Workspace } from './workspace.js?v=202611120105';
-import { getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js?v=202611120105';
+import { chordsFound, runChecks } from './checks.js?v=202611122344';
+import { FORM_LABELS } from './form.js?v=202611122344';
+import { QuizView } from './quiz.js?v=202611122344';
+import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js?v=202611122344';
+import { COURSE, courseLessons, lessonNeighbours } from './course.js?v=202611122344';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611122344';
+import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611122344';
+import { newProject, normalizeProject, setBars } from './project.js?v=202611122344';
+import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js?v=202611122344';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js?v=202611122344';
+import { Workspace } from './workspace.js?v=202611122344';
+import { awardXp, getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js?v=202611122344';
 
 const $ = (sel) => document.querySelector(sel);
 const params = new URLSearchParams(location.search);
@@ -35,6 +35,12 @@ function setStatus(exId, status) {
     saveProgress(lesson.id, exId, status).catch(() => {});
   }
   renderTabs();
+  // XP: the database gives it once per exercise, so asking again is harmless.
+  if (status === 'passed' || status === 'submitted') {
+    awardXp(status, `${lesson.id}/${exId}`);
+    const now = statusAll();
+    if (lesson.exercises.every((e) => now[e.id] === 'passed' || now[e.id] === 'submitted')) awardXp('lesson', lesson.id);
+  }
 }
 
 const ws = new Workspace($('#workspace'), {
@@ -176,6 +182,9 @@ function renderQuiz() {
       const prev = answers.quiz || { best: 0, rounds: 0 };
       answers.quiz = { best: Math.max(prev.best || 0, correct), last: correct, total, rounds: (prev.rounds || 0) + 1 };
       saveAnswers();
+      const ref = `${lesson.id}/${exercise.id}`;
+      awardXp(correct >= exercise.quiz.pass ? 'quiz-pass' : 'quiz-round', ref);
+      if (total > 0 && correct === total) awardXp('quiz-perfect', ref);
       check();
     },
   });

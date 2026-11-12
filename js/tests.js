@@ -1,13 +1,14 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611120105';
-import { LESSONS } from './lessons.js?v=202611120105';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611120105';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611120105';
-import { projectToAbc } from './staff.js?v=202611120105';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611120105';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611120105';
-import { pack, unpack } from './util.js?v=202611120105';
+import { runChecks } from './checks.js?v=202611122344';
+import { LESSONS } from './lessons.js?v=202611122344';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611122344';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611122344';
+import { projectToAbc } from './staff.js?v=202611122344';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611122344';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611122344';
+import { pack, unpack } from './util.js?v=202611122344';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611122344';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -317,6 +318,38 @@ await test('course order: Foundations first', async () => {
 
 await test('lesson 1 is unchanged', () => {
   assertEq(LESSONS[0].exercises.map((x) => x.id), ['p1-build', 'p1-cadence', 'p1-melody', 'p1-daw']);
+});
+
+await test('levels from XP', () => {
+  assertEq([levelFor(0).n, levelFor(99).n, levelFor(100).n, levelFor(260).n, levelFor(99999).n], [1, 1, 2, 3, 11]);
+  assertEq(levelFor(175).pct, 50);
+  assertEq(levelFor(99999).pct, 100);
+  assertEq(levelFor(99999).next, null);
+});
+
+await test('streaks: days in a row, alive until the end of today', () => {
+  const at = (y, m, d, hr = 12) => ({ kind: 'daily', xp: 5, created_at: new Date(y, m - 1, d, hr).toISOString() });
+  const now = new Date(2026, 10, 12, 9);
+  const ev = [at(2026, 11, 1), at(2026, 11, 2), at(2026, 11, 3), at(2026, 11, 3, 20), at(2026, 11, 10), at(2026, 11, 11)];
+  const s = streaks(ev, now);
+  assertEq([s.current, s.best, s.practisedToday], [2, 3, false]);
+  assertEq(streaks([...ev, at(2026, 11, 12, 8)], now).current, 3);
+  assertEq(streaks([at(2026, 11, 9)], now).current, 0);
+  // Teacher feedback isn't practice: it doesn't keep a streak going.
+  assertEq(streaks([{ kind: 'marked', xp: 30, created_at: new Date(2026, 10, 12, 8).toISOString() }], now).current, 0);
+});
+
+await test('badges from XP events', () => {
+  const t = new Date().toISOString();
+  const ev = [
+    { kind: 'passed', ref: 'mt-01-pitch/mt01-count', xp: 20, created_at: t },
+    { kind: 'marked', ref: 'x', xp: 46, created_at: t },
+    ...['mt-01-pitch', 'mt-02-keyboard', 'mt-03-intervals', 'mt-04-major-scale'].map((ref) => ({ kind: 'lesson', ref, xp: 50, created_at: t })),
+  ];
+  const ids = earnedBadges(summarise(ev)).map((b) => b.id);
+  for (const id of ['first-xp', 'all-green', 'feedback', 'top-marks', 'module-1']) assert(ids.includes(id), `missing ${id}: ${ids}`);
+  for (const id of ['handed-in', 'perfect', 'streak-3', 'module-2']) assert(!ids.includes(id), `should not have ${id}`);
+  assertEq(summarise(ev).xp, 266);
 });
 
 const failed = results.filter((r) => !r.ok);

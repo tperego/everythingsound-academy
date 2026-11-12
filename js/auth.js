@@ -2,7 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611120105';
+import { h } from './util.js?v=202611122344';
+import { celebrate, summarise, xpChip } from './game.js?v=202611122344';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
@@ -32,7 +33,7 @@ export function myProfile(refresh = false) {
     profilePromise = (async () => {
       const user = await currentUser();
       if (!user) return null;
-      const { data, error } = await sb().from('profiles').select('id, full_name, role').eq('id', user.id).single();
+      const { data, error } = await sb().from('profiles').select('*').eq('id', user.id).single();
       if (error) return { id: user.id, full_name: user.user_metadata?.full_name || '', role: 'student', email: user.email };
       return { ...data, email: user.email };
     })();
@@ -71,6 +72,7 @@ export async function signIn({ email, password }) {
 export async function signOut() {
   await sb()?.auth.signOut();
   myProfile(true);
+  xpPromise = null;
   // On a shared computer the next person shouldn't see this student's work: it's all in their account anyway.
   const keep = new Set(['es.views', 'es.view', 'es.hideMarked']);
   try {
@@ -101,9 +103,72 @@ export async function renderAccountWidget(el) {
     h('a', { class: 'btn small', href: 'account.html', title: 'My profile: your work and your teacher’s feedback' }, `👤 ${p.full_name || 'My profile'}`),
     p.role === 'teacher' ? h('a', { class: 'btn small ghost', href: 'mark.html' }, 'Inbox') : '',
   );
+  if (p.role !== 'teacher') {
+    myXpEvents().then((ev) => { if (ev) el.prepend(xpChip(summarise(ev))); }).catch(() => {});
+  }
   unreadChatCount().then((n) => {
     if (n > 0) { badge.textContent = n > 9 ? '9+' : String(n); badge.hidden = false; }
   }).catch(() => {});
+}
+
+// ---------- XP (see supabase/game.sql and js/game.js) ----------
+
+let xpPromise = null;
+/** This student's XP events, or null when signed out (or before game.sql has been run). */
+export function myXpEvents(refresh = false) {
+  if (!xpPromise || refresh) {
+    xpPromise = (async () => {
+      const user = await currentUser();
+      if (!user) return null;
+      const { data, error } = await sb().from('xp_events').select('kind, ref, xp, created_at').eq('user_id', user.id).order('created_at');
+      if (error) return null;
+      return data;
+    })();
+  }
+  return xpPromise;
+}
+
+let awardQueue = Promise.resolve();
+/** Ask the database for XP (it decides how much, once per exercise, with daily limits), then celebrate.
+ *  Calls run one after another, so each celebration compares with the one before. */
+export function awardXp(kind, ref) {
+  const run = awardQueue.then(() => doAward(kind, ref));
+  awardQueue = run.catch(() => 0);
+  return run;
+}
+
+async function doAward(kind, ref) {
+  try {
+    const p = await myProfile();
+    if (!p || p.role === 'teacher') return 0;
+    const before = await myXpEvents();
+    if (!before) return 0;
+    const { data, error } = await sb().rpc('award_xp', { p_kind: kind, p_ref: ref });
+    if (error) return 0;
+    const gained = data?.[0]?.gained || 0;
+    if (gained) {
+      const after = await myXpEvents(true);
+      celebrate({ gained, before: summarise(before), after: after ? summarise(after) : null });
+      const chip = document.querySelector('.xp-chip');
+      if (chip && after) chip.replaceWith(xpChip(summarise(after)));
+    }
+    return gained;
+  } catch {
+    return 0;
+  }
+}
+
+export async function leaderboard() {
+  const { data, error } = await sb().rpc('leaderboard');
+  if (error) throw new Error(friendly(error));
+  return data || [];
+}
+
+export async function setLeaderboardOptIn(on) {
+  const p = await myProfile();
+  const { error } = await sb().from('profiles').update({ show_on_leaderboard: !!on }).eq('id', p.id);
+  if (error) throw new Error(friendly(error));
+  myProfile(true);
 }
 
 // ---------- Progress ----------

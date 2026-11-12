@@ -1,8 +1,9 @@
 // Course home: modules, lessons, progress, and a way back into where the student left off.
 
-import { COURSE, courseLessons, lessonProgress } from './course.js?v=202611120105';
-import { h, store } from './util.js?v=202611120105';
-import { myProgress, renderAccountWidget } from './auth.js?v=202611120105';
+import { COURSE, courseLessons, lessonProgress } from './course.js?v=202611122344';
+import { h, store } from './util.js?v=202611122344';
+import { myProfile, myProgress, myXpEvents, renderAccountWidget } from './auth.js?v=202611122344';
+import { journeyStrip, summarise } from './game.js?v=202611122344';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -59,4 +60,11 @@ myProgress().then((remote) => {
   }
   render();
   $('#device-note').textContent = 'You are signed in: your progress, submissions and feedback are saved in your profile.';
+}).catch(() => {});
+
+// Signed-in students: level, streak and badges at the top.
+myProfile().then(async (p) => {
+  if (!p || p.role === 'teacher') return;
+  const ev = await myXpEvents();
+  if (ev) $('#journey-strip').replaceChildren(journeyStrip(summarise(ev)));
 }).catch(() => {});

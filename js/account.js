@@ -1,9 +1,10 @@
 // Account page: sign in / create account, then "My profile": progress, submissions and the teacher's feedback.
 
-import { listPieces, myProfile, myProgress, mySubmissions, renderAccountWidget, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611120105';
-import { COURSE, courseLessons } from './course.js?v=202611120105';
-import { findExercise } from './lessons.js?v=202611120105';
-import { h, store, toast } from './util.js?v=202611120105';
+import { leaderboard, listPieces, myProfile, myProgress, mySubmissions, myXpEvents, renderAccountWidget, setLeaderboardOptIn, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611122344';
+import { journeyCard, leaderboardList, summarise } from './game.js?v=202611122344';
+import { COURSE, courseLessons } from './course.js?v=202611122344';
+import { findExercise } from './lessons.js?v=202611122344';
+import { h, store, toast } from './util.js?v=202611122344';
 
 const main = document.getElementById('main');
 const next = new URLSearchParams(location.search).get('next');
@@ -94,11 +95,14 @@ async function renderProfile(p) {
   let subs = [];
   let progress = null;
   let pieces = null;
+  let events = null;
+  let board = null;
   try {
-    [subs, progress, pieces] = await Promise.all([mySubmissions(), myProgress(), listPieces()]);
+    [subs, progress, pieces, events, board] = await Promise.all([mySubmissions(), myProgress(), listPieces(), myXpEvents(true), leaderboard().catch(() => null)]);
   } catch (err) {
     toast(err.message);
   }
+  const teacher = p.role === 'teacher';
 
   const nameInput = h('input', { type: 'text', value: p.full_name, maxlength: 120, 'aria-label': 'Your name' });
   const head = h('section', { class: 'profile-head' },
@@ -149,9 +153,48 @@ async function renderProfile(p) {
       try { await updateMyName(nameInput.value.trim()); toast('Name saved.'); render(); } catch (err) { toast(err.message); }
     } }, 'Save name'));
 
+  // Leaderboard: this week or all time. Students choose whether classmates can see them.
+  let boardCard = '';
+  if (board) {
+    let by = 'week_xp';
+    const listBox = h('div');
+    const draw = () => listBox.replaceChildren(leaderboardList(board, { by, teacher }));
+    const tab = (id, label) => h('button', { type: 'button', class: by === id ? 'on' : '', 'aria-pressed': String(by === id), onclick: (e) => {
+      by = id;
+      e.target.parentNode.querySelectorAll('button').forEach((b) => { const on = b === e.target; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+      draw();
+    } }, label);
+    draw();
+    const optIn = teacher ? '' : h('label', { class: 'check-row' },
+      h('input', { type: 'checkbox', checked: !!p.show_on_leaderboard, onchange: async (e) => {
+        const on = e.target.checked;
+        e.target.disabled = true;
+        try {
+          await setLeaderboardOptIn(on);
+          toast(on ? 'You’re on the class leaderboard.' : 'You’re hidden from the class leaderboard.');
+          render();
+        } catch (err) {
+          e.target.checked = !on;
+          e.target.disabled = false;
+          toast(err.message);
+        }
+      } }),
+      ' Show me on the class leaderboard (classmates see your name and XP)');
+    boardCard = h('section', { class: 'card' },
+      h('h2', {}, teacher ? 'Class activity' : 'Class leaderboard'),
+      h('p', { class: 'muted small' }, teacher
+        ? 'Every student’s XP and when they last practised. Students only see classmates who chose to be on the leaderboard.'
+        : 'Only classmates who choose to appear are listed.'),
+      h('div', { class: 'seg' }, tab('week_xp', 'This week'), tab('xp', 'All time')),
+      listBox,
+      optIn);
+  }
+
   main.replaceChildren(
     head,
+    !teacher && events ? h('div', { class: 'cols' }, journeyCard(summarise(events), events), boardCard) : '',
     h('section', { class: 'card' }, h('h2', {}, 'My feedback'), subList),
+    teacher ? boardCard : '',
     h('div', { class: 'cols' },
       h('section', { class: 'card' }, h('h2', {}, 'My progress'), progressList),
       h('section', { class: 'card' },
@@ -161,6 +204,7 @@ async function renderProfile(p) {
         h('h3', { class: 'mt' }, 'My name'),
         h('p', { class: 'muted small' }, 'This is the name your teacher sees.'),
         nameRow)));
+  if (location.hash === '#journey') document.getElementById('journey')?.scrollIntoView({ block: 'start' });
 }
 
 render();
