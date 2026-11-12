@@ -2,8 +2,9 @@
 
 import { chordsFound, runChecks } from './checks.js';
 import { FORM_LABELS } from './form.js';
+import { QuizView } from './quiz.js';
 import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js';
-import { COURSE, lessonNeighbours } from './course.js';
+import { COURSE, courseLessons, lessonNeighbours } from './course.js';
 import { analyseMidi, projectToMidi, readMidi } from './midi.js';
 import { renderChecks, renderMidiAnalysis } from './panels.js';
 import { newProject, normalizeProject, setBars } from './project.js';
@@ -15,7 +16,7 @@ import { getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress
 const $ = (sel) => document.querySelector(sel);
 const params = new URLSearchParams(location.search);
 
-let lesson = findLesson(params.get('lesson')) || LESSONS[0];
+let lesson = findLesson(params.get('lesson')) || courseLessons()[0] || LESSONS[0];
 let exercise = null;
 let feedback = null; // when viewing a teacher's feedback link
 const attachments = {}; // exerciseId -> { midi: [{fileName, size, bytes, parsed}], audio: {fileName, size, type, bytes, url} }
@@ -138,6 +139,7 @@ function selectExercise(id, { project = null, fromFeedback = false } = {}) {
   updateMelodyGate(p, { initial: true });
   renderListenBox();
   renderFormPanel();
+  renderQuiz();
 
   $('#check-results').replaceChildren();
   $('#submit-status').replaceChildren();
@@ -158,6 +160,26 @@ $('#reset-btn').addEventListener('click', () => {
   store.remove(answersKey(exercise));
   selectExercise(exercise.id);
 });
+
+// ---------- Quick-fire practice ----------
+
+let quizView = null;
+function renderQuiz() {
+  quizView?.destroy();
+  quizView = null;
+  if (!exercise.quiz) { $('#quiz-panel').replaceChildren(); return; }
+  quizView = new QuizView($('#quiz-panel'), {
+    quiz: exercise.quiz,
+    player: ws.player,
+    best: answers.quiz?.total ? { best: answers.quiz.best, total: answers.quiz.total } : null,
+    onResult: (correct, total) => {
+      const prev = answers.quiz || { best: 0, rounds: 0 };
+      answers.quiz = { best: Math.max(prev.best || 0, correct), last: correct, total, rounds: (prev.rounds || 0) + 1 };
+      saveAnswers();
+      check();
+    },
+  });
+}
 
 // ---------- Listening clip ----------
 
@@ -498,7 +520,7 @@ function buildSubmission({ withFiles }) {
     project: ws.getProject(),
     checks: results,
     attachments: files,
-    answers: exercise.form?.answer || exercise.patternChoice || exercise.sections ? answers : null,
+    answers: exercise.form?.answer || exercise.patternChoice || exercise.sections || exercise.quiz ? answers : null,
   });
 }
 

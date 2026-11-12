@@ -81,7 +81,7 @@ await test('inversions and slash chords', async () => {
 });
 
 await test('Sigur Rós chord loop: E | E/D | A/C# | A', () => {
-  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-pattern-compose');
+  const e = LESSONS.find((l) => l.id === 'listen-form-1').exercises.find((x) => x.id === 'l2-pattern-compose');
   const p = newProject({ key: 'E', mode: 'major', bars: 4, progression: e.chordTemplate.progression });
   const infos = chordEvents(p).map((ev) => chordInfo('E', 'major', ev.chord));
   assertEq(infos.map((i) => i.symbol), ['E', 'E/D', 'A/C#', 'A']);
@@ -190,7 +190,7 @@ await test('submission + link packing', async () => {
 
 await test('form: phrase comparison + Ode to Joy analysis', async () => {
   const { comparePhrases, phraseNotes } = await import('./form.js');
-  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-form-analyse');
+  const e = LESSONS.find((l) => l.id === 'listen-form-1').exercises.find((x) => x.id === 'l2-form-analyse');
   const p = newProject(e.start);
   const ph = [0, 1, 2, 3].map((i) => phraseNotes(p, i, 4));
   const c1 = comparePhrases(ph[0], ph[1]);
@@ -206,7 +206,7 @@ await test('form: phrase comparison + Ode to Joy analysis', async () => {
 });
 
 await test('form: composing A A′ B A′', () => {
-  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-form-compose');
+  const e = LESSONS.find((l) => l.id === 'listen-form-1').exercises.find((x) => x.id === 'l2-form-compose');
   const A = [q(0, 1), q(2, 3), q(4, 5), q(6, 3), q(8, 2), q(10, 7, 2, -1), q(12, 5, 4, -1)];
   const Ap = [q(16, 1), q(18, 3), q(20, 5), q(22, 3), q(24, 2), q(26, 2), q(28, 1, 4)];
   const B = [q(32, 4, 1), q(33, 5, 1), q(34, 6, 4), q(38, 4, 2), q(40, 5, 6), q(46, 7, 2, -1)];
@@ -222,7 +222,7 @@ await test('form: composing A A′ B A′', () => {
 
 await test('listening: key, chords by bar, melody unlock', async () => {
   const { chordsFound } = await import('./checks.js');
-  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-listen');
+  const e = LESSONS.find((l) => l.id === 'listen-form-1').exercises.find((x) => x.id === 'l2-listen');
   const wrongKey = newProject({ key: 'C', bars: 4, progression: [1, 6, 2, [2, 5]] });
   assert(!chordsFound(e, wrongKey), 'right chords in the wrong key stay locked');
   const half = newProject({ key: 'Bb', bars: 4, progression: [1, 6, 4, 4] });
@@ -233,7 +233,7 @@ await test('listening: key, chords by bar, melody unlock', async () => {
 
 await test('Bohemian: split last bar (Cm then F)', async () => {
   const { chordsFound } = await import('./checks.js');
-  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-listen');
+  const e = LESSONS.find((l) => l.id === 'listen-form-1').exercises.find((x) => x.id === 'l2-listen');
   const right = newProject({ key: 'Bb', bars: 4, progression: [1, 6, 2, [2, 5]] });
   assert(chordsFound(e, right), 'Bb Gm Cm Cm-F should be right');
   const noSplit = newProject({ key: 'Bb', bars: 4, progression: [1, 6, 2, 5] });
@@ -242,7 +242,7 @@ await test('Bohemian: split last bar (Cm then F)', async () => {
 });
 
 await test('Sigur Rós: compose in a chosen pattern', () => {
-  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-pattern-compose');
+  const e = LESSONS.find((l) => l.id === 'listen-form-1').exercises.find((x) => x.id === 'l2-pattern-compose');
   const q = (start, deg, len = 2, oct = 0) => ({ start, len, deg, oct });
   const bar = (b, notes) => notes.map(([st, deg, len = 2]) => q(b * 8 + st, deg, len));
   // Pattern D G D G, one bar per phrase.
@@ -258,7 +258,7 @@ await test('Sigur Rós: compose in a chosen pattern', () => {
 });
 
 await test('Sigur Rós: labelling sections, any consistent letters', () => {
-  const e = LESSONS[1].exercises.find((x) => x.id === 'l2-sigur-analyse');
+  const e = LESSONS.find((l) => l.id === 'listen-form-1').exercises.find((x) => x.id === 'l2-sigur-analyse');
   const teacher = e.sections.map((s) => s.split(' '));
   assert(runChecks(e, null, { answers: { sectionLabels: teacher } })[0].pass, 'teacher answer passes');
   // Same structure with different letters (A<->D swapped everywhere) still passes.
@@ -274,6 +274,45 @@ await test('Sigur Rós: labelling sections, any consistent letters', () => {
   const noPrime = teacher.map((sec) => sec.map((l) => l.replace('′', '')));
   const r2 = runChecks(e, null, { answers: { sectionLabels: noPrime } })[0];
   assert(!r2.pass && r2.detail.includes('section 1'), r2.detail);
+});
+
+await test('quiz: every question type makes valid questions', async () => {
+  const { QUIZ_TYPES } = await import('./quiz.js');
+  const mod = await import('./quiz.js');
+  // Generate many questions of each type through a quiz with a fake root and player.
+  const root = document.createElement('div');
+  for (const type of QUIZ_TYPES) {
+    const view = new mod.QuizView(root, { quiz: { type, count: 40, pass: 1 }, player: null });
+    view.start();
+    for (const q of view.questions) {
+      assert(q.text, `${type}: no text`);
+      if (q.choices) assert(q.choices.includes(q.answer) && new Set(q.choices).size === q.choices.length, `${type}: bad choices ${JSON.stringify(q)}`);
+      if (q.clickMidi != null) assert(q.clickMidi >= 48 && q.clickMidi <= 83, `${type}: target off the keyboard ${q.clickMidi}`);
+      if (q.sequence) assert(q.sequence.length === 8 && q.sequence[7] - q.sequence[0] === 12 && q.sequence.every((m) => m >= 48 && m <= 83), `${type}: bad scale`);
+      if (type === 'spot-mistake') assert(q.marks.includes(q.clickMidi) && q.marks.every((m, i) => i === 0 || m > q.marks[i - 1]), `${type}: bad mistake`);
+      if (!q.choices && q.clickMidi == null && q.clickPc == null && !q.sequence) throw new Error(`${type}: no way to answer`);
+    }
+    view.destroy();
+  }
+});
+
+await test('quiz score and steps-and-3rds checks', () => {
+  const quizEx = LESSONS.find((l) => l.id === 'mt-01-pitch').exercises[0];
+  assert(!runChecks(quizEx, null, {})[0].pass, 'not played yet fails');
+  assert(runChecks(quizEx, null, { answers: { quiz: { best: 8, total: 10 } } })[0].pass, '8/10 passes');
+  assert(!runChecks(quizEx, null, { answers: { quiz: { best: 7, total: 10 } } })[0].pass, '7/10 fails');
+  const mel = LESSONS.find((l) => l.id === 'mt-03-intervals').exercises[3];
+  const q = (start, deg, len = 2) => ({ start, len, deg, oct: 0 });
+  const good = newProject({ key: 'C', bars: 4, melody: [q(0, 1), q(2, 2), q(4, 3), q(6, 5), q(8, 4), q(10, 2), q(12, 3), q(16, 2), q(24, 1, 8)] });
+  assert(runChecks(mel, good).every((r) => r.pass), JSON.stringify(runChecks(mel, good)));
+  const leap = newProject({ key: 'C', bars: 4, melody: [q(0, 1), q(2, 5), q(4, 3), q(8, 2), q(10, 3), q(16, 2), q(18, 3), q(24, 1, 8)] });
+  const r = runChecks(mel, leap).find((x) => x.label.includes('steps and 3rds'));
+  assert(!r.pass && r.detail.includes('bar 1'), r.detail);
+});
+
+await test('course order: Foundations first', async () => {
+  const { courseLessons } = await import('./course.js');
+  assertEq(courseLessons().map((l) => l.id).slice(0, 4), ['mt-01-pitch', 'mt-02-keyboard', 'mt-03-intervals', 'mt-04-major-scale']);
 });
 
 await test('lesson 1 is unchanged', () => {

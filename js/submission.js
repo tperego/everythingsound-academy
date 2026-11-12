@@ -24,6 +24,10 @@ export function parseAnswers(a) {
     samePitch: arr(a.samePitch).map(Boolean),
     pattern,
     phraseBars: a.phraseBars === 2 ? 2 : 1,
+    // Quick-fire practice: best score so far.
+    quiz: a.quiz && typeof a.quiz === 'object'
+      ? { best: Math.max(0, Math.min(100, Number(a.quiz.best) || 0)), last: Math.max(0, Math.min(100, Number(a.quiz.last) || 0)), total: Math.max(0, Math.min(100, Number(a.quiz.total) || 0)), rounds: Math.max(0, Math.min(10000, Number(a.quiz.rounds) || 0)) }
+      : null,
     // Letters per section for whole-song labelling: [['A','B',…], …]
     sectionLabels: arr(a.sectionLabels).map((sec) => arr(sec).map((v) => (typeof v === 'string' && /^[A-Z]′?$/.test(v) ? v : ''))),
   };

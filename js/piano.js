@@ -62,16 +62,20 @@ export function keyboardSvg({ low = 36, high = 88, marks = new Map(), whiteW = 2
   };
   whites.forEach((m, i) => {
     const x = i * whiteW;
-    svg.append(s('rect', { x: x + 0.5, y: 0.5, width: whiteW - 1, height: height - 1, rx: 3, class: cls(m, 'wk') }));
+    svg.append(s('rect', { x: x + 0.5, y: 0.5, width: whiteW - 1, height: height - 1, rx: 3, class: cls(m, 'wk'), 'data-midi': m }));
     if (labels && m % 12 === 0 && !marks.get(m)) svg.append(s('text', { x: x + whiteW / 2, y: height - 6, class: 'clabel', 'font-size': Math.max(7, whiteW * 0.38) }, noteName(m)));
     fingerBadge(m, x + whiteW / 2, height - whiteW * 0.55, whiteW * 0.36);
+    const lab = marks.get(m)?.label;
+    if (lab) svg.append(s('text', { x: x + whiteW / 2, y: height - 8, class: 'klabel', 'font-size': Math.max(9, whiteW * 0.42) }, lab));
   });
   let wi = 0;
   for (let m = low; m <= high; m++) {
     if (!isBlack(m)) { wi++; continue; }
     const x = wi * whiteW - bw / 2;
-    svg.append(s('rect', { x, y: 0, width: bw, height: bh, rx: 2, class: cls(m, 'bk') }));
+    svg.append(s('rect', { x, y: 0, width: bw, height: bh, rx: 2, class: cls(m, 'bk'), 'data-midi': m }));
     fingerBadge(m, x + bw / 2, bh - bw * 0.7, bw * 0.42);
+    const lab = marks.get(m)?.label;
+    if (lab) svg.append(s('text', { x: x + bw / 2, y: bh - 6, class: 'klabel on-black', 'font-size': Math.max(8, bw * 0.5) }, lab));
   }
   return svg;
 }

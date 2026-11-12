@@ -12,8 +12,13 @@ export const COURSE = {
     'Learn music theory by doing it. Each lesson has a short video and exercises you play, build and compose in the browser, with instant feedback where there is a right answer and personal feedback from your teacher where there isn’t.',
   modules: [
     {
-      title: 'Sample lessons from class',
-      intro: 'The two lessons we used in class. The full course lessons will appear here, step by step.',
+      title: 'Foundations',
+      intro: 'Pitch, the keyboard, intervals and the major scale: the building blocks for everything that follows.',
+      lessons: ['mt-01-pitch', 'mt-02-keyboard', 'mt-03-intervals', 'mt-04-major-scale'],
+    },
+    {
+      title: 'From class: chords, listening and form',
+      intro: 'The lessons we used in class. More modules will appear here, step by step.',
       lessons: ['progressions-1', 'listen-form-1'],
     },
   ],

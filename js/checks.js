@@ -170,6 +170,27 @@ const CHECKS = {
     };
   },
 
+  // Quick-fire practice: the best round so far.
+  'quiz-score'({ min = 8 }, p, ctx) {
+    const q = ctx.answers?.quiz;
+    if (!q?.total) return { label: `Score at least ${min} in the practice round`, pass: false, detail: 'Press Start to play a round.' };
+    return { label: `Score at least ${min} out of ${q.total}`, pass: q.best >= min, detail: `Best score: ${q.best} / ${q.total}${q.rounds ? ` · ${q.rounds} round${q.rounds === 1 ? '' : 's'} played` : ''}` };
+  },
+
+  // A melody that moves only by steps and small leaps (e.g. "steps and 3rds only").
+  'melody-intervals'({ maxSteps = 2 }, p) {
+    const notes = [...p.melody].sort((a, b) => a.start - b.start);
+    if (notes.length < 2) return { label: 'The melody moves only by steps and 3rds', pass: false, detail: 'Write a melody first.' };
+    const idx = (n) => n.oct * 7 + n.deg;
+    const leaps = [];
+    for (let i = 1; i < notes.length; i++) if (Math.abs(idx(notes[i]) - idx(notes[i - 1])) > maxSteps) leaps.push(Math.floor(notes[i].start / 8) + 1);
+    return {
+      label: maxSteps === 2 ? 'The melody moves only by steps and 3rds' : `No leaps bigger than ${maxSteps} scale steps`,
+      pass: leaps.length === 0,
+      detail: leaps.length ? `Too big a leap in bar ${[...new Set(leaps)].join(', ')}.` : '',
+    };
+  },
+
   // Labelling a whole song section by section (e.g. the vocal phrases of a recording).
   // Students may use different letters from the teacher, as long as they use them consistently:
   // the same idea must always get the same letter, and a prime (′) must match a prime.

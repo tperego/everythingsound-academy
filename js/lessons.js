@@ -120,6 +120,144 @@ export const LESSONS = [
   },
 ];
 
+// ---------- Module 1 · Foundations ----------
+
+const quizEx = (id, title, type, brief, { count = 10, pass = 8, options = {} } = {}) => ({
+  id, title, kind: 'quiz', noComposer: true, brief,
+  start: { key: 'C', mode: 'major', bpm: 90, bars: 4 },
+  quiz: { type, count, pass, options },
+  checks: [{ type: 'quiz-score', min: pass }],
+  rubric: [],
+});
+
+LESSONS.push(
+  {
+    id: 'mt-01-pitch',
+    course: 'Music Theory · Foundations',
+    title: 'Pitch, tones and semitones',
+    youtubeId: 'r5UU6ODpl5Y',
+    intro: 'How high or low a note is, and the two smallest distances in Western music: the semitone and the tone.',
+    exercises: [
+      quizEx('mt01-higher-lower', '1 · Higher or lower?', 'higher-lower', [
+        'Listen to two notes. Is the second one higher or lower?',
+        'Use ▶ Play again as often as you like. Get 8 out of 10 to pass.',
+      ]),
+      quizEx('mt01-tone-semitone', '2 · Tone or semitone?', 'tone-semitone', [
+        'Two keys light up and play. Are they a semitone apart (next-door keys) or a tone (one key in between)?',
+        'Look and listen: a semitone sounds tighter, more “squeezed”.',
+      ]),
+      quizEx('mt01-count', '3 · Count the semitones', 'count-semitones', [
+        'Two keys light up. Count the semitones from the lower to the higher one: every key counts, black and white.',
+      ]),
+    ],
+  },
+  {
+    id: 'mt-02-keyboard',
+    course: 'Music Theory · Foundations',
+    title: 'The piano keyboard',
+    youtubeId: '9kiI2B6duvQ',
+    intro: 'How the keyboard is built: the pattern of black keys, the names of every key, and where the semitones are.',
+    exercises: [
+      quizEx('mt02-find-key', '1 · Find the key', 'find-key', [
+        'Click any key with the name shown. Every octave counts.',
+        'Tip: C sits just left of the group of two black keys, F just left of the group of three.',
+      ]),
+      quizEx('mt02-black-keys', '2 · Name the black key', 'name-black-key', [
+        'A black key has two names: a ♯ name and a ♭ name. Choose the right pair.',
+      ]),
+      quizEx('mt02-steps', '3 · A tone or semitone away', 'semitone-step', [
+        'Click the key a tone or a semitone above or below the one shown.',
+        'Watch out for E–F and B–C: they are semitones with no black key between them.',
+      ]),
+    ],
+  },
+  {
+    id: 'mt-03-intervals',
+    course: 'Music Theory · Foundations',
+    title: 'Intervals',
+    youtubeId: 'tpy1MFZKAV0',
+    intro: 'Naming the distance between two notes: seconds, thirds, fourths, fifths and the octave, by eye and by ear.',
+    exercises: [
+      quizEx('mt03-name', '1 · Name the interval', 'name-interval', [
+        'Two keys light up and play. Name the interval between them.',
+        'Count semitones if you need to: minor 2nd = 1, major 2nd = 2, minor 3rd = 3, major 3rd = 4, perfect 4th = 5, perfect 5th = 7, octave = 12.',
+      ]),
+      quizEx('mt03-build', '2 · Build the interval', 'build-interval', [
+        'Click the key that makes the interval asked for, above the note shown.',
+      ]),
+      quizEx('mt03-hear', '3 · Hear the interval', 'hear-interval', [
+        'Listen to two notes and choose the interval: major 2nd, major 3rd, perfect 5th or octave.',
+        'Tip: link each one to a song you know.',
+      ], { pass: 7 }),
+      {
+        id: 'mt03-melody',
+        title: '4 · Write a melody with steps and 3rds',
+        kind: 'creative',
+        brief: [
+          'Write a 4-bar melody in C major using only steps (2nds) and 3rds: no bigger leaps.',
+          'Click in the grid to add notes, drag to make them longer. Press Play to hear it.',
+          'End on C (degree 1). Check, then submit it to your teacher.',
+        ],
+        start: { key: 'C', mode: 'major', bpm: 90, bars: 4 },
+        lock: { key: true, bars: true },
+        checks: [
+          { type: 'melody-fills', minNotes: 8 },
+          { type: 'melody-intervals', maxSteps: 2 },
+          { type: 'melody-ends-on-tonic' },
+        ],
+        rubric: [
+          { label: 'Uses steps and 3rds well', max: 5 },
+          { label: 'Shape: it goes somewhere', max: 5 },
+          { label: 'Rhythm and musicality', max: 5 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'mt-04-major-scale',
+    course: 'Music Theory · Foundations',
+    title: 'The major scale',
+    youtubeId: 'v1_RLraa6ug',
+    intro: 'The pattern behind every major scale, T–T–S–T–T–T–S, and how to build it from any note.',
+    exercises: [
+      quizEx('mt04-build', '1 · Build the scale', 'build-scale', [
+        'Click the 8 notes of the major scale asked for, from the keynote up to the next one.',
+        'As you click, the keys show T (tone) or S (semitone) from the note before. Follow T–T–S–T–T–T–S.',
+      ], { count: 6, pass: 5 }),
+      quizEx('mt04-mistake', '2 · Spot the mistake', 'spot-mistake', [
+        'One note of this major scale is wrong. Click it.',
+        'Listen too: the wrong note sticks out.',
+      ], { count: 8, pass: 6 }),
+      quizEx('mt04-degrees', '3 · Scale degrees', 'scale-degree', [
+        'Which note is degree 2, 3, 4… of the major scale asked for?',
+      ]),
+      {
+        id: 'mt04-melody',
+        title: '4 · An 8-bar melody in a major key',
+        kind: 'creative',
+        brief: [
+          'Choose any major key in the Key menu and write an 8-bar melody in it.',
+          'The grid only offers the notes of your scale, so every note is in the key. Make it sing: steps, a few leaps, a high point.',
+          'End on the keynote (degree 1). Turn on Piano to see your scale on the keyboard. Check, then submit.',
+        ],
+        start: { key: 'G', mode: 'major', bpm: 96, bars: 8 },
+        lock: { bars: true },
+        checks: [
+          { type: 'melody-fills', minNotes: 12 },
+          { type: 'melody-ends-on-tonic' },
+          { type: 'melody-range', maxRows: 10 },
+        ],
+        rubric: [
+          { label: 'Melodic shape and a high point', max: 5 },
+          { label: 'Rhythm and phrasing', max: 5 },
+          { label: 'Ending', max: 5 },
+          { label: 'Overall musicality', max: 5 },
+        ],
+      },
+    ],
+  },
+);
+
 // ---------- Lesson 2 ----------
 
 // The melodic patterns the class identified in the vocal parts of Sigur Rós, "Svefn-g-englar".
@@ -300,4 +438,5 @@ export const KIND_LABELS = {
   daw: 'DAW project · marked by your teacher',
   listen: 'Listening · chords checked, melody marked by your teacher',
   form: 'Analysis · checked instantly',
+  quiz: 'Quick-fire practice · checked instantly',
 };

@@ -483,3 +483,36 @@ a.btn { text-decoration: none; display: inline-block; }
 .other-ways summary { cursor: pointer; }
 .mt { margin-top: 16px; }
 #account-widget { gap: 6px; }
+
+/* ---------- Quick-fire practice ---------- */
+.quiz { margin-top: 6px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--grid-bg); }
+.quiz-start { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+.quiz-start h3 { margin: 0; }
+.quiz-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.quiz-bar { flex: 1; height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.quiz-bar span { display: block; height: 100%; background: var(--accent); transition: width 0.3s; }
+.quiz-score { font-weight: 700; color: var(--ok); white-space: nowrap; }
+.quiz-q { font: 700 1.2rem/1.35 Georgia, serif; margin: 6px 0 12px; }
+.quiz-kbd { margin-bottom: 12px; }
+.quiz-kbd .kbd { min-width: 560px; max-width: 760px; }
+.quiz-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.quiz-choice { min-width: 120px; font-weight: 600; padding: 10px 16px; }
+.quiz-choice.right { background: var(--ok); border-color: var(--ok); color: #fff; opacity: 1; }
+.quiz-choice.wrong { background: var(--bad); border-color: var(--bad); color: #fff; opacity: 1; }
+.quiz-feedback { min-height: 1.5em; margin: 8px 0; }
+.quiz-feedback.ok strong { color: var(--ok); }
+.quiz-feedback.bad strong { color: var(--bad); }
+.quiz-end { text-align: center; }
+.quiz-end.passed { border-color: var(--ok); }
+.quiz-end .score-big { font-size: 3rem; margin: 6px 0 10px; }
+.kbd.clickable rect { cursor: pointer; }
+.kbd.clickable rect:hover { opacity: 0.85; }
+.kbd text, .kbd circle { pointer-events: none; }
+.kbd .given { fill: var(--hand-lh); }
+.kbd .pick { fill: var(--hand-rh); }
+.kbd .ok { fill: var(--ok); }
+.kbd .bad { fill: var(--bad); }
+.kbd .step { fill: color-mix(in srgb, var(--accent) 30%, var(--key-white)); }
+.kbd .bk.step { fill: color-mix(in srgb, var(--accent) 55%, var(--key-black)); }
+.kbd .klabel { fill: #fff; font-weight: 800; text-anchor: middle; font-family: system-ui, sans-serif; }
+.kbd .wk:not(.given):not(.pick):not(.ok):not(.bad) + .klabel { fill: #333; }
