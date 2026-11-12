@@ -86,7 +86,11 @@ export function slug(s) {
 
 export function uid() {
   if (crypto.randomUUID) return crypto.randomUUID();
-  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const x = Array.from(b, (v) => v.toString(16).padStart(2, '0')).join('');
+  return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`;
 }
 
 // localStorage can be missing or full (private windows, blocked storage): never let that break the app.

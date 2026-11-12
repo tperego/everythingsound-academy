@@ -4,6 +4,7 @@ import { projectToMidi } from './midi.js';
 import { newProject, normalizeProject } from './project.js';
 import { copyText, downloadBytes, h, pack, slug, store, toast, uid, unpack } from './util.js';
 import { Workspace } from './workspace.js';
+import { deletePiece, listPieces, myProfile, renderAccountWidget, savePiece } from './auth.js';
 
 const $ = (sel) => document.querySelector(sel);
 const KEY = 'es.sandbox.pieces';
@@ -21,9 +22,40 @@ const ws = new Workspace($('#workspace'), {
   },
 });
 
+// Signed in: pieces are also saved to the account (a second after the last change).
+let online = false;
+let sharedOpened = null;
+let uploadTimer = null;
 function save() {
   if (!store.set(KEY, pieces)) toast('Could not save: this browser’s storage is full or blocked.');
   if (current) store.set(CUR, current.id);
+  if (online && current) {
+    clearTimeout(uploadTimer);
+    const piece = current;
+    uploadTimer = setTimeout(() => savePiece(piece).catch((err) => toast(`Not saved online: ${err.message}`)), 1000);
+  }
+}
+
+async function goOnline() {
+  renderAccountWidget($('#account-widget'));
+  const me = await myProfile();
+  if (!me) return;
+  const remote = await listPieces();
+  if (!remote) return;
+  // Merge: the newer version of each piece wins; pieces only on this device are uploaded.
+  const byId = new Map(pieces.map((x) => [x.id, x]));
+  for (const r of remote) {
+    const local = byId.get(r.id);
+    const rp = { id: r.id, title: r.title, updatedAt: r.updated_at, project: normalizeProject(r.project) };
+    if (!local || (r.updated_at || '') > (local.updatedAt || '')) byId.set(r.id, rp);
+  }
+  const remoteIds = new Set(remote.map((r) => r.id));
+  pieces = [...byId.values()].filter((x) => remoteIds.has(x.id) || x.project.chords.some(Boolean) || x.project.melody.length);
+  if (!pieces.length) pieces.push(blankPiece());
+  online = true;
+  for (const x of pieces) if (!remoteIds.has(x.id)) savePiece(x).catch(() => {});
+  $('#save-where').textContent = `Your pieces are saved to your account (${me.full_name || me.email}), so they are there on any computer.`;
+  open(sharedOpened && byId.has(sharedOpened) ? sharedOpened : pieces.find((x) => x.id === current?.id) ? current.id : pieces[0].id);
 }
 
 function blankPiece(title = 'Untitled piece') {
@@ -68,6 +100,7 @@ $('#dup-btn').addEventListener('click', () => {
 
 $('#del-btn').addEventListener('click', () => {
   if (!confirm(`Delete “${current.title}”? This can’t be undone.`)) return;
+  if (online) deletePiece(current.id).catch(() => {});
   pieces = pieces.filter((x) => x.id !== current.id);
   if (!pieces.length) pieces.push(blankPiece());
   open(pieces[0].id);
@@ -100,6 +133,7 @@ $('#share-btn').addEventListener('click', async () => {
       history.replaceState(null, '', 'sandbox.html');
       open(p.id);
       toast('Opened a shared piece as a new copy in your Sandbox.');
+      sharedOpened = p.id;
       return;
     } catch (err) {
       toast('That share link could not be opened: ' + (err.message || err));
@@ -107,4 +141,4 @@ $('#share-btn').addEventListener('click', async () => {
   }
   if (!pieces.length) pieces.push(blankPiece());
   open(store.get(CUR) || pieces[0].id);
-})();
+})().then(() => goOnline()).catch(() => {});

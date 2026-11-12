@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/app.css">
   <script src="https://cdn.jsdelivr.net/npm/tone@15.0.4/build/Tone.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/abcjs/6.4.4/abcjs-basic-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -15,6 +16,7 @@
     <span class="crumb">Sandbox</span>
     <span class="spacer"></span>
     <a class="btn ghost small" href="index.html">Course</a>
+    <span id="account-widget" class="row"></span>
   </header>
 
   <main class="page">
@@ -32,7 +34,7 @@
           <button type="button" class="btn ghost small" id="del-btn">Delete</button>
         </div>
       </div>
-      <p class="muted small">Everything is unlocked. Pick chords from the palette (or type 1–7), set the bass for inversions, draw a melody in the grid, and turn on Piano, Staff or Chord sheet. Your pieces are saved in this browser as you work.</p>
+      <p class="muted small">Everything is unlocked. Pick chords from the palette (or type 1–7), set the bass for inversions, draw a melody in the grid, and turn on Piano, Staff or Chord sheet. <span id="save-where">Your pieces are saved in this browser as you work.</span></p>
       <div id="workspace"></div>
     </section>
 

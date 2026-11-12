@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/app.css">
   <script src="https://cdn.jsdelivr.net/npm/tone@15.0.4/build/Tone.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/abcjs/6.4.4/abcjs-basic-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -15,8 +16,8 @@
     <span class="crumb" id="crumb"></span>
     <span class="spacer"></span>
     <a class="btn small" href="sandbox.html">Sandbox</a>
-    <label class="student-name">Your name <input id="student-name" type="text" autocomplete="name" placeholder="First and last name"></label>
-    <a class="btn ghost small" href="mark.html">Teacher</a>
+    <label class="student-name" id="name-label">Your name <input id="student-name" type="text" autocomplete="name" placeholder="First and last name"></label>
+    <span id="account-widget" class="row"></span>
   </header>
 
   <div id="feedback-banner" hidden></div>
@@ -60,14 +61,22 @@
 
       <section class="card">
         <h3>Submit to your teacher</h3>
-        <p class="muted">Download your submission file and send it to your teacher, or upload it wherever your course asks. A link is quicker but can’t carry audio or MIDI files.</p>
+        <p class="muted" id="submit-intro">Sign in to send your work straight to your teacher. Their feedback will appear in your profile.</p>
         <label class="field">Message to your teacher <span class="muted">(optional)</span>
           <textarea id="message" rows="3" placeholder="What did you try? Anything you’re unsure about?"></textarea>
         </label>
-        <div class="row">
-          <button type="button" class="btn primary" id="submit-file">Download submission file</button>
-          <button type="button" class="btn" id="submit-link">Copy submission link</button>
+        <div class="row wrap">
+          <button type="button" class="btn primary" id="submit-online">Submit to your teacher</button>
+          <a class="btn primary" id="signin-to-submit" href="account.html" hidden>Sign in to submit</a>
         </div>
+        <details class="other-ways">
+          <summary class="muted small">Other ways to send (file or link)</summary>
+          <p class="muted small">Download a submission file (includes your MIDI and audio) or copy a link (no files), and send it to your teacher yourself.</p>
+          <div class="row wrap">
+            <button type="button" class="btn small" id="submit-file">Download submission file</button>
+            <button type="button" class="btn small" id="submit-link">Copy submission link</button>
+          </div>
+        </details>
         <p class="status" id="submit-status" role="status"></p>
       </section>
     </div>

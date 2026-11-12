@@ -1,0 +1,215 @@
+// Student accounts, online submissions, feedback, progress and Sandbox pieces, via Supabase.
+// The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
+// decide what each signed-in person can read or change.
+
+import { h } from './util.js';
+
+const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
+export const COURSE_ID = 'music-theory';
+const BUCKET = 'attachments';
+
+let client = null;
+/** The Supabase client, or null when the library didn't load (the site then works on this device only). */
+export function sb() {
+  if (!client && window.supabase?.createClient) {
+    client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  }
+  return client;
+}
+
+export async function currentUser() {
+  const c = sb();
+  if (!c) return null;
+  const { data } = await c.auth.getSession();
+  return data.session?.user || null;
+}
+
+let profilePromise = null;
+/** {id, full_name, role} of whoever is signed in, or null. */
+export function myProfile(refresh = false) {
+  if (!profilePromise || refresh) {
+    profilePromise = (async () => {
+      const user = await currentUser();
+      if (!user) return null;
+      const { data, error } = await sb().from('profiles').select('id, full_name, role').eq('id', user.id).single();
+      if (error) return { id: user.id, full_name: user.user_metadata?.full_name || '', role: 'student', email: user.email };
+      return { ...data, email: user.email };
+    })();
+  }
+  return profilePromise;
+}
+
+function friendly(error) {
+  const m = String(error?.message || error || '');
+  if (/database error saving new user|invalid class code/i.test(m)) return 'That class code isn’t right. Check it with your teacher.';
+  if (/invalid login credentials/i.test(m)) return 'Email or password not recognised.';
+  if (/already registered|already been registered/i.test(m)) return 'There is already an account with this email. Sign in instead.';
+  if (/password should be at least/i.test(m)) return 'The password needs at least 8 characters.';
+  if (/rate limit/i.test(m)) return 'Too many attempts. Please wait a few minutes and try again.';
+  return m || 'Something went wrong.';
+}
+
+export async function signUp({ name, email, password, code }) {
+  const c = sb();
+  if (!c) throw new Error('Accounts are unavailable right now. Please reload the page.');
+  const { data, error } = await c.auth.signUp({ email, password, options: { data: { full_name: name, class_code: code } } });
+  if (error) throw new Error(friendly(error));
+  if (!data.session) throw new Error('Account created. Check your email to confirm it, then sign in.');
+  myProfile(true);
+  return data.user;
+}
+
+export async function signIn({ email, password }) {
+  const c = sb();
+  if (!c) throw new Error('Accounts are unavailable right now. Please reload the page.');
+  const { error } = await c.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(friendly(error));
+  myProfile(true);
+}
+
+export async function signOut() {
+  await sb()?.auth.signOut();
+  myProfile(true);
+  // On a shared computer the next person shouldn't see this student's work: it's all in their account anyway.
+  const keep = new Set(['es.views', 'es.view', 'es.hideMarked']);
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('es.') && !keep.has(k)) localStorage.removeItem(k);
+  } catch {
+    /* storage blocked */
+  }
+}
+
+export async function updateMyName(name) {
+  const p = await myProfile();
+  const { error } = await sb().from('profiles').update({ full_name: name.slice(0, 120) }).eq('id', p.id);
+  if (error) throw new Error(friendly(error));
+  myProfile(true);
+}
+
+/** Header: "Sign in" or the student's name with a menu. */
+export async function renderAccountWidget(el) {
+  if (!el) return;
+  const p = await myProfile();
+  if (!p) {
+    el.replaceChildren(h('a', { class: 'btn small primary', href: 'account.html' }, 'Sign in'));
+    return;
+  }
+  el.replaceChildren(
+    h('a', { class: 'btn small', href: 'account.html', title: 'My profile: your work and your teacher’s feedback' }, `👤 ${p.full_name || 'My profile'}`),
+    p.role === 'teacher' ? h('a', { class: 'btn small ghost', href: 'mark.html' }, 'Inbox') : '',
+  );
+}
+
+// ---------- Progress ----------
+
+export async function saveProgress(lessonId, exerciseId, status) {
+  const user = await currentUser();
+  if (!user) return;
+  await sb().from('progress').upsert({ user_id: user.id, lesson_id: lessonId, exercise_id: exerciseId, status, updated_at: new Date().toISOString() });
+}
+
+/** Map of lessonId -> {exerciseId: status}. */
+export async function myProgress() {
+  const user = await currentUser();
+  if (!user) return null;
+  const { data, error } = await sb().from('progress').select('lesson_id, exercise_id, status').eq('user_id', user.id);
+  if (error) return null;
+  const out = {};
+  for (const r of data) (out[r.lesson_id] ||= {})[r.exercise_id] = r.status;
+  return out;
+}
+
+// ---------- Submissions ----------
+
+const safeName = (s) => String(s || 'file').replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 80);
+
+/** files: [{kind, fileName, type, size, bytes}] uploaded privately, then the submission row is created. */
+export async function submitOnline(sub, files = []) {
+  const user = await currentUser();
+  if (!user) throw new Error('Please sign in first.');
+  const folder = `${user.id}/${crypto.randomUUID ? crypto.randomUUID() : Date.now()}`;
+  const attachments = [];
+  for (const f of files) {
+    const path = `${folder}/${safeName(f.fileName)}`;
+    const { error } = await sb().storage.from(BUCKET).upload(path, new Blob([f.bytes], { type: f.type || 'application/octet-stream' }), { contentType: f.type || 'application/octet-stream', upsert: false });
+    if (error) throw new Error(`Uploading ${f.fileName} failed: ${error.message}`);
+    attachments.push({ kind: f.kind, fileName: f.fileName, type: f.type, size: f.size, path });
+  }
+  const { data, error } = await sb().from('submissions').insert({
+    course_id: COURSE_ID,
+    lesson_id: sub.lessonId,
+    exercise_id: sub.exerciseId,
+    exercise_title: sub.exerciseTitle,
+    project: sub.project,
+    answers: sub.answers,
+    checks: sub.checks,
+    message: sub.message || '',
+    attachments,
+  }).select('id').single();
+  if (error) throw new Error(friendly(error));
+  return data.id;
+}
+
+const SUB_FIELDS = 'id, student_id, lesson_id, exercise_id, exercise_title, project, answers, checks, message, attachments, created_at, status, scores, comment, marked_at';
+
+export async function mySubmissions() {
+  const user = await currentUser();
+  if (!user) return [];
+  const { data, error } = await sb().from('submissions').select(SUB_FIELDS).eq('student_id', user.id).order('created_at', { ascending: false });
+  if (error) throw new Error(friendly(error));
+  return data;
+}
+
+export async function getSubmission(id) {
+  const { data, error } = await sb().from('submissions').select(`${SUB_FIELDS}, student:profiles!submissions_student_id_fkey(full_name)`).eq('id', id).single();
+  if (error) throw new Error(friendly(error));
+  return data;
+}
+
+/** Teacher: every submission, newest first, with the student's name. */
+export async function inbox() {
+  const { data, error } = await sb().from('submissions')
+    .select(`${SUB_FIELDS}, student:profiles!submissions_student_id_fkey(full_name)`)
+    .order('created_at', { ascending: false })
+    .limit(500);
+  if (error) throw new Error(friendly(error));
+  return data;
+}
+
+export async function saveFeedback(id, { scores, comment }) {
+  const p = await myProfile();
+  const { error } = await sb().from('submissions').update({
+    status: 'marked', scores, comment, marked_at: new Date().toISOString(), marked_by: p.id,
+  }).eq('id', id);
+  if (error) throw new Error(friendly(error));
+}
+
+export async function downloadAttachment(path) {
+  const { data, error } = await sb().storage.from(BUCKET).download(path);
+  if (error) throw new Error(friendly(error));
+  return new Uint8Array(await data.arrayBuffer());
+}
+
+// ---------- Sandbox pieces ----------
+
+export async function listPieces() {
+  const user = await currentUser();
+  if (!user) return null;
+  const { data, error } = await sb().from('pieces').select('id, title, project, updated_at').eq('user_id', user.id).order('updated_at', { ascending: false });
+  if (error) return null;
+  return data;
+}
+
+export async function savePiece(piece) {
+  const user = await currentUser();
+  if (!user) return;
+  const { error } = await sb().from('pieces').upsert({ id: piece.id, user_id: user.id, title: piece.title, project: piece.project, updated_at: piece.updatedAt || new Date().toISOString() });
+  if (error) throw new Error(friendly(error));
+}
+
+export async function deletePiece(id) {
+  const user = await currentUser();
+  if (!user) return;
+  await sb().from('pieces').delete().eq('id', id);
+}

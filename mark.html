@@ -3,11 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EverythingSound · Marking</title>
+  <title>Marking · EverythingSound Academy</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e8743b'/%3E%3Cpath d='M12 22V9l11-2v13' stroke='white' stroke-width='2.5' fill='none'/%3E%3Ccircle cx='9.5' cy='22' r='3' fill='white'/%3E%3Ccircle cx='20.5' cy='20' r='3' fill='white'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/app.css">
   <script src="https://cdn.jsdelivr.net/npm/tone@15.0.4/build/Tone.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/abcjs/6.4.4/abcjs-basic-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 </head>
 <body class="teacher">
   <header class="topbar">
@@ -15,10 +16,12 @@
     <span class="crumb">Marking</span>
     <span class="spacer"></span>
     <a class="btn ghost small" href="index.html">Course</a>
+    <span id="account-widget" class="row"></span>
   </header>
 
   <main class="mark-layout">
     <aside class="inbox">
+      <div id="cloud-box"></div>
       <label class="dropzone" id="dropzone">
         <input type="file" id="files" multiple accept=".json,application/json">
         <strong>Drop submission files here</strong>
@@ -33,7 +36,7 @@
       <div class="empty">
         <h1>Marking</h1>
         <p>Open a submission to listen to it, see the automatic checks, look at the MIDI a student brought back from their DAW, and score it with the exercise rubric.</p>
-        <p class="muted">Students send you either a <code>.esound.json</code> file, which you drop on the left, or a submission link that opens this page directly.</p>
+        <p class="muted">Signed in as the teacher, students’ online submissions appear on the left. Press “Save feedback” and the student sees it in their profile. Files (<code>.esound.json</code>) and submission links still work too.</p>
       </div>
     </section>
   </main>

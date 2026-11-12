@@ -4,8 +4,10 @@ import { runChecks } from './checks.js';
 import { KIND_LABELS, findExercise } from './lessons.js';
 import { analyseMidi, readMidi } from './midi.js';
 import { renderChecks, renderMidiAnalysis } from './panels.js';
-import { makeFeedback, parseSubmission } from './submission.js';
-import { base64ToBytes, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js';
+import { makeFeedback, parseAnswers, parseSubmission } from './submission.js';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js';
+import { normalizeProject } from './project.js';
+import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js';
 import { Workspace } from './workspace.js';
 import { Player } from './audio.js';
 
@@ -47,15 +49,70 @@ dz.addEventListener('drop', (e) => { e.preventDefault(); addFiles([...e.dataTran
 document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => { if (!dz.contains(e.target)) { e.preventDefault(); addFiles([...e.dataTransfer.files]); } });
 
+let hideMarked = store.get('es.hideMarked', false);
+
 function renderList() {
-  const list = [...subs.values()].sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+  const list = [...subs.values()]
+    .filter((s) => !(hideMarked && (s.status === 'marked' || store.get(marksKey(s.id))?.done) && s.id !== current?.id))
+    .sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
   $('#sub-list').replaceChildren(...list.map((s) => {
     const m = store.get(marksKey(s.id));
+    const marked = s.status === 'marked' || m?.done;
     return h('li', {},
       h('button', { type: 'button', class: `sub-item${current?.id === s.id ? ' on' : ''}`, onclick: () => open(s.id) },
-        h('span', { class: `st ${m?.done ? 'st-submitted' : m ? 'st-tried' : 'st-new'}`, title: m?.done ? 'Marked' : m ? 'Draft' : 'Not marked' }),
-        h('span', { class: 'sub-text' }, h('strong', {}, s.student.name), h('span', { class: 'muted small' }, s.exerciseTitle || s.exerciseId))));
+        h('span', { class: `st ${marked ? 'st-submitted' : m ? 'st-tried' : 'st-new'}`, title: marked ? 'Marked' : m ? 'Draft' : 'Not marked' }),
+        h('span', { class: 'sub-text' }, h('strong', {}, s.student.name),
+          h('span', { class: 'muted small' }, `${s.exerciseTitle || s.exerciseId}${s.submittedAt ? ' · ' + new Date(s.submittedAt).toLocaleDateString() : ''}`))));
   }));
+}
+
+// ---------- Online inbox (teacher account) ----------
+
+function fromRow(r) {
+  return {
+    id: r.id,
+    cloud: true,
+    status: r.status,
+    submittedAt: r.created_at,
+    lessonId: r.lesson_id,
+    exerciseId: r.exercise_id,
+    exerciseTitle: r.exercise_title || '',
+    student: { name: r.student?.full_name || 'Student' },
+    message: r.message || '',
+    project: normalizeProject(r.project),
+    checks: (Array.isArray(r.checks) ? r.checks : []).map((c) => ({ label: String(c?.label || ''), pass: !!c?.pass, detail: String(c?.detail || '') })),
+    attachments: (Array.isArray(r.attachments) ? r.attachments : []).map((a) => ({ kind: a.kind === 'audio' ? 'audio' : 'midi', fileName: String(a.fileName || 'file'), type: String(a.type || ''), size: Number(a.size) || 0, path: String(a.path || '') })),
+    answers: parseAnswers(r.answers),
+    cloudScores: Array.isArray(r.scores) ? r.scores : null,
+    cloudComment: r.comment || '',
+  };
+}
+
+async function loadInbox() {
+  const box = $('#cloud-box');
+  const me = await myProfile();
+  renderAccountWidget($('#account-widget'));
+  if (!me || me.role !== 'teacher') {
+    box.replaceChildren(h('p', { class: 'muted small' }, me
+      ? 'You are signed in as a student. Online submissions are only shown to the teacher account.'
+      : 'Sign in with your teacher account to see students’ online submissions.'),
+      me ? '' : h('a', { class: 'btn small primary', href: 'account.html?next=mark.html' }, 'Sign in'));
+    return;
+  }
+  box.replaceChildren(h('p', { class: 'muted small' }, 'Loading online submissions…'));
+  try {
+    const rows = await inbox();
+    rows.forEach((r) => subs.set(r.id, fromRow(r)));
+    const waiting = rows.filter((r) => r.status !== 'marked').length;
+    box.replaceChildren(
+      h('h3', { class: 'inbox-title' }, `Online: ${waiting} waiting · ${rows.length} in total`),
+      h('div', { class: 'row wrap' },
+        h('button', { type: 'button', class: 'btn small', onclick: loadInbox }, '↻ Refresh'),
+        h('label', { class: 'toggle small' }, h('input', { type: 'checkbox', checked: hideMarked, onchange: (e) => { hideMarked = e.target.checked; store.set('es.hideMarked', hideMarked); renderList(); } }), ' Hide marked')));
+    renderList();
+  } catch (err) {
+    box.replaceChildren(h('p', { class: 'warn' }, `Couldn’t load submissions: ${err.message}`));
+  }
 }
 
 // ---------- Detail ----------
@@ -79,11 +136,25 @@ function midiContext(sub) {
   return { midi: { fileName: midis.map((m) => m.fileName).join(', '), analysis: analyseMidi({ tracks, bpm }, sub.project.key, sub.project.mode) }, errors };
 }
 
-function open(id) {
+async function open(id) {
   const sub = subs.get(id);
   if (!sub) return;
   current = sub;
   renderList();
+  // Online submissions: fetch the attached MIDI/audio from private storage the first time.
+  if (sub.cloud && !sub.filesLoaded) {
+    $('#detail').replaceChildren(h('p', { class: 'muted' }, sub.attachments.length ? 'Loading the attached files…' : 'Loading…'));
+    for (const a of sub.attachments) {
+      try {
+        a.data = bytesToBase64(await downloadAttachment(a.path));
+      } catch (err) {
+        a.error = err.message;
+      }
+    }
+    sub.attachments = sub.attachments.filter((a) => a.data || toast(`${a.fileName}: ${a.error}`));
+    sub.filesLoaded = true;
+    if (current !== sub) return;
+  }
   if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; }
   const { lesson, exercise } = findExercise(sub.lessonId, sub.exerciseId);
   const mctx = midiContext(sub);
@@ -91,7 +162,7 @@ function open(id) {
   const ctx = { midi: mctx.midi, audio: audio ? { fileName: audio.fileName } : null, answers: sub.answers };
   const checks = exercise ? runChecks(exercise, sub.project, ctx) : sub.checks;
   const rubric = exercise?.rubric?.length ? exercise.rubric : [{ label: 'Overall', max: 10 }];
-  const saved = store.get(marksKey(sub.id), {});
+  const saved = store.get(marksKey(sub.id), null) || (sub.cloudScores ? { scores: sub.cloudScores, comment: sub.cloudComment, done: true } : {});
   const scores = rubric.map((r, i) => ({ label: r.label, max: r.max, score: saved.scores?.[i]?.score ?? '' }));
 
   const detail = $('#detail');
@@ -195,8 +266,27 @@ function open(id) {
     includeAuto ? h('div', { class: 'rubric-row' }, h('span', {}, 'Automatic checks'), h('b', {}, `${autoPassed} / ${checks.length}`)) : '',
     h('label', { class: 'field' }, 'Comment for the student', comment),
     h('div', { class: 'row wrap' },
-      h('button', {
+      sub.cloud ? h('button', {
         type: 'button', class: 'btn primary',
+        onclick: async (e) => {
+          e.target.disabled = true;
+          try {
+            await saveFeedback(sub.id, { scores: allScores(), comment: comment.value.trim() });
+            sub.status = 'marked';
+            sub.cloudScores = allScores();
+            sub.cloudComment = comment.value.trim();
+            saved.done = true;
+            persist({ done: true });
+            linkOut.replaceChildren(`Feedback saved. ${sub.student.name} can see it in their profile now.`);
+          } catch (err) {
+            linkOut.replaceChildren(h('p', { class: 'warn' }, `Not saved: ${err.message}`));
+          } finally {
+            e.target.disabled = false;
+          }
+        },
+      }, sub.status === 'marked' ? 'Update feedback' : 'Save feedback') : '',
+      h('button', {
+        type: 'button', class: sub.cloud ? 'btn' : 'btn primary',
         onclick: async () => {
           const url = await feedbackUrl();
           const ok = await copyText(url);
@@ -214,6 +304,8 @@ function open(id) {
 }
 
 // ---------- Start: a submission link opens straight here ----------
+
+loadInbox();
 
 (async () => {
   const s = new URLSearchParams(location.search).get('s');

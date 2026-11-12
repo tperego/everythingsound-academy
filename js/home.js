@@ -1,7 +1,8 @@
 // Course home: modules, lessons, progress, and a way back into where the student left off.
 
 import { COURSE, courseLessons, lessonProgress } from './course.js';
-import { h } from './util.js';
+import { h, store } from './util.js';
+import { myProgress, renderAccountWidget } from './auth.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -10,8 +11,9 @@ $('#course-title').textContent = COURSE.title;
 $('#course-intro').textContent = COURSE.intro;
 
 const lessonUrl = (l) => `lesson.html?lesson=${encodeURIComponent(l.id)}`;
-let n = 0;
 
+function render() {
+let n = 0;
 $('#modules').replaceChildren(...COURSE.modules.map((m, mi) => h('section', { class: 'module' },
   h('div', { class: 'module-head' },
     h('p', { class: 'eyebrow' }, `Module ${mi + 1}`),
@@ -41,3 +43,20 @@ if (next) {
 } else {
   btn.hidden = true;
 }
+}
+
+render();
+
+// Signed in: bring progress from the account (it may come from another computer) and show the account button.
+renderAccountWidget($('#account-widget'));
+myProgress().then((remote) => {
+  if (!remote) return;
+  const rank = { tried: 1, passed: 2, submitted: 3 };
+  for (const [lessonId, ex] of Object.entries(remote)) {
+    const all = store.get(`es.status.${lessonId}`, {});
+    for (const [k, v] of Object.entries(ex)) if ((rank[v] || 0) > (rank[all[k]] || 0)) all[k] = v;
+    store.set(`es.status.${lessonId}`, all);
+  }
+  render();
+  $('#device-note').textContent = 'You are signed in: your progress, submissions and feedback are saved in your profile.';
+}).catch(() => {});

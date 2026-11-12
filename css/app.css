@@ -163,7 +163,7 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-
 .btn.small { padding: 4px 10px; font-size: 0.82rem; }
 .btn.block { display: block; width: 100%; margin: 6px 0; text-align: left; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-input[type="text"], input[type="number"], select, textarea {
+input[type="text"], input[type="number"], input[type="email"], input[type="password"], select, textarea {
   font: inherit; color: var(--ink); background: var(--surface);
   border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px;
 }
@@ -466,3 +466,20 @@ a.lesson-link { text-decoration: none; }
 @media (max-width: 600px) { .piece-title input { width: 160px; } .hero h1 { font-size: 1.8rem; } }
 
 a.btn { text-decoration: none; display: inline-block; }
+
+/* ---------- Accounts ---------- */
+.auth-card { max-width: 480px; margin: 20px auto; }
+.auth-form { display: grid; gap: 4px; margin-top: 12px; }
+.auth-form input { width: 100%; }
+.auth-form .btn { margin-top: 8px; justify-self: start; }
+.profile-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; padding: 20px 0 6px; }
+.sub-cards { display: grid; gap: 10px; }
+.sub-card { border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface); }
+.sub-card.marked { border-left-color: var(--ok); }
+.sub-card-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 6px; }
+.score-pill { background: var(--ok); color: #fff; font-weight: 800; padding: 3px 10px; border-radius: 99px; white-space: nowrap; }
+.feedback.pending { border-color: var(--fn-PD); }
+.other-ways { margin-top: 10px; }
+.other-ways summary { cursor: pointer; }
+.mt { margin-top: 16px; }
+#account-widget { gap: 6px; }

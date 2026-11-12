@@ -10,6 +10,7 @@ import { newProject, normalizeProject, setBars } from './project.js';
 import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js';
 import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js';
 import { Workspace } from './workspace.js';
+import { getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js';
 
 const $ = (sel) => document.querySelector(sel);
 const params = new URLSearchParams(location.search);
@@ -30,6 +31,7 @@ function setStatus(exId, status) {
   if ((rank[status] || 0) >= (rank[all[exId]] || 0)) {
     all[exId] = status;
     store.set(`es.status.${lesson.id}`, all);
+    saveProgress(lesson.id, exId, status).catch(() => {});
   }
   renderTabs();
 }
@@ -473,7 +475,7 @@ nameInput.addEventListener('input', () => store.set('es.studentName', nameInput.
 const studentName = () => nameInput.value.trim();
 
 function requireName() {
-  if (studentName()) return true;
+  if (studentName() || profile) return true;
   toast('Add your name at the top first.');
   nameInput.focus();
   return false;
@@ -491,7 +493,7 @@ function buildSubmission({ withFiles }) {
     lessonId: lesson.id,
     exerciseId: exercise.id,
     exerciseTitle: exercise.title,
-    student: studentName(),
+    student: profile?.full_name || studentName(),
     message: $('#message').value.trim(),
     project: ws.getProject(),
     checks: results,
@@ -499,6 +501,56 @@ function buildSubmission({ withFiles }) {
     answers: exercise.form?.answer || exercise.patternChoice || exercise.sections ? answers : null,
   });
 }
+
+// Signed in: submit straight to the teacher's inbox (files are uploaded privately).
+let profile = null;
+async function setupAccount() {
+  profile = await myProfile();
+  renderAccountWidget($('#account-widget'));
+  const signed = !!profile;
+  $('#name-label').hidden = signed;
+  $('#submit-online').hidden = !signed;
+  const link = $('#signin-to-submit');
+  link.hidden = signed;
+  link.href = `account.html?next=${encodeURIComponent(`lesson.html?lesson=${lesson.id}&ex=${exercise?.id || ''}`)}`;
+  $('#submit-intro').textContent = signed
+    ? `Signed in as ${profile.full_name || profile.email}. Your work goes straight to your teacher, and their feedback appears in your profile.`
+    : 'Sign in to send your work straight to your teacher. Their feedback will appear in your profile.';
+  if (signed) {
+    // Bring this lesson's progress from the account (another device may have done more).
+    const remote = (await myProgress())?.[lesson.id];
+    if (remote) {
+      const all = statusAll();
+      const rank = { tried: 1, passed: 2, submitted: 3 };
+      for (const [k, v] of Object.entries(remote)) if ((rank[v] || 0) > (rank[all[k]] || 0)) all[k] = v;
+      store.set(`es.status.${lesson.id}`, all);
+      renderTabs();
+    }
+  }
+}
+
+$('#submit-online').addEventListener('click', async () => {
+  const btn = $('#submit-online');
+  const sub = buildSubmission({ withFiles: false });
+  const a = attachments[exercise.id] || {};
+  const files = [
+    ...(a.midi || []).map((m) => ({ kind: 'midi', fileName: m.fileName, type: 'audio/midi', size: m.size, bytes: m.bytes })),
+    ...(a.audio ? [{ kind: 'audio', fileName: a.audio.fileName, type: a.audio.type, size: a.audio.size, bytes: a.audio.bytes }] : []),
+  ];
+  btn.disabled = true;
+  $('#submit-status').replaceChildren(files.length ? 'Sending your work and uploading your files…' : 'Sending…');
+  try {
+    const id = await submitOnline(sub, files);
+    setStatus(exercise.id, 'submitted');
+    $('#submit-status').replaceChildren('Sent! ',
+      h('a', { href: `lesson.html?lesson=${lesson.id}&ex=${exercise.id}&submission=${id}` }, 'See what you sent'),
+      ' · ', h('a', { href: 'account.html' }, 'My profile'));
+  } catch (err) {
+    $('#submit-status').replaceChildren(`Not sent: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 $('#submit-file').addEventListener('click', () => {
   if (!requireName()) return;
@@ -531,18 +583,21 @@ function closeFeedback(reload = true) {
   document.body.classList.remove('viewing-feedback');
   const u = new URL(location.href);
   u.searchParams.delete('feedback');
+  u.searchParams.delete('submission');
   history.replaceState(null, '', u);
   if (reload && exercise) selectExercise(exercise.id);
 }
 
-function showFeedback(fb) {
+function showFeedback(fb, { pending = false } = {}) {
   const total = fb.scores.reduce((s, x) => s + x.score, 0);
   const max = fb.scores.reduce((s, x) => s + x.max, 0);
   const banner = $('#feedback-banner');
-  banner.replaceChildren(h('div', { class: 'feedback' },
+  banner.replaceChildren(h('div', { class: `feedback${pending ? ' pending' : ''}` },
     h('div', { class: 'fb-head' },
-      h('div', {}, h('p', { class: 'eyebrow' }, 'Feedback from your teacher'), h('h2', {}, fb.exerciseTitle || 'Your submission'),
-        h('p', { class: 'muted' }, `For ${fb.student.name || 'you'}${fb.markedAt ? ` · marked ${new Date(fb.markedAt).toLocaleDateString()}` : ''}. Your submitted piece is loaded below. Press Play to hear it.`)),
+      h('div', {}, h('p', { class: 'eyebrow' }, pending ? 'Your submission' : 'Feedback from your teacher'), h('h2', {}, fb.exerciseTitle || 'Your submission'),
+        h('p', { class: 'muted' }, pending
+          ? `Sent${fb.sentAt ? ` on ${new Date(fb.sentAt).toLocaleDateString()}` : ''}. Your teacher hasn’t marked it yet. This is the piece you sent: press Play to hear it.`
+          : `For ${fb.student.name || 'you'}${fb.markedAt ? ` · marked ${new Date(fb.markedAt).toLocaleDateString()}` : ''}. Your submitted piece is loaded below. Press Play to hear it.`)),
       max ? h('div', { class: 'score-big' }, h('span', {}, String(total)), h('small', {}, `/ ${max}`)) : ''),
     fb.scores.length ? h('ul', { class: 'score-list' }, fb.scores.map((s) => h('li', {}, h('span', {}, s.label), h('b', {}, `${s.score} / ${s.max}`)))) : '',
     fb.comment ? h('blockquote', { class: 'comment' }, fb.comment) : '',
@@ -557,6 +612,32 @@ function showFeedback(fb) {
 
 async function start() {
   renderLesson();
+  setupAccount().catch(() => {});
+  // From "My profile": a submission stored in the account, with the teacher's feedback if it's marked.
+  const subId = params.get('submission');
+  if (subId) {
+    try {
+      const row = await getSubmission(subId);
+      const found = findExercise(row.lesson_id, row.exercise_id);
+      if (found.lesson) { lesson = found.lesson; renderLesson(); }
+      const fb = {
+        exerciseTitle: row.exercise_title,
+        student: { name: row.student?.full_name || '' },
+        markedAt: row.marked_at,
+        sentAt: row.created_at,
+        scores: (Array.isArray(row.scores) ? row.scores : []).map((s) => ({ label: String(s.label || ''), score: Number(s.score) || 0, max: Number(s.max) || 0 })),
+        comment: row.comment || '',
+        project: normalizeProject(row.project),
+        answers: parseAnswers(row.answers),
+      };
+      feedback = fb;
+      selectExercise(found.exercise?.id || lesson.exercises[0].id, { project: fb.project, fromFeedback: true });
+      showFeedback(fb, { pending: row.status !== 'marked' });
+      return;
+    } catch (err) {
+      toast('That submission could not be opened: ' + (err.message || err));
+    }
+  }
   const fbParam = params.get('feedback');
   if (fbParam) {
     try {
