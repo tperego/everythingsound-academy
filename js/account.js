@@ -1,9 +1,9 @@
 // Account page: sign in / create account, then "My profile": progress, submissions and the teacher's feedback.
 
-import { listPieces, myProfile, myProgress, mySubmissions, signIn, signOut, signUp, updateMyName } from './auth.js';
-import { COURSE, courseLessons } from './course.js';
-import { findExercise } from './lessons.js';
-import { h, store, toast } from './util.js';
+import { listPieces, myProfile, myProgress, mySubmissions, renderAccountWidget, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611120105';
+import { COURSE, courseLessons } from './course.js?v=202611120105';
+import { findExercise } from './lessons.js?v=202611120105';
+import { h, store, toast } from './util.js?v=202611120105';
 
 const main = document.getElementById('main');
 const next = new URLSearchParams(location.search).get('next');
@@ -16,6 +16,7 @@ function goNext() {
 
 async function render() {
   const p = await myProfile();
+  renderAccountWidget(document.getElementById('account-widget'));
   if (!p) renderSignIn();
   else renderProfile(p);
 }

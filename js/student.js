@@ -1,17 +1,17 @@
 // Student lesson page: video, exercises, composer, checks, DAW round-trip, submission, feedback.
 
-import { chordsFound, runChecks } from './checks.js';
-import { FORM_LABELS } from './form.js';
-import { QuizView } from './quiz.js';
-import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js';
-import { COURSE, courseLessons, lessonNeighbours } from './course.js';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js';
-import { renderChecks, renderMidiAnalysis } from './panels.js';
-import { newProject, normalizeProject, setBars } from './project.js';
-import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js';
-import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js';
-import { Workspace } from './workspace.js';
-import { getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js';
+import { chordsFound, runChecks } from './checks.js?v=202611120105';
+import { FORM_LABELS } from './form.js?v=202611120105';
+import { QuizView } from './quiz.js?v=202611120105';
+import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js?v=202611120105';
+import { COURSE, courseLessons, lessonNeighbours } from './course.js?v=202611120105';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611120105';
+import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611120105';
+import { newProject, normalizeProject, setBars } from './project.js?v=202611120105';
+import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js?v=202611120105';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js?v=202611120105';
+import { Workspace } from './workspace.js?v=202611120105';
+import { getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js?v=202611120105';
 
 const $ = (sel) => document.querySelector(sel);
 const params = new URLSearchParams(location.search);

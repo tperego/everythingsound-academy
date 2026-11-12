@@ -1,8 +1,8 @@
 // The composer grid: a chord lane (half-bar slots) and a scale-degree melody grid (8th-note steps).
 
-import { MELODY_ROWS, SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, removeOverlaps } from './project.js';
-import { FUNCTION_NAMES, bassForChordTone, bassOptions, chordDegrees, chordInfo, chordVoicing, degreeName, midiForDegree } from './theory.js';
-import { h } from './util.js';
+import { MELODY_ROWS, SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, removeOverlaps } from './project.js?v=202611120105';
+import { FUNCTION_NAMES, bassForChordTone, bassOptions, chordDegrees, chordInfo, chordVoicing, degreeName, midiForDegree } from './theory.js?v=202611120105';
+import { h } from './util.js?v=202611120105';
 
 const ROW_H = 22;
 

@@ -1,13 +1,13 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js';
-import { LESSONS } from './lessons.js';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js';
-import { projectToAbc } from './staff.js';
-import { makeSubmission, parseSubmission } from './submission.js';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js';
-import { pack, unpack } from './util.js';
+import { runChecks } from './checks.js?v=202611120105';
+import { LESSONS } from './lessons.js?v=202611120105';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611120105';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611120105';
+import { projectToAbc } from './staff.js?v=202611120105';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611120105';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611120105';
+import { pack, unpack } from './util.js?v=202611120105';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);

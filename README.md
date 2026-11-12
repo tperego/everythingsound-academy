@@ -82,3 +82,8 @@ Everything lives in [`js/lessons.js`](js/lessons.js):
 ## Not built yet (phase 2)
 
 Student accounts and an online inbox (instead of files and links), video cue points that open an exercise automatically, TikTok 60-second challenge pages, Ableton template sets, and more exercise types (ear training, intervals, minor keys, rhythm).
+
+## Publishing an update
+
+1. `python3 tools/stamp-version.py`: gives every file a new version so browsers never mix old and new code.
+2. Commit, then `git push`.

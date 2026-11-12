@@ -4,9 +4,9 @@
 // Types: higher-lower, tone-semitone, count-semitones, find-key, name-black-key, semitone-step,
 //        name-interval, build-interval, hear-interval, build-scale, spot-mistake, scale-degree
 
-import { keyboardSvg } from './piano.js';
-import { MODES, pcOf, scaleNames } from './theory.js';
-import { h } from './util.js';
+import { keyboardSvg } from './piano.js?v=202611120105';
+import { MODES, pcOf, scaleNames } from './theory.js?v=202611120105';
+import { h } from './util.js?v=202611120105';
 
 const NATURAL = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B' };
 const BLACK_PAIRS = { 1: 'C♯ / D♭', 3: 'D♯ / E♭', 6: 'F♯ / G♭', 8: 'G♯ / A♭', 10: 'A♯ / B♭' };

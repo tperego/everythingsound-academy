@@ -1,8 +1,8 @@
 // Course home: modules, lessons, progress, and a way back into where the student left off.
 
-import { COURSE, courseLessons, lessonProgress } from './course.js';
-import { h, store } from './util.js';
-import { myProgress, renderAccountWidget } from './auth.js';
+import { COURSE, courseLessons, lessonProgress } from './course.js?v=202611120105';
+import { h, store } from './util.js?v=202611120105';
+import { myProgress, renderAccountWidget } from './auth.js?v=202611120105';
 
 const $ = (sel) => document.querySelector(sel);
 
