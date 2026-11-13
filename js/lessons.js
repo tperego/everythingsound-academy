@@ -258,6 +258,213 @@ LESSONS.push(
   },
 );
 
+// ---------- Module 1 · Foundations (continued) ----------
+
+LESSONS.push(
+  {
+    id: 'mt-05-minor-scale',
+    course: 'Music Theory · Foundations',
+    title: 'The minor scale',
+    youtubeId: 'gsgkY6_pTD4',
+    intro: 'The natural minor scale, T–S–T–T–S–T–T, its darker colour, and how every major key has a relative minor with the same notes.',
+    exercises: [
+      quizEx('mt05-build', '1 · Build the minor scale', 'build-scale', [
+        'Click the 8 notes of the natural minor scale asked for, from the keynote up to the next one.',
+        'The keys show T or S as you go. Follow T–S–T–T–S–T–T.',
+      ], { count: 6, pass: 5, options: { mode: 'minor', keys: ['A', 'E', 'D', 'B', 'G', 'C'] } }),
+      quizEx('mt05-relative', '2 · Relative keys', 'relative-key', [
+        'Find the relative minor of a major key, or the relative major of a minor key.',
+        'Tip: the relative minor starts on degree 6 of the major scale, 3 semitones below its keynote.',
+      ]),
+      quizEx('mt05-hear', '3 · Major or minor?', 'hear-scale-mode', [
+        'Listen to a scale going up. Is it major or minor?',
+        'Listen to the 3rd note: bright (major) or dark (minor)?',
+      ]),
+      {
+        id: 'mt05-melody',
+        title: '4 · An 8-bar melody in a minor key',
+        kind: 'creative',
+        brief: [
+          'Write an 8-bar melody in a minor key. Any minor key: choose it in the Key menu (the mode must stay minor).',
+          'Let the minor colour come through: lean on degree 3, and try the raised 7th just before the end.',
+          'End on the keynote (degree 1). Check, then submit.',
+        ],
+        start: { key: 'A', mode: 'minor', bpm: 84, bars: 8 },
+        lock: { bars: true },
+        checks: [
+          { type: 'mode-is', mode: 'minor' },
+          { type: 'melody-fills', minNotes: 12 },
+          { type: 'melody-ends-on-tonic' },
+          { type: 'melody-range', maxRows: 10 },
+        ],
+        rubric: [
+          { label: 'Minor colour and mood', max: 5 },
+          { label: 'Melodic shape and rhythm', max: 5 },
+          { label: 'Ending', max: 5 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'mt-06-enharmony',
+    course: 'Music Theory · Foundations',
+    title: 'Enharmony',
+    youtubeId: 'k-ksTtq8OCU',
+    intro: 'One key, two names: why C♯ and D♭ are the same note on the piano, when E♯ and C♭ appear, and how a key decides which name is right.',
+    exercises: [
+      quizEx('mt06-twins', '1 · The other name', 'enharmonic', [
+        'A key lights up with one of its names. Choose its other name.',
+        'Watch out: white keys have other names too (E♯, B♯, C♭, F♭).',
+      ]),
+      quizEx('mt06-find', '2 · Find the spelled note', 'find-spelled', [
+        'Click any key with the name shown. ♯ means a semitone up, ♭ a semitone down, whatever colour the key is.',
+      ]),
+      quizEx('mt06-spelling', '3 · Which name does the scale use?', 'scale-spelling', [
+        'In a major scale, every letter is used once. Choose the right name for the degree asked.',
+        'Tip: write the letters out in order first (G A B C D E F…), then add the ♯ or ♭.',
+      ]),
+    ],
+  },
+);
+
+// ---------- Module 2 · Chords and harmony ----------
+
+LESSONS.push(
+  {
+    id: 'mt-07-triads',
+    course: 'Music Theory · Chords and harmony',
+    title: 'Triads: building chords',
+    youtubeId: 'TyEcpdtXfbk',
+    videos: [
+      { id: 'TyEcpdtXfbk', title: 'Part 1 · Building a chord' },
+      { id: '9IuQ38Dq2MI', title: 'Part 2 · Chords over a scale' },
+    ],
+    intro: 'Stack two 3rds and you have a chord. Major, minor, diminished and augmented triads, and the chords that grow on every degree of the major scale.',
+    exercises: [
+      quizEx('mt07-build', '1 · Build the triad', 'build-chord', [
+        'Watch Part 1 first. Click the 3 notes of the triad asked for, from the root up.',
+        'The keys show m3 or M3 as you go. Major = M3 + m3. Minor = m3 + M3.',
+      ], { count: 8, pass: 6, options: { qualities: ['major', 'minor'] } }),
+      quizEx('mt07-quality', '2 · Major, minor, diminished or augmented?', 'chord-quality', [
+        'A triad lights up and plays. Name its quality.',
+        'Count the 3rds: M3 + m3 major, m3 + M3 minor, m3 + m3 diminished, M3 + M3 augmented.',
+      ]),
+      quizEx('mt07-hear', '3 · Hear major or minor', 'chord-quality', [
+        'Listen to a chord (first note by note, then together). Is it major or minor?',
+      ], { options: { ear: true, qualities: ['major', 'minor'] } }),
+      { ...quizEx('mt07-scale', '4 · Chords over the scale', 'diatonic-chord', [
+        'Watch Part 2 first. In a major key, what kind of chord grows on each degree?',
+        'The pattern is the same in every major key: I ii iii IV V vi vii°.',
+      ]), videoPart: 2 },
+      {
+        id: 'mt07-colours',
+        title: '5 · Paint with major, minor and diminished',
+        kind: 'creative',
+        videoPart: 2,
+        brief: [
+          'Write an 8-bar chord progression in C major, one or two chords per bar.',
+          'Use at least two minor chords (ii, iii, vi) and the diminished chord (vii°) somewhere. Tip: vii° sounds great just before I.',
+          'Start on I and end on I. Listen to how each colour feels, then check and submit.',
+        ],
+        start: { key: 'C', mode: 'major', bpm: 88, bars: 8 },
+        lock: { key: true, bars: true, melody: true },
+        checks: [
+          { type: 'starts-on-tonic' },
+          { type: 'all-bars-filled' },
+          { type: 'chord-qualities', need: { min: 2, dim: 1 } },
+        ],
+        rubric: [
+          { label: 'Uses the chord colours with intention', max: 5 },
+          { label: 'Sense of direction and ending', max: 5 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'mt-08-sevenths',
+    course: 'Music Theory · Chords and harmony',
+    title: 'Seventh chords',
+    youtubeId: '3Q3h4ASfl0A',
+    intro: 'Add one more 3rd on top of a triad: major 7th, dominant 7th, minor 7th and half-diminished 7th, and where each lives in a major key.',
+    exercises: [
+      quizEx('mt08-build', '1 · Build the 7th chord', 'build-chord', [
+        'Click the 4 notes of the 7th chord asked for, from the root up.',
+        'Major 7th = major triad + M3. Dominant 7th = major triad + m3. Minor 7th = minor triad + m3. Half-diminished = diminished triad + M3.',
+      ], { count: 8, pass: 6, options: { kind: 'seventh', qualities: ['major 7th', 'dominant 7th', 'minor 7th', 'half-diminished 7th'] } }),
+      quizEx('mt08-quality', '2 · Name the 7th chord', 'chord-quality', [
+        'A 7th chord lights up and plays. Which one is it?',
+      ], { options: { kind: 'seventh', qualities: ['major 7th', 'dominant 7th', 'minor 7th', 'half-diminished 7th'] } }),
+      quizEx('mt08-scale', '3 · 7th chords over the scale', 'diatonic-chord', [
+        'In a major key, what 7th chord grows on each degree?',
+        'The pattern: Imaj7 ii7 iii7 IVmaj7 V7 vi7 viiø7. Only V has a dominant 7th.',
+      ], { options: { seventh: true } }),
+      {
+        id: 'mt08-ii-v-i',
+        title: '4 · The ii7 – V7 – Imaj7',
+        kind: 'creative',
+        brief: [
+          'We are in F major. Switch on “Add 7th”, then build ii7 – V7 – Imaj7 – Imaj7, one chord per bar.',
+          'Then write a melody over it: put chord tones (including the 7ths!) on beats 1 and 3.',
+          'This is the most famous progression in jazz. Check, then submit.',
+        ],
+        start: { key: 'F', mode: 'major', bpm: 100, bars: 4 },
+        lock: { key: true, bars: true },
+        checks: [
+          { type: 'progression', sequence: ['ii7', 'V7', 'Imaj7', 'Imaj7'] },
+          { type: 'melody-fills', minNotes: 8 },
+          { type: 'melody-chord-tones', minRatio: 0.6 },
+        ],
+        rubric: [
+          { label: 'Melody brings out the 7ths', max: 5 },
+          { label: 'Rhythm and phrasing', max: 5 },
+          { label: 'Overall musicality', max: 5 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'mt-09-gravity',
+    course: 'Music Theory · Chords and harmony',
+    title: 'Harmonic gravity',
+    youtubeId: '74xos8HvpGk',
+    intro: 'Tonality as it worked from Bach to Debussy: home (tonic), moving away (pre-dominant), tension (dominant), and the pull that brings us back.',
+    exercises: [
+      quizEx('mt09-function', '1 · Tonic, pre-dominant or dominant?', 'chord-function', [
+        'What job does each chord do? Tonic = home (I, iii, vi). Pre-dominant = moving away (ii, IV). Dominant = tension that pulls home (V, vii°).',
+      ]),
+      quizEx('mt09-tendency', '2 · Where does the note want to go?', 'tendency-tone', [
+        'Some notes of the scale are pulled by gravity. You hear the key, then one note: click the note it wants to move to.',
+      ]),
+      quizEx('mt09-cadence', '3 · Home or left hanging?', 'hear-cadence', [
+        'Listen to a short progression. Does it land home (on I), or stop on V and leave you hanging?',
+      ]),
+      {
+        id: 'mt09-journey',
+        title: '4 · A journey away and home, in minor',
+        kind: 'creative',
+        brief: [
+          'Gravity works in minor keys too. Choose any minor key and write 8 bars of chords.',
+          'Start home (i), move away with a pre-dominant (iv or ii°), build tension with V, and land home with V – i at the end.',
+          'In minor, V is major: its raised 7th is the leading tone that pulls home. Check, then submit.',
+        ],
+        start: { key: 'D', mode: 'minor', bpm: 80, bars: 8 },
+        lock: { bars: true, melody: true },
+        checks: [
+          { type: 'mode-is', mode: 'minor' },
+          { type: 'starts-on-tonic' },
+          { type: 'all-bars-filled' },
+          { type: 'predominant-before-dominant' },
+          { type: 'ends-with-cadence', cadence: 'perfect' },
+        ],
+        rubric: [
+          { label: 'Clear tension and release', max: 5 },
+          { label: 'Choice of chords', max: 5 },
+        ],
+      },
+    ],
+  },
+);
+
 // ---------- Lesson 2 ----------
 
 // The melodic patterns the class identified in the vocal parts of Sigur Rós, "Svefn-g-englar".

@@ -2,8 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611122344';
-import { celebrate, summarise, xpChip } from './game.js?v=202611122344';
+import { h } from './util.js?v=202611122359';
+import { celebrate, summarise, xpChip } from './game.js?v=202611122359';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';

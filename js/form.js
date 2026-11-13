@@ -1,6 +1,6 @@
 // Melodic form: split a melody into phrases and compare them for rhythm and pitch.
 
-import { STEPS_PER_BAR } from './project.js?v=202611122344';
+import { STEPS_PER_BAR } from './project.js?v=202611122359';
 
 export const FORM_LABELS = ['A', 'A′', 'A″', 'B', 'B′', 'C', 'C′', 'D'];
 

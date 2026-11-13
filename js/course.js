@@ -1,8 +1,8 @@
 // The course: modules in order, each listing lesson ids from js/lessons.js.
 // Add your lessons to js/lessons.js, then list them here in the order students should take them.
 
-import { LESSONS, findLesson } from './lessons.js?v=202611122344';
-import { store } from './util.js?v=202611122344';
+import { LESSONS, findLesson } from './lessons.js?v=202611122359';
+import { store } from './util.js?v=202611122359';
 
 export const COURSE = {
   id: 'music-theory',
@@ -14,14 +14,20 @@ export const COURSE = {
   chatChannels: [
     { id: 'course:announcements', name: 'Announcements', icon: '📢', about: 'News and tips from your teacher.', teacherOnly: true },
     { id: 'course:general', name: 'General', icon: '#', about: 'Say hello, share what you’re working on, ask anything.' },
-    { id: 'course:foundations', name: 'Foundations Q&A', icon: '#', about: 'Questions about Module 1: pitch, the keyboard, intervals, the major scale.' },
+    { id: 'course:foundations', name: 'Foundations Q&A', icon: '#', about: 'Questions about Module 1: pitch, the keyboard, intervals, scales and enharmony.' },
+    { id: 'course:chords', name: 'Chords & harmony Q&A', icon: '#', about: 'Questions about Module 2: triads, 7th chords and harmonic gravity.' },
     { id: 'course:class-lessons', name: 'Chords & form Q&A', icon: '#', about: 'Questions about the lessons from class.' },
   ],
   modules: [
     {
       title: 'Foundations',
-      intro: 'Pitch, the keyboard, intervals and the major scale: the building blocks for everything that follows.',
-      lessons: ['mt-01-pitch', 'mt-02-keyboard', 'mt-03-intervals', 'mt-04-major-scale'],
+      intro: 'Pitch, the keyboard, intervals, the major and minor scales and enharmony: the building blocks for everything that follows.',
+      lessons: ['mt-01-pitch', 'mt-02-keyboard', 'mt-03-intervals', 'mt-04-major-scale', 'mt-05-minor-scale', 'mt-06-enharmony'],
+    },
+    {
+      title: 'Chords and harmony',
+      intro: 'Triads, seventh chords and the harmonic gravity that pulls music home.',
+      lessons: ['mt-07-triads', 'mt-08-sevenths', 'mt-09-gravity'],
     },
     {
       title: 'From class: chords, listening and form',

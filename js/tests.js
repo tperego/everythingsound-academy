@@ -1,14 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611122344';
-import { LESSONS } from './lessons.js?v=202611122344';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611122344';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611122344';
-import { projectToAbc } from './staff.js?v=202611122344';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611122344';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611122344';
-import { pack, unpack } from './util.js?v=202611122344';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611122344';
+import { runChecks } from './checks.js?v=202611122359';
+import { LESSONS } from './lessons.js?v=202611122359';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611122359';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611122359';
+import { projectToAbc } from './staff.js?v=202611122359';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611122359';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611122359';
+import { pack, unpack } from './util.js?v=202611122359';
+import { makeQuestion } from './quiz.js?v=202611122359';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611122359';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -344,12 +345,54 @@ await test('badges from XP events', () => {
   const ev = [
     { kind: 'passed', ref: 'mt-01-pitch/mt01-count', xp: 20, created_at: t },
     { kind: 'marked', ref: 'x', xp: 46, created_at: t },
-    ...['mt-01-pitch', 'mt-02-keyboard', 'mt-03-intervals', 'mt-04-major-scale'].map((ref) => ({ kind: 'lesson', ref, xp: 50, created_at: t })),
+    ...['mt-01-pitch', 'mt-02-keyboard', 'mt-03-intervals', 'mt-04-major-scale', 'mt-05-minor-scale', 'mt-06-enharmony'].map((ref) => ({ kind: 'lesson', ref, xp: 50, created_at: t })),
   ];
   const ids = earnedBadges(summarise(ev)).map((b) => b.id);
   for (const id of ['first-xp', 'all-green', 'feedback', 'top-marks', 'module-1']) assert(ids.includes(id), `missing ${id}: ${ids}`);
   for (const id of ['handed-in', 'perfect', 'streak-3', 'module-2']) assert(!ids.includes(id), `should not have ${id}`);
-  assertEq(summarise(ev).xp, 266);
+  assertEq(summarise(ev).xp, 366);
+});
+
+await test('every quick-fire exercise makes valid questions', () => {
+  const quizzes = LESSONS.flatMap((l) => l.exercises.filter((e) => e.quiz).map((e) => [`${l.id}/${e.id}`, e.quiz]));
+  assert(quizzes.length >= 25, `only ${quizzes.length} quizzes`);
+  for (const [id, q] of quizzes) {
+    for (let i = 0; i < 150; i++) {
+      const qn = makeQuestion(q.type, q.options);
+      assert(qn.text && qn.reveal, `${id}: missing text`);
+      const ways = [qn.choices, qn.clickPc, qn.clickMidi, qn.sequence].filter((x) => x != null).length;
+      assert(ways === 1, `${id}: ${ways} ways to answer`);
+      if (qn.choices) {
+        assert(qn.choices.includes(qn.answer), `${id}: answer ${qn.answer} not in ${qn.choices}`);
+        assert(new Set(qn.choices).size === qn.choices.length && qn.choices.length >= 2, `${id}: bad choices ${qn.choices}`);
+      }
+      if (qn.sequence) assert(qn.names?.length === qn.sequence.length && qn.sequence.every((m) => m >= 48 && m <= 83), `${id}: bad sequence`);
+      for (const m of [...(qn.marks || []), ...(qn.clickMidi != null ? [qn.clickMidi] : [])]) assert(m >= 48 && m <= 83, `${id}: key ${m} off the keyboard`);
+    }
+  }
+});
+
+await test('chord spelling in questions', () => {
+  for (let i = 0; i < 300; i++) {
+    const qn = makeQuestion('build-chord', { kind: 'seventh', qualities: ['major 7th', 'dominant 7th', 'minor 7th', 'half-diminished 7th'] });
+    const letters = qn.names.map((n) => n[0]);
+    const L = 'CDEFGAB';
+    for (let k = 1; k < letters.length; k++) assertEq((L.indexOf(letters[k]) - L.indexOf(letters[k - 1]) + 7) % 7, 2, `stacked in 3rds: ${qn.names}`);
+  }
+  const s = makeQuestion('diatonic-chord', { keys: ['G'], seventh: true });
+  assert(/Imaj7 ii7 iii7 IVmaj7 V7 vi7 viiø7/.test(s.reveal), s.reveal);
+});
+
+await test('new checks: minor key and chord colours', () => {
+  const ex = LESSONS.find((l) => l.id === 'mt-07-triads').exercises.find((e) => e.id === 'mt07-colours');
+  const good = newProject({ key: 'C', bars: 8, progression: [1, 6, 2, 7, 1, 3, 4, 1] });
+  assert(runChecks(ex, good).every((r) => r.pass), JSON.stringify(runChecks(ex, good)));
+  const plain = newProject({ key: 'C', bars: 8, progression: [1, 4, 5, 1, 1, 4, 5, 1] });
+  assert(!runChecks(ex, plain).find((r) => r.label.includes('minor')).pass, 'needs minor and dim');
+  const gex = LESSONS.find((l) => l.id === 'mt-09-gravity').exercises[3];
+  const minor = newProject({ key: 'D', mode: 'minor', bars: 8, progression: [1, 6, 4, 5, 1, 2, 5, 1] });
+  assert(runChecks(gex, minor).every((r) => r.pass), JSON.stringify(runChecks(gex, minor)));
+  assert(!runChecks(gex, { ...minor, mode: 'major' }).every((r) => r.pass), 'major should fail');
 });
 
 const failed = results.filter((r) => !r.ok);

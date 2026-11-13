@@ -1,8 +1,8 @@
 // Auto-checks. Each exercise lists checks as data; each check returns {label, pass, detail}.
 
-import { chordAtBeat, chordEvents } from './project.js?v=202611122344';
-import { chordDegrees, chordInfo } from './theory.js?v=202611122344';
-import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js?v=202611122344';
+import { chordAtBeat, chordEvents } from './project.js?v=202611122359';
+import { chordDegrees, chordInfo } from './theory.js?v=202611122359';
+import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js?v=202611122359';
 
 const pct = (x) => `${Math.round(x * 100)}%`;
 const listBars = (arr) => arr.join(', ');
@@ -115,6 +115,25 @@ const CHECKS = {
   'key-is'({ key, mode }, p) {
     const pass = p.key === key && p.mode === mode;
     return { label: 'You found the key', pass, detail: pass ? `${key} ${mode} ✓` : `You chose ${p.key} ${p.mode}. Listen for the note that feels like home.` };
+  },
+
+  'mode-is'({ mode }, p) {
+    const pass = p.mode === mode;
+    return { label: `The piece is in a ${mode} key`, pass, detail: pass ? `${p.key} ${p.mode} ✓` : `It’s in ${p.key} ${p.mode}. Choose a ${mode} key in the Key menu.` };
+  },
+
+  // At least so many chords of each quality, e.g. { min: 2, dim: 1 }.
+  'chord-qualities'({ need = {} }, p) {
+    const evs = romans(p);
+    const words = { maj: 'major', min: 'minor', dim: 'diminished', aug: 'augmented' };
+    const have = {};
+    for (const e of evs) have[e.info.quality] = (have[e.info.quality] || 0) + 1;
+    const missing = Object.entries(need).filter(([q, n]) => (have[q] || 0) < n);
+    return {
+      label: `Uses ${Object.entries(need).map(([q, n]) => `${n === 1 ? 'a' : `at least ${n}`} ${words[q]} chord${n === 1 ? '' : 's'}`).join(' and ')}`,
+      pass: missing.length === 0,
+      detail: `You have ${Object.entries(words).filter(([q]) => have[q]).map(([q, w]) => `${have[q]} ${w}`).join(', ') || 'no chords yet'}.`,
+    };
   },
 
   // Like 'progression' but says which bars are right, without giving the answer away.

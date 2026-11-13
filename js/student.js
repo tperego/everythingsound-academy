@@ -1,17 +1,17 @@
 // Student lesson page: video, exercises, composer, checks, DAW round-trip, submission, feedback.
 
-import { chordsFound, runChecks } from './checks.js?v=202611122344';
-import { FORM_LABELS } from './form.js?v=202611122344';
-import { QuizView } from './quiz.js?v=202611122344';
-import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js?v=202611122344';
-import { COURSE, courseLessons, lessonNeighbours } from './course.js?v=202611122344';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611122344';
-import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611122344';
-import { newProject, normalizeProject, setBars } from './project.js?v=202611122344';
-import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js?v=202611122344';
-import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js?v=202611122344';
-import { Workspace } from './workspace.js?v=202611122344';
-import { awardXp, getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js?v=202611122344';
+import { chordsFound, runChecks } from './checks.js?v=202611122359';
+import { FORM_LABELS } from './form.js?v=202611122359';
+import { QuizView } from './quiz.js?v=202611122359';
+import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js?v=202611122359';
+import { COURSE, courseLessons, lessonNeighbours } from './course.js?v=202611122359';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611122359';
+import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611122359';
+import { newProject, normalizeProject, setBars } from './project.js?v=202611122359';
+import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js?v=202611122359';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js?v=202611122359';
+import { Workspace } from './workspace.js?v=202611122359';
+import { awardXp, getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js?v=202611122359';
 
 const $ = (sel) => document.querySelector(sel);
 const params = new URLSearchParams(location.search);
@@ -86,21 +86,33 @@ function renderLesson() {
   renderTabs();
 }
 
-function setVideo(startAt = null) {
+let videoPart = 1; // lessons with more than one video: which part is showing (1, 2…)
+function setVideo(startAt = null, part = videoPart) {
   const box = $('#video');
-  if (!lesson.youtubeId) {
+  const parts = $('#video-parts');
+  const videos = Array.isArray(lesson.videos) && lesson.videos.length > 1 ? lesson.videos : null;
+  videoPart = videos ? Math.min(Math.max(1, part), videos.length) : 1;
+  parts.hidden = !videos;
+  if (videos) {
+    parts.replaceChildren(...videos.map((v, i) => h('button', {
+      type: 'button', class: videoPart === i + 1 ? 'on' : '', 'aria-pressed': String(videoPart === i + 1),
+      onclick: () => { if (videoPart !== i + 1) setVideo(null, i + 1); },
+    }, v.title)));
+  }
+  const videoId = videos ? videos[videoPart - 1].id : lesson.youtubeId;
+  if (!videoId) {
     box.replaceChildren(h('div', { class: 'video-placeholder' },
       h('span', { class: 'big' }, '▶'),
       h('strong', {}, 'Lesson video goes here'),
       h('span', {}, 'Add the YouTube video ID to this lesson in js/lessons.js.')));
     return;
   }
-  const id = encodeURIComponent(lesson.youtubeId);
+  const id = encodeURIComponent(videoId);
   const q = new URLSearchParams({ rel: '0' });
   if (startAt != null) { q.set('start', String(Math.floor(startAt))); q.set('autoplay', '1'); }
   box.replaceChildren(h('iframe', {
     src: `https://www.youtube-nocookie.com/embed/${id}?${q}`,
-    title: `${lesson.title} (video)`,
+    title: `${lesson.title}${videos ? `, ${videos[videoPart - 1].title}` : ''} (video)`,
     allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
     allowfullscreen: true,
     loading: 'lazy',
@@ -131,6 +143,7 @@ function selectExercise(id, { project = null, fromFeedback = false } = {}) {
   const watch = $('#watch-btn');
   watch.hidden = !(lesson.youtubeId && exercise.videoAt != null);
   watch.onclick = () => { setVideo(exercise.videoAt); $('#video').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  if (lesson.videos && exercise.videoPart && exercise.videoPart !== videoPart) setVideo(null, exercise.videoPart);
 
   answers = normalizeAnswers(feedback?.answers || store.get(answersKey(exercise), null));
   const saved = store.get(workKey(exercise));

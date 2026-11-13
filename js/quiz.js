@@ -2,11 +2,13 @@
 //
 // Exercise data: quiz: { type, count, pass, options }
 // Types: higher-lower, tone-semitone, count-semitones, find-key, name-black-key, semitone-step,
-//        name-interval, build-interval, hear-interval, build-scale, spot-mistake, scale-degree
+//        name-interval, build-interval, hear-interval, build-scale, spot-mistake, scale-degree,
+//        relative-key, hear-scale-mode, enharmonic, find-spelled, scale-spelling,
+//        build-chord, chord-quality, diatonic-chord, chord-function, tendency-tone, hear-cadence
 
-import { keyboardSvg } from './piano.js?v=202611122344';
-import { MODES, pcOf, scaleNames } from './theory.js?v=202611122344';
-import { h } from './util.js?v=202611122344';
+import { keyboardSvg } from './piano.js?v=202611122359';
+import { FUNCTION_NAMES, FUNCTION_OF_DEGREE, KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611122359';
+import { h } from './util.js?v=202611122359';
 
 const NATURAL = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B' };
 const BLACK_PAIRS = { 1: 'C♯ / D♭', 3: 'D♯ / E♭', 6: 'F♯ / G♭', 8: 'G♯ / A♭', 10: 'A♯ / B♭' };
@@ -37,6 +39,57 @@ function choicesFrom(correct, pool, n = 4) {
 }
 
 const KB = { low: 48, high: 83 }; // the keyboard shown in quizzes: C3 to B5
+
+// ---------- Spelling: chords and enharmonic names ----------
+
+const LETTER_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+/** Notes of a chord stacked in 3rds, spelled with one letter each: ('D', [0,3,7]) -> D F A. */
+function spellStack(root, ivs) {
+  const li = LETTERS.indexOf(root[0]);
+  const r = pcOf(root);
+  return ivs.map((iv, i) => {
+    const L = LETTERS[(li + 2 * i) % 7];
+    let d = (((r + iv - LETTER_PC[L]) % 12) + 12) % 12;
+    if (d > 6) d -= 12;
+    return L + (d > 0 ? '#'.repeat(d) : 'b'.repeat(-d));
+  });
+}
+const prettyAll = (n) => n.replace(/#/g, '♯').replace(/([A-G])bb/, '$1𝄫').replace(/([A-G])b/, '$1♭');
+const ENHARMONIC = {
+  0: ['C', 'B#'], 1: ['C#', 'Db'], 3: ['D#', 'Eb'], 4: ['E', 'Fb'], 5: ['F', 'E#'],
+  6: ['F#', 'Gb'], 8: ['G#', 'Ab'], 10: ['A#', 'Bb'], 11: ['B', 'Cb'],
+};
+const ALL_NAMES = ['C', 'B#', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'Fb', 'F', 'E#', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B', 'Cb'];
+
+export const TRIADS = { major: [0, 4, 7], minor: [0, 3, 7], diminished: [0, 3, 6], augmented: [0, 4, 8] };
+export const SEVENTHS = { 'major 7th': [0, 4, 7, 11], 'dominant 7th': [0, 4, 7, 10], 'minor 7th': [0, 3, 7, 10], 'half-diminished 7th': [0, 3, 6, 10] };
+const CHORD_ROOTS = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'Bb', 'Eb', 'Ab', 'F#', 'Db'];
+const THIRD_NAME = { 3: 'minor 3rd', 4: 'major 3rd', 2: 'diminished 3rd', 5: 'augmented 3rd' };
+
+/** A random chord with no double sharps or flats: {root, quality, ivs, names, midis}. */
+function randomChord(table, qualities) {
+  for (;;) {
+    const root = pick(CHORD_ROOTS);
+    const quality = pick(qualities);
+    const ivs = table[quality];
+    const names = spellStack(root, ivs);
+    if (names.some((n) => /##|bb/.test(n))) continue;
+    const base = 53 + ((pcOf(root) - 5 + 12) % 12); // F3 to E4
+    return { root, quality, ivs, names, midis: ivs.map((iv) => base + iv) };
+  }
+}
+const stackText = (c) => c.ivs.slice(1).map((iv, i) => THIRD_NAME[iv - c.ivs[i]]).join(' + ');
+
+/** Quality of a diatonic chord in words, e.g. "minor" or "dominant 7th". */
+function qualityWords(info) {
+  if (!info.seventh) return { maj: 'major', min: 'minor', dim: 'diminished', aug: 'augmented' }[info.quality];
+  if (info.roman.endsWith('maj7')) return 'major 7th';
+  if (info.roman.endsWith('ø7')) return 'half-diminished 7th';
+  return info.quality === 'min' ? 'minor 7th' : 'dominant 7th';
+}
+const symbolText = (info) => prettyAll(info.symbol.replace('m7b5', 'm7♭5'));
+const MAJOR_KEYS = ['C', 'G', 'D', 'A', 'E', 'F', 'Bb', 'Eb', 'Ab'];
+const tonicMidi = (key) => 60 + pcOf(key) - (pcOf(key) > 7 ? 12 : 0);
 
 // ---------- Question generators ----------
 
@@ -142,15 +195,15 @@ const GEN = {
     };
   },
 
-  'build-scale'({ keys = ['C', 'G', 'F', 'D', 'Bb', 'A'] } = {}) {
+  'build-scale'({ keys = ['C', 'G', 'F', 'D', 'Bb', 'A'], mode = 'major' } = {}) {
     const key = pick(keys);
-    const tonic = 60 + pcOf(key) - (pcOf(key) > 7 ? 12 : 0);
-    const seq = [...MODES.major.map((iv) => tonic + iv), tonic + 12];
-    const names = [...scaleNames(key, 'major'), key].map(pretty);
+    const tonic = tonicMidi(key);
+    const seq = [...MODES[mode].map((iv) => tonic + iv), tonic + 12];
+    const names = [...scaleNames(key, mode), key].map(pretty);
     return {
-      text: `Build ${pretty(key)} major: click its 8 notes, from this ${pretty(key)} up to the next ${pretty(key)}.`,
+      text: `Build ${pretty(key)} ${mode === 'minor' ? 'natural minor' : 'major'}: click its 8 notes, from this ${pretty(key)} up to the next ${pretty(key)}.`,
       marks: [tonic], sequence: seq, play: [tonic],
-      reveal: `${pretty(key)} major: ${names.join(' – ')} (T–T–S–T–T–T–S).`, names,
+      reveal: `${pretty(key)} ${mode}: ${names.join(' – ')} (${mode === 'minor' ? 'T–S–T–T–S–T–T' : 'T–T–S–T–T–T–S'}).`, names,
     };
   },
 
@@ -184,18 +237,201 @@ const GEN = {
       reveal: `${pretty(key)} major: ${names.map((x, i) => (i === n - 1 ? `[${x}]` : x)).join(' ')}.`,
     };
   },
+
+  // ----- Minor scale -----
+  'relative-key'({ keys = ['C', 'G', 'D', 'A', 'F', 'Bb', 'Eb', 'E'] } = {}) {
+    const major = pick(keys);
+    const minor = scaleNames(major, 'major')[5];
+    const toMinor = Math.random() < 0.5;
+    const answer = pretty(toMinor ? `${minor} minor` : `${major} major`);
+    const pool = toMinor
+      ? [...KEY_OPTIONS.minor.map((k) => `${k} minor`)]
+      : [...KEY_OPTIONS.major.map((k) => `${k} major`)];
+    const near = toMinor ? [scaleNames(major, 'major')[2], scaleNames(major, 'major')[4], major].map((k) => `${k} minor`) : [];
+    return {
+      text: toMinor ? `What is the relative minor of ${pretty(major)} major?` : `What is the relative major of ${pretty(minor)} minor?`,
+      choices: choicesFrom(answer, [...new Set([...near, ...pool].map(pretty))]), answer,
+      reveal: `${pretty(major)} major and ${pretty(minor)} minor share the same notes and key signature. The relative minor starts on degree 6 of the major scale (3 semitones down from its keynote).`,
+    };
+  },
+
+  'hear-scale-mode'() {
+    const mode = Math.random() < 0.5 ? 'major' : 'minor';
+    const tonic = noteIn(55, 65);
+    const seq = [...MODES[mode].map((iv) => tonic + iv), tonic + 12];
+    return {
+      text: 'Listen to this scale. Major or minor?',
+      play: seq, gap: 0.42, choices: ['Major', 'Minor'], answer: mode === 'major' ? 'Major' : 'Minor',
+      reveal: mode === 'major' ? 'Major: listen for the bright major 3rd (4 semitones) at note 3.' : 'Minor: the 3rd note is only 3 semitones up, which gives the darker colour.',
+      showAfter: seq,
+    };
+  },
+
+  // ----- Enharmony -----
+  'enharmonic'({ tricky = true } = {}) {
+    const pcs = Object.keys(ENHARMONIC).map(Number).filter((p) => tricky || BLACK_PCS.includes(p));
+    const p = pick(pcs);
+    const [a, b] = shuffle(ENHARMONIC[p]);
+    const m = noteIn(KB.low, KB.high, [p]);
+    const pool = ALL_NAMES.filter((n) => !ENHARMONIC[p].includes(n) && Math.abs(((pcOf(n) - p + 18) % 12) - 6) <= 2);
+    return {
+      text: `${prettyAll(a)} is shown. What is its other name?`,
+      marks: [m], play: [m], choices: choicesFrom(prettyAll(b), [prettyAll(b), ...pool.map(prettyAll)]), answer: prettyAll(b),
+      reveal: `${prettyAll(a)} = ${prettyAll(b)}: one key, two names. They are enharmonic.${[0, 4, 5, 11].includes(p) ? ' E–F and B–C are a semitone apart, so a white key can have a ♯ or ♭ name too.' : ''}`,
+    };
+  },
+
+  'find-spelled'() {
+    const name = pick(['E#', 'B#', 'Cb', 'Fb', 'E#', 'B#', 'Cb', 'Fb', 'C#', 'Db', 'Gb', 'A#', 'D#', 'Ab']);
+    const p = pcOf(name);
+    return {
+      text: `Click any ${prettyAll(name)}.`,
+      clickPc: p,
+      reveal: `${prettyAll(name)} is the same key as ${prettyAll(ENHARMONIC[p].find((n) => n !== name))}: ♯ is one semitone up, ♭ one semitone down, whatever colour the key is.`,
+    };
+  },
+
+  'scale-spelling'({ keys = ['G', 'D', 'A', 'E', 'B', 'F', 'Bb', 'Eb', 'Ab', 'Db'] } = {}) {
+    for (;;) {
+      const key = pick(keys);
+      const names = scaleNames(key, 'major');
+      const n = 1 + rand(7);
+      const right = names[n - 1];
+      const twin = (ENHARMONIC[pcOf(right)] || []).find((x) => x !== right);
+      if (!twin || (!/[#b]/.test(right) && Math.random() < 0.7)) continue;
+      return {
+        text: `In ${pretty(key)} major, degree ${n} is one key on the piano with two names. Which name is right?`,
+        choices: shuffle([prettyAll(right), prettyAll(twin)]), answer: prettyAll(right),
+        reveal: `${prettyAll(right)}. A scale uses every letter once: ${names.map(prettyAll).join(' ')}. ${prettyAll(twin)} would repeat or skip a letter.`,
+      };
+    }
+  },
+
+  // ----- Chords -----
+  'build-chord'({ kind = 'triad', qualities = ['major', 'minor'] } = {}) {
+    const c = randomChord(kind === 'seventh' ? SEVENTHS : TRIADS, qualities);
+    const what = kind === 'seventh' ? `${pretty(c.root)} ${c.quality} chord` : `${pretty(c.root)} ${c.quality} triad`;
+    return {
+      text: `Build ${/^[AEF]/.test(c.root) ? 'an' : 'a'} ${what}: click its ${c.ivs.length} notes, from this ${pretty(c.root)} upwards.`,
+      marks: [c.midis[0]], sequence: c.midis, play: [c.midis[0]], names: c.names.map(prettyAll), chord: true,
+      reveal: `${c.names.map(prettyAll).join(' – ')}: ${stackText(c)}.`,
+    };
+  },
+
+  'chord-quality'({ kind = 'triad', qualities = ['major', 'minor', 'diminished', 'augmented'], ear = false } = {}) {
+    const c = randomChord(kind === 'seventh' ? SEVENTHS : TRIADS, qualities);
+    return {
+      text: ear ? 'Listen. What kind of chord is it?' : 'What kind of chord is this?',
+      marks: ear ? undefined : c.midis, showAfter: ear ? c.midis : undefined,
+      play: [...c.midis, c.midis], choices: qualities.map((q) => q[0].toUpperCase() + q.slice(1)), answer: c.quality[0].toUpperCase() + c.quality.slice(1),
+      reveal: `${c.names.map(prettyAll).join(' – ')}: ${c.quality} (${stackText(c)}).`,
+    };
+  },
+
+  'diatonic-chord'({ seventh = false, keys = MAJOR_KEYS } = {}) {
+    const key = pick(keys);
+    const deg = 1 + rand(7);
+    const info = chordInfo(key, 'major', { deg, seventh });
+    const all = [1, 2, 3, 4, 5, 6, 7].map((d) => chordInfo(key, 'major', { deg: d, seventh }));
+    const opts = seventh ? Object.keys(SEVENTHS) : ['major', 'minor', 'diminished'];
+    const cap = (x) => x[0].toUpperCase() + x.slice(1);
+    const v = chordVoicing(info).chord;
+    return {
+      text: `In ${pretty(key)} major, what kind of ${seventh ? '7th chord' : 'chord'} is built on degree ${deg}?`,
+      choices: opts.map(cap), answer: cap(qualityWords(info)), play: [...v, v], showAfter: v,
+      reveal: `${info.roman}: ${symbolText(info)}. In every major key: ${all.map((x) => x.roman).join(' ')}.`,
+    };
+  },
+
+  // ----- Harmonic gravity -----
+  'chord-function'({ keys = MAJOR_KEYS } = {}) {
+    const key = pick(keys);
+    const deg = 1 + rand(7);
+    const info = chordInfo(key, 'major', { deg });
+    const why = {
+      1: 'it is home: everything else is measured from it.',
+      3: 'it shares two notes with I, so it feels close to home.',
+      6: 'it shares two notes with I, so it can stand in for home.',
+      2: 'it moves away from home and leads towards V.',
+      4: 'it moves away from home and leads towards V.',
+      5: 'it holds the leading tone, which pulls up to the tonic.',
+      7: 'it is like V7 without its root, so it pulls home too.',
+    }[deg];
+    const answer = FUNCTION_NAMES[FUNCTION_OF_DEGREE[deg]];
+    return {
+      text: `In ${pretty(key)} major, what is the job of the ${info.roman} chord (${symbolText(info)})?`,
+      choices: Object.values(FUNCTION_NAMES), answer,
+      reveal: `${answer}: ${why}`,
+    };
+  },
+
+  'tendency-tone'({ keys = MAJOR_KEYS } = {}) {
+    const key = pick(keys);
+    const t = tonicMidi(key);
+    const names = scaleNames(key, 'major');
+    const tend = pick([
+      { from: 11, to: 12, fd: 7, td: 1, why: 'the leading tone rises a semitone to the tonic' },
+      { from: 11, to: 12, fd: 7, td: 1, why: 'the leading tone rises a semitone to the tonic' },
+      { from: 5, to: 4, fd: 4, td: 3, why: 'degree 4 falls a semitone to degree 3' },
+      { from: 9, to: 7, fd: 6, td: 5, why: 'degree 6 leans down to degree 5' },
+      { from: 2, to: 0, fd: 2, td: 1, why: 'degree 2 steps down to the tonic' },
+    ]);
+    const from = t + tend.from;
+    return {
+      text: `In ${pretty(key)} major, ${prettyAll(names[tend.fd - 1])} (degree ${tend.fd}) is pulled by harmonic gravity. Click the note it wants to move to.`,
+      marks: [from], play: [t, t + 4, t + 7, t + 12, from], clickPc: (pcOf(key) + MODES.major[tend.td - 1]) % 12,
+      reveal: `${prettyAll(names[tend.td - 1])}: ${tend.why}.`,
+    };
+  },
+
+  'hear-cadence'({ keys = ['C', 'D', 'F', 'G', 'A', 'Bb'] } = {}) {
+    const key = pick(keys);
+    const pattern = pick([
+      { degs: [1, 4, 5, 1], home: true, name: 'I – IV – V – I' },
+      { degs: [1, 6, 2, 5, 1], home: true, name: 'I – vi – ii – V – I' },
+      { degs: [1, 4, 1, 5], home: false, name: 'I – IV – I – V' },
+      { degs: [1, 6, 4, 5], home: false, name: 'I – vi – IV – V' },
+    ]);
+    const chords = pattern.degs.map((d) => chordVoicing(chordInfo(key, 'major', { deg: d })).chord);
+    const answer = pattern.home ? 'Finished: it lands home' : 'Left hanging: it wants more';
+    return {
+      text: 'Listen to these chords. Does the music land home, or is it left hanging?',
+      play: chords, choices: ['Finished: it lands home', 'Left hanging: it wants more'], answer,
+      reveal: pattern.home ? `${pattern.name}: V pulls back to I, a perfect cadence.` : `${pattern.name}: it stops on V, the most unstable chord. This is a half cadence.`,
+    };
+  },
 };
 
 export const QUIZ_TYPES = Object.keys(GEN);
+/** One question of a type (used by the tests). */
+export const makeQuestion = (type, options = {}) => GEN[type](options);
 
 // ---------- Sound ----------
 
+let lastNoteAt = 0;
+/** Plays notes one after another; an array inside the list is a chord, played together. */
 async function playNotes(player, notes, gap = 0.65) {
   if (!player || !notes?.length) return;
   await player.ensure();
   const t = Tone.now() + 0.05;
   const f = (m) => 440 * 2 ** ((m - 69) / 12);
-  notes.forEach((m, i) => player.synths.melody.triggerAttackRelease(f(m), Math.min(0.55, gap * 0.9), t + i * gap, 0.8));
+  let at = t;
+  notes.forEach((m) => {
+    if (Array.isArray(m)) {
+      player.synths.chords.triggerAttackRelease(m.map(f), 1.0, at, 0.6);
+      at += 1.15;
+    } else {
+      // The melody synth plays one note at a time and can't take a note earlier than one already
+      // scheduled (e.g. a key clicked while the question still plays): those go to the chord synth.
+      if (at > lastNoteAt) {
+        player.synths.melody.triggerAttackRelease(f(m), Math.min(0.55, gap * 0.9), at, 0.8);
+        lastNoteAt = at;
+      } else {
+        player.synths.chords.triggerAttackRelease([f(m)], Math.min(0.55, gap * 0.9), at, 0.6);
+      }
+      at += gap;
+    }
+  });
 }
 
 // ---------- The quiz view ----------
@@ -267,11 +503,11 @@ export class QuizView {
       this.controls,
       this.feedback,
       h('div', { class: 'row wrap' },
-        qn.play ? h('button', { type: 'button', class: 'btn small', onclick: () => playNotes(this.player, qn.play) }, '▶ Play again') : '',
+        qn.play ? h('button', { type: 'button', class: 'btn small', onclick: () => playNotes(this.player, qn.play, qn.gap) }, '▶ Play again') : '',
         this.nextBtn)));
     this.drawKeyboard();
     this.drawControls();
-    if (qn.play) playNotes(this.player, qn.play);
+    if (qn.play) playNotes(this.player, qn.play, qn.gap);
   }
 
   /** Draw the keyboard with the question's keys, the student's clicks and (after answering) the answer. */
@@ -331,7 +567,7 @@ export class QuizView {
         this.picked.forEach((x, k) => { if (x !== qn.sequence[k]) extra.set(x, { cls: 'bad' }); });
         this.drawKeyboard(extra);
         this.drawControls();
-        setTimeout(() => playNotes(this.player, qn.sequence, 0.4), 400);
+        setTimeout(() => playNotes(this.player, qn.chord ? [...qn.sequence, qn.sequence] : qn.sequence, 0.4), 400);
       } else {
         this.redrawSequence();
       }
@@ -351,10 +587,14 @@ export class QuizView {
 
   /** Building a scale: show the student's notes with T / S between them as they click. */
   redrawSequence() {
+    const qn = this.questions[this.i];
     const extra = new Map();
     this.picked.forEach((m, k) => {
       const step = k ? m - this.picked[k - 1] : null;
-      extra.set(m, { cls: 'pick', label: k === 0 ? '1' : step === 1 ? 'S' : step === 2 ? 'T' : '?' });
+      const label = qn.chord
+        ? (k === 0 ? 'R' : step === 3 ? 'm3' : step === 4 ? 'M3' : String(step))
+        : (k === 0 ? '1' : step === 1 ? 'S' : step === 2 ? 'T' : '?');
+      extra.set(m, { cls: 'pick', label });
     });
     this.drawKeyboard(extra);
     this.drawControls();
