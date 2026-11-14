@@ -1,13 +1,17 @@
 // Account page: sign in / create account, then "My profile": progress, submissions and the teacher's feedback.
 
-import { leaderboard, listPieces, myProfile, myProgress, mySubmissions, myXpEvents, renderAccountWidget, setLeaderboardOptIn, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611141612';
-import { journeyCard, leaderboardList, summarise } from './game.js?v=202611141612';
-import { COURSE, courseLessons } from './course.js?v=202611141612';
-import { findExercise } from './lessons.js?v=202611141612';
-import { h, store, toast } from './util.js?v=202611141612';
+import { leaderboard, listPieces, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611141651';
+import { journeyCard, leaderboardList, summarise } from './game.js?v=202611141651';
+import { COURSE, courseLessons } from './course.js?v=202611141651';
+import { findExercise } from './lessons.js?v=202611141651';
+import { h, store, toast } from './util.js?v=202611141651';
 
 const main = document.getElementById('main');
 const next = new URLSearchParams(location.search).get('next');
+// Arriving from a password-reset email: read the link before Supabase tidies the address bar.
+const linkHash = new URLSearchParams(location.hash.slice(1));
+let recovering = linkHash.get('type') === 'recovery';
+const linkError = linkHash.get('error_description');
 
 function goNext() {
   // Only go back to a page of this site.
@@ -16,6 +20,7 @@ function goNext() {
 }
 
 async function render() {
+  if (recovering) { renderNewPassword(); return; }
   const p = await myProfile();
   renderAccountWidget(document.getElementById('account-widget'));
   if (!p) renderSignIn();
@@ -81,7 +86,70 @@ function renderSignIn(mode = 'signin') {
     h('div', { class: 'seg' }, tab('signin', 'Sign in'), tab('signup', 'Create account')),
     mode === 'signin' ? signinForm : signupForm,
     msg,
-    mode === 'signin' ? h('p', { class: 'muted small' }, 'Forgot your password? Ask your teacher to reset it.') : ''));
+    mode === 'signin' ? h('p', { class: 'muted small' }, h('a', { href: '#', onclick: (e) => { e.preventDefault(); renderForgot(); } }, 'Forgot your password?')) : ''));
+  if (linkError && mode === 'signin') msg.textContent = /expired|invalid/i.test(linkError) ? 'That reset link has expired or was already used. Ask for a new one below.' : linkError;
+}
+
+// ---------- Forgotten password ----------
+
+function renderForgot() {
+  const msg = h('p', { class: 'status', role: 'status' });
+  const form = h('form', {
+    class: 'auth-form',
+    onsubmit: async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      f.querySelectorAll('button, input').forEach((x) => { x.disabled = true; });
+      msg.textContent = 'Sending…';
+      try {
+        await requestPasswordReset(f.email.value.trim());
+        msg.textContent = 'If there is an account with this email, a link to choose a new password is on its way. Check your inbox (and spam). The link works once, for one hour.';
+      } catch (err) {
+        msg.textContent = err.message;
+        f.querySelectorAll('button, input').forEach((x) => { x.disabled = false; });
+      }
+    },
+  },
+    h('label', { class: 'field' }, 'Email', h('input', { type: 'email', name: 'email', required: true, autocomplete: 'email' })),
+    h('button', { type: 'submit', class: 'btn primary' }, 'Email me a reset link'));
+  main.replaceChildren(h('section', { class: 'card auth-card' },
+    h('p', { class: 'eyebrow' }, COURSE.academy),
+    h('h1', {}, 'Forgot your password?'),
+    h('p', { class: 'muted' }, 'Type the email you signed up with. We’ll send you a link to choose a new password.'),
+    form, msg,
+    h('p', { class: 'muted small' }, h('a', { href: '#', onclick: (e) => { e.preventDefault(); renderSignIn(); } }, '← Back to sign in'))));
+}
+
+function renderNewPassword() {
+  const msg = h('p', { class: 'status', role: 'status' });
+  const form = h('form', {
+    class: 'auth-form',
+    onsubmit: async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      if (f.password.value.length < 8) { msg.textContent = 'The password needs at least 8 characters.'; return; }
+      if (f.password.value !== f.again.value) { msg.textContent = 'The two passwords don’t match.'; return; }
+      f.querySelectorAll('button, input').forEach((x) => { x.disabled = true; });
+      msg.textContent = 'Saving…';
+      try {
+        await setNewPassword(f.password.value);
+        recovering = false;
+        history.replaceState(null, '', 'account.html');
+        toast('New password saved. You’re signed in.');
+        render();
+      } catch (err) {
+        msg.textContent = err.message;
+        f.querySelectorAll('button, input').forEach((x) => { x.disabled = false; });
+      }
+    },
+  },
+    h('label', { class: 'field' }, 'New password (at least 8 characters)', h('input', { type: 'password', name: 'password', required: true, minlength: 8, autocomplete: 'new-password' })),
+    h('label', { class: 'field' }, 'Type it again', h('input', { type: 'password', name: 'again', required: true, minlength: 8, autocomplete: 'new-password' })),
+    h('button', { type: 'submit', class: 'btn primary' }, 'Save my new password'));
+  main.replaceChildren(h('section', { class: 'card auth-card' },
+    h('p', { class: 'eyebrow' }, COURSE.academy),
+    h('h1', {}, 'Choose a new password'),
+    form, msg));
 }
 
 // ---------- Profile ----------
@@ -207,4 +275,5 @@ async function renderProfile(p) {
   if (location.hash === '#journey') document.getElementById('journey')?.scrollIntoView({ block: 'start' });
 }
 
+onPasswordRecovery(() => { recovering = true; renderNewPassword(); });
 render();

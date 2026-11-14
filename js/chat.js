@@ -4,9 +4,9 @@
 import {
   chatDelete, chatFetch, chatMarkRead, chatReads, chatRecent, chatSend, chatSubscribe, dmChannel,
   listStudents, myProfile, renderAccountWidget, unreadByChannel,
-} from './auth.js?v=202611141612';
-import { COURSE } from './course.js?v=202611141612';
-import { h, toast } from './util.js?v=202611141612';
+} from './auth.js?v=202611141651';
+import { COURSE } from './course.js?v=202611141651';
+import { h, toast } from './util.js?v=202611141651';
 
 const root = document.getElementById('chat');
 const params = new URLSearchParams(location.search);

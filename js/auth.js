@@ -2,8 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611141612';
-import { celebrate, summarise, xpChip } from './game.js?v=202611141612';
+import { h } from './util.js?v=202611141651';
+import { celebrate, summarise, xpChip } from './game.js?v=202611141651';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
@@ -48,6 +48,8 @@ function friendly(error) {
   if (/already registered|already been registered/i.test(m)) return 'There is already an account with this email. Sign in instead.';
   if (/password should be at least/i.test(m)) return 'The password needs at least 8 characters.';
   if (/rate limit/i.test(m)) return 'Too many attempts. Please wait a few minutes and try again.';
+  if (/same.*(old|previous|current).*password|different from the old/i.test(m)) return 'Choose a password you haven’t used before.';
+  if (/error sending (recovery|reset) email|smtp/i.test(m)) return 'The reset email couldn’t be sent right now. Please try again later, or ask your teacher.';
   return m || 'Something went wrong.';
 }
 
@@ -65,6 +67,28 @@ export async function signIn({ email, password }) {
   const c = sb();
   if (!c) throw new Error('Accounts are unavailable right now. Please reload the page.');
   const { error } = await c.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(friendly(error));
+  myProfile(true);
+}
+
+// ---------- Forgotten password ----------
+
+/** Emails a reset link (if an account exists). The link opens account.html, where a new password is chosen. */
+export async function requestPasswordReset(email) {
+  const c = sb();
+  if (!c) throw new Error('Accounts are unavailable right now. Please reload the page.');
+  const redirectTo = new URL('account.html', location.href).href;
+  const { error } = await c.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) throw new Error(friendly(error));
+}
+
+/** Called when the student arrives from the reset link (Supabase signs them in for this one purpose). */
+export function onPasswordRecovery(cb) {
+  sb()?.auth.onAuthStateChange((event) => { if (event === 'PASSWORD_RECOVERY') cb(); });
+}
+
+export async function setNewPassword(password) {
+  const { error } = await sb().auth.updateUser({ password });
   if (error) throw new Error(friendly(error));
   myProfile(true);
 }

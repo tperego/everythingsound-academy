@@ -8,9 +8,9 @@
 //        note-values, time-signature, hear-meter, chord-pull, tendency-tone, hear-cadence,
 //        name-inversion, find-fundamental, common-chord, modulation-fifth
 
-import { keyboardSvg } from './piano.js?v=202611141612';
-import { KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611141612';
-import { h } from './util.js?v=202611141612';
+import { keyboardSvg } from './piano.js?v=202611141651';
+import { KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611141651';
+import { h } from './util.js?v=202611141651';
 
 const NATURAL = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B' };
 const BLACK_PAIRS = { 1: 'C♯ / D♭', 3: 'D♯ / E♭', 6: 'F♯ / G♭', 8: 'G♯ / A♭', 10: 'A♯ / B♭' };

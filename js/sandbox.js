@@ -1,10 +1,10 @@
 // Sandbox: the whole app with nothing locked. Several named pieces, saved in this browser.
 
-import { projectToMidi } from './midi.js?v=202611141612';
-import { newProject, normalizeProject } from './project.js?v=202611141612';
-import { copyText, downloadBytes, h, pack, slug, store, toast, uid, unpack } from './util.js?v=202611141612';
-import { Workspace } from './workspace.js?v=202611141612';
-import { deletePiece, listPieces, myProfile, renderAccountWidget, savePiece } from './auth.js?v=202611141612';
+import { projectToMidi } from './midi.js?v=202611141651';
+import { newProject, normalizeProject } from './project.js?v=202611141651';
+import { copyText, downloadBytes, h, pack, slug, store, toast, uid, unpack } from './util.js?v=202611141651';
+import { Workspace } from './workspace.js?v=202611141651';
+import { deletePiece, listPieces, myProfile, renderAccountWidget, savePiece } from './auth.js?v=202611141651';
 
 const $ = (sel) => document.querySelector(sel);
 const KEY = 'es.sandbox.pieces';
