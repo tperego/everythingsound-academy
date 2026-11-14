@@ -1,8 +1,8 @@
 // Auto-checks. Each exercise lists checks as data; each check returns {label, pass, detail}.
 
-import { chordAtBeat, chordEvents } from './project.js?v=202611122359';
-import { chordDegrees, chordInfo } from './theory.js?v=202611122359';
-import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js?v=202611122359';
+import { chordAtBeat, chordEvents } from './project.js?v=202611141607';
+import { chordDegrees, chordInfo } from './theory.js?v=202611141607';
+import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js?v=202611141607';
 
 const pct = (x) => `${Math.round(x * 100)}%`;
 const listBars = (arr) => arr.join(', ');
@@ -45,8 +45,9 @@ const CHECKS = {
     const evs = romans(p);
     const a = evs[evs.length - 2];
     const b = evs[evs.length - 1];
-    const names = { perfect: 'a perfect cadence (V – I)', plagal: 'a plagal cadence (IV – I)', half: 'a half cadence (ends on V)', imperfect: 'an imperfect cadence (ends on V)' };
+    const names = { perfect: 'a perfect cadence (V – I)', plagal: 'a plagal cadence (IV – I)', half: 'a half cadence (ends on V)', imperfect: 'an imperfect cadence (ends on V)', resolving: 'a cadence that resolves home (V, vii°, IV or ii, then I)' };
     let pass = false;
+    if (cadence === 'resolving') pass = !!a && !!b && [5, 7, 4, 2].includes(a.chord.deg) && b.chord.deg === 1;
     if (cadence === 'perfect') pass = !!a && !!b && a.chord.deg === 5 && b.chord.deg === 1;
     if (cadence === 'plagal') pass = !!a && !!b && a.chord.deg === 4 && b.chord.deg === 1;
     if (cadence === 'half' || cadence === 'imperfect') pass = !!b && b.chord.deg === 5;
@@ -101,7 +102,7 @@ const CHECKS = {
 
   'melody-ends-on-tonic'(_, p) {
     const last = [...p.melody].sort((a, b) => a.start - b.start).pop();
-    return { label: 'The melody ends on the tonic (degree 1)', pass: !!last && last.deg === 1, detail: last ? `Last note: degree ${last.deg}` : 'No notes yet.' };
+    return { label: 'The melody ends on the tonic (grade 1)', pass: !!last && last.deg === 1, detail: last ? `Last note: grade ${last.deg}` : 'No notes yet.' };
   },
 
   'melody-range'({ maxRows = 10 }, p) {
@@ -115,6 +116,37 @@ const CHECKS = {
   'key-is'({ key, mode }, p) {
     const pass = p.key === key && p.mode === mode;
     return { label: 'You found the key', pass, detail: pass ? `${key} ${mode} ✓` : `You chose ${p.key} ${p.mode}. Listen for the note that feels like home.` };
+  },
+
+  // At least one chord built on one of these grades, e.g. { degrees: [3, 6] }.
+  'uses-degrees'({ degrees, label }, p) {
+    const evs = romans(p);
+    const found = evs.filter((e) => degrees.includes(e.chord.deg));
+    return { label: label || `Uses a chord on grade ${degrees.join(' or ')}`, pass: found.length > 0, detail: found.length ? `Found: ${found.map((e) => e.info.roman).join(', ')}` : 'Not yet.' };
+  },
+
+  // Some chords inverted for a smooth flow, but the chords on the given grades in fundamental state.
+  'inversions-used'({ min = 1, rootOn = [5, 1] }, p) {
+    const evs = romans(p);
+    const inverted = evs.filter((e) => e.info.inversion > 0);
+    const wrong = evs.filter((e) => rootOn.includes(e.chord.deg) && e.info.inversion !== 0);
+    return {
+      label: `At least ${min} chord${min === 1 ? '' : 's'} in inversion, with ${rootOn.map((d) => ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'][d - 1]).join(' and ')} in fundamental state`,
+      pass: inverted.length >= min && wrong.length === 0,
+      detail: `${inverted.length} inverted${inverted.length ? ` (${inverted.map((e) => e.info.roman).join(', ')})` : ''}${wrong.length ? `; put ${wrong.map((e) => e.info.roman).join(', ')} back in fundamental state` : ''}.`,
+    };
+  },
+
+  // The melody uses each of these note lengths (in 8th-note steps: 8 whole, 4 half, 2 quarter, 1 eighth).
+  'melody-durations'({ lens = [8, 4, 2, 1] }, p) {
+    const names = { 8: 'whole', 4: 'half', 2: 'quarter', 1: 'eighth' };
+    const have = new Set(p.melody.map((n) => n.len));
+    const missing = lens.filter((l) => !have.has(l));
+    return {
+      label: `Uses ${lens.map((l) => names[l]).join(', ')} notes`,
+      pass: missing.length === 0,
+      detail: missing.length ? `Still missing: ${missing.map((l) => `${names[l]} note`).join(', ')}.` : 'All there.',
+    };
   },
 
   'mode-is'({ mode }, p) {

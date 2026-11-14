@@ -1,15 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611122359';
-import { LESSONS } from './lessons.js?v=202611122359';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611122359';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611122359';
-import { projectToAbc } from './staff.js?v=202611122359';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611122359';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611122359';
-import { pack, unpack } from './util.js?v=202611122359';
-import { makeQuestion } from './quiz.js?v=202611122359';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611122359';
+import { runChecks } from './checks.js?v=202611141607';
+import { LESSONS } from './lessons.js?v=202611141607';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611141607';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611141607';
+import { projectToAbc } from './staff.js?v=202611141607';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611141607';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611141607';
+import { pack, unpack } from './util.js?v=202611141607';
+import { makeQuestion } from './quiz.js?v=202611141607';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611141607';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -290,7 +290,7 @@ await test('quiz: every question type makes valid questions', async () => {
       assert(q.text, `${type}: no text`);
       if (q.choices) assert(q.choices.includes(q.answer) && new Set(q.choices).size === q.choices.length, `${type}: bad choices ${JSON.stringify(q)}`);
       if (q.clickMidi != null) assert(q.clickMidi >= 48 && q.clickMidi <= 83, `${type}: target off the keyboard ${q.clickMidi}`);
-      if (q.sequence) assert(q.sequence.length === 8 && q.sequence[7] - q.sequence[0] === 12 && q.sequence.every((m) => m >= 48 && m <= 83), `${type}: bad scale`);
+      if (q.sequence && !q.chord) assert(q.sequence.length === 8 && q.sequence[7] - q.sequence[0] === 12 && q.sequence.every((m) => m >= 48 && m <= 83), `${type}: bad scale`);
       if (type === 'spot-mistake') assert(q.marks.includes(q.clickMidi) && q.marks.every((m, i) => i === 0 || m > q.marks[i - 1]), `${type}: bad mistake`);
       if (!q.choices && q.clickMidi == null && q.clickPc == null && !q.sequence) throw new Error(`${type}: no way to answer`);
     }
@@ -303,7 +303,7 @@ await test('quiz score and steps-and-3rds checks', () => {
   assert(!runChecks(quizEx, null, {})[0].pass, 'not played yet fails');
   assert(runChecks(quizEx, null, { answers: { quiz: { best: 8, total: 10 } } })[0].pass, '8/10 passes');
   assert(!runChecks(quizEx, null, { answers: { quiz: { best: 7, total: 10 } } })[0].pass, '7/10 fails');
-  const mel = LESSONS.find((l) => l.id === 'mt-03-intervals').exercises[3];
+  const mel = LESSONS.find((l) => l.id === 'mt-03-intervals').exercises.find((e) => e.id === 'mt03-melody');
   const q = (start, deg, len = 2) => ({ start, len, deg, oct: 0 });
   const good = newProject({ key: 'C', bars: 4, melody: [q(0, 1), q(2, 2), q(4, 3), q(6, 5), q(8, 4), q(10, 2), q(12, 3), q(16, 2), q(24, 1, 8)] });
   assert(runChecks(mel, good).every((r) => r.pass), JSON.stringify(runChecks(mel, good)));
@@ -373,26 +373,52 @@ await test('every quick-fire exercise makes valid questions', () => {
 });
 
 await test('chord spelling in questions', () => {
+  const sevenths = ['major triad + major 7th', 'major triad + minor 7th', 'minor triad + minor 7th', 'diminished triad + minor 7th', 'diminished triad + diminished 7th', 'minor triad + major 7th', 'augmented triad + major 7th'];
   for (let i = 0; i < 300; i++) {
-    const qn = makeQuestion('build-chord', { kind: 'seventh', qualities: ['major 7th', 'dominant 7th', 'minor 7th', 'half-diminished 7th'] });
+    const qn = makeQuestion('build-chord', { kind: 'seventh', qualities: sevenths });
     const letters = qn.names.map((n) => n[0]);
     const L = 'CDEFGAB';
     for (let k = 1; k < letters.length; k++) assertEq((L.indexOf(letters[k]) - L.indexOf(letters[k - 1]) + 7) % 7, 2, `stacked in 3rds: ${qn.names}`);
   }
-  const s = makeQuestion('diatonic-chord', { keys: ['G'], seventh: true });
-  assert(/Imaj7 ii7 iii7 IVmaj7 V7 vi7 viiø7/.test(s.reveal), s.reveal);
+  const minor = makeQuestion('diatonic-chord', { mode: 'minor' });
+  assert(/i ii° III iv v VI VII/.test(minor.reveal), minor.reveal);
+  for (let i = 0; i < 100; i++) {
+    const q = makeQuestion('diatonic-chord', { keys: ['G'] });
+    const grade = Number(q.text.match(/grade (\d)/)[1]);
+    assertEq(q.answer, ['Major', 'Minor', 'Minor', 'Major', 'Major', 'Minor', 'Diminished'][grade - 1], q.text);
+  }
 });
 
-await test('new checks: minor key and chord colours', () => {
-  const ex = LESSONS.find((l) => l.id === 'mt-07-triads').exercises.find((e) => e.id === 'mt07-colours');
+await test('new checks: chord colours, gravity, inversions, durations', () => {
+  const find = (lid, eid) => LESSONS.find((l) => l.id === lid).exercises.find((e) => e.id === eid);
+  const colours = find('mt-09-chords-scale', 'mt09-colours');
   const good = newProject({ key: 'C', bars: 8, progression: [1, 6, 2, 7, 1, 3, 4, 1] });
-  assert(runChecks(ex, good).every((r) => r.pass), JSON.stringify(runChecks(ex, good)));
+  assert(runChecks(colours, good).every((r) => r.pass), JSON.stringify(runChecks(colours, good)));
   const plain = newProject({ key: 'C', bars: 8, progression: [1, 4, 5, 1, 1, 4, 5, 1] });
-  assert(!runChecks(ex, plain).find((r) => r.label.includes('minor')).pass, 'needs minor and dim');
-  const gex = LESSONS.find((l) => l.id === 'mt-09-gravity').exercises[3];
-  const minor = newProject({ key: 'D', mode: 'minor', bars: 8, progression: [1, 6, 4, 5, 1, 2, 5, 1] });
-  assert(runChecks(gex, minor).every((r) => r.pass), JSON.stringify(runChecks(gex, minor)));
-  assert(!runChecks(gex, { ...minor, mode: 'major' }).every((r) => r.pass), 'major should fail');
+  assert(!runChecks(colours, plain).find((r) => r.label.includes('minor')).pass, 'needs minor and dim');
+
+  const journey = find('mt-11-gravity', 'mt11-journey');
+  const ok = newProject({ key: 'C', bars: 8, progression: [1, 6, 3, 6, 4, 2, 5, 1] });
+  assert(runChecks(journey, ok).every((r) => r.pass), JSON.stringify(runChecks(journey, ok)));
+  const plagal = newProject({ key: 'C', bars: 8, progression: [1, 6, 3, 6, 1, 6, 4, 1] });
+  assert(runChecks(journey, plagal).every((r) => r.pass), 'plagal ending is fine');
+  const floating = newProject({ key: 'C', bars: 8, progression: [1, 6, 3, 6, 4, 2, 6, 1] });
+  assert(!runChecks(journey, floating).every((r) => r.pass), 'vi – I does not resolve');
+
+  const smooth = find('mt-12-inversions', 'mt12-smooth');
+  const given = newProject(smooth.start);
+  const r0 = runChecks(smooth, given);
+  assert(r0[0].pass && !r0[1].pass, `given: chords right, no inversions yet ${JSON.stringify(r0)}`);
+  const inverted = newProject({ ...smooth.start, progression: [1, { deg: 3, bass: { deg: 5, acc: 0 } }, { deg: 6, bass: { deg: 1, acc: 0 } }, [5, 1]] });
+  assert(runChecks(smooth, inverted).every((r) => r.pass), JSON.stringify(runChecks(smooth, inverted)));
+  const badEnd = newProject({ ...smooth.start, progression: [1, { deg: 3, bass: { deg: 5, acc: 0 } }, { deg: 6, bass: { deg: 1, acc: 0 } }, [{ deg: 5, bass: { deg: 7, acc: 0 } }, 1]] });
+  assert(!runChecks(smooth, badEnd)[1].pass, 'V must stay in fundamental state');
+
+  const dur = find('mt-10-rhythm', 'mt10-durations');
+  const q = (start, len, deg = 3) => ({ start, len, deg, oct: 0 });
+  const p = { ...newProject(dur.start), melody: [q(0, 8), q(8, 4), q(12, 2), q(14, 1), q(15, 1), q(16, 8), q(24, 8, 1)] };
+  assert(runChecks(dur, p).every((r) => r.pass), JSON.stringify(runChecks(dur, p)));
+  assert(!runChecks(dur, { ...p, melody: p.melody.filter((n) => n.len !== 1) })[0].pass, 'needs eighths');
 });
 
 const failed = results.filter((r) => !r.ok);

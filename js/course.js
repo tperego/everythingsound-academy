@@ -1,8 +1,8 @@
 // The course: modules in order, each listing lesson ids from js/lessons.js.
 // Add your lessons to js/lessons.js, then list them here in the order students should take them.
 
-import { LESSONS, findLesson } from './lessons.js?v=202611122359';
-import { store } from './util.js?v=202611122359';
+import { LESSONS, findLesson } from './lessons.js?v=202611141607';
+import { store } from './util.js?v=202611141607';
 
 export const COURSE = {
   id: 'music-theory',
@@ -15,7 +15,7 @@ export const COURSE = {
     { id: 'course:announcements', name: 'Announcements', icon: '📢', about: 'News and tips from your teacher.', teacherOnly: true },
     { id: 'course:general', name: 'General', icon: '#', about: 'Say hello, share what you’re working on, ask anything.' },
     { id: 'course:foundations', name: 'Foundations Q&A', icon: '#', about: 'Questions about Module 1: pitch, the keyboard, intervals, scales and enharmony.' },
-    { id: 'course:chords', name: 'Chords & harmony Q&A', icon: '#', about: 'Questions about Module 2: triads, 7th chords and harmonic gravity.' },
+    { id: 'course:chords', name: 'Chords & harmony Q&A', icon: '#', about: 'Questions about Modules 2 and 3: chords, rhythm, gravity, inversions, modulation.' },
     { id: 'course:class-lessons', name: 'Chords & form Q&A', icon: '#', about: 'Questions about the lessons from class.' },
   ],
   modules: [
@@ -25,9 +25,14 @@ export const COURSE = {
       lessons: ['mt-01-pitch', 'mt-02-keyboard', 'mt-03-intervals', 'mt-04-major-scale', 'mt-05-minor-scale', 'mt-06-enharmony'],
     },
     {
-      title: 'Chords and harmony',
-      intro: 'Triads, seventh chords and the harmonic gravity that pulls music home.',
-      lessons: ['mt-07-triads', 'mt-08-sevenths', 'mt-09-gravity'],
+      title: 'Chords',
+      intro: 'How chords are built by 3rds, 7th chords, and the chords that grow on every grade of the scale.',
+      lessons: ['mt-07-chords', 'mt-08-sevenths', 'mt-09-chords-scale'],
+    },
+    {
+      title: 'Rhythm and harmony',
+      intro: 'Note durations and time signatures, the harmonic gravity system, inversions and modulation.',
+      lessons: ['mt-10-rhythm', 'mt-11-gravity', 'mt-12-inversions', 'mt-13-modulation'],
     },
     {
       title: 'From class: chords, listening and form',

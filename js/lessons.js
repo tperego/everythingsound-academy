@@ -121,14 +121,18 @@ export const LESSONS = [
 ];
 
 // ---------- Module 1 · Foundations ----------
+// Wording follows the videos: tone / semitone, whole / half (scale patterns), grade of the scale,
+// fundamental state. `at` is where in the video the topic is explained (for "Watch this part").
 
-const quizEx = (id, title, type, brief, { count = 10, pass = 8, options = {} } = {}) => ({
+const quizEx = (id, title, type, brief, { count = 10, pass = 8, options = {}, at = null } = {}) => ({
   id, title, kind: 'quiz', noComposer: true, brief,
   start: { key: 'C', mode: 'major', bpm: 90, bars: 4 },
   quiz: { type, count, pass, options },
   checks: [{ type: 'quiz-score', min: pass }],
   rubric: [],
+  ...(at != null ? { videoAt: at } : {}),
 });
+const ALL_INTERVALS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 LESSONS.push(
   {
@@ -136,19 +140,19 @@ LESSONS.push(
     course: 'Music Theory · Foundations',
     title: 'Pitch, tones and semitones',
     youtubeId: 'r5UU6ODpl5Y',
-    intro: 'How high or low a note is, and the two smallest distances in Western music: the semitone and the tone.',
+    intro: 'How high or low a note is, and the unit of measure for the distance between notes: the semitone and the tone.',
     exercises: [
       quizEx('mt01-higher-lower', '1 · Higher or lower?', 'higher-lower', [
-        'Listen to two notes. Is the second one higher or lower?',
+        'Listen to two notes. Is the second one higher (ascending) or lower (descending)?',
         'Use ▶ Play again as often as you like. Get 8 out of 10 to pass.',
-      ]),
+      ], { at: 156 }),
       quizEx('mt01-tone-semitone', '2 · Tone or semitone?', 'tone-semitone', [
-        'Two keys light up and play. Are they a semitone apart (next-door keys) or a tone (one key in between)?',
-        'Look and listen: a semitone sounds tighter, more “squeezed”.',
-      ]),
+        'Two keys light up and play. Are they a semitone apart (the very next key) or a tone (two semitones)?',
+        'Listen too: memorise how a tone and a semitone sound.',
+      ], { at: 187 }),
       quizEx('mt01-count', '3 · Count the semitones', 'count-semitones', [
         'Two keys light up. Count the semitones from the lower to the higher one: every key counts, black and white.',
-      ]),
+      ], { at: 251 }),
     ],
   },
   {
@@ -156,15 +160,16 @@ LESSONS.push(
     course: 'Music Theory · Foundations',
     title: 'The piano keyboard',
     youtubeId: '9kiI2B6duvQ',
-    intro: 'How the keyboard is built: the pattern of black keys, the names of every key, and where the semitones are.',
+    intro: 'The pattern of black keys in groups of two and three, the reference points C and F, and the sequence of notes C D E F G A B.',
     exercises: [
       quizEx('mt02-find-key', '1 · Find the key', 'find-key', [
         'Click any key with the name shown. Every octave counts.',
-        'Tip: C sits just left of the group of two black keys, F just left of the group of three.',
-      ]),
-      quizEx('mt02-black-keys', '2 · Name the black key', 'name-black-key', [
-        'A black key has two names: a ♯ name and a ♭ name. Choose the right pair.',
-      ]),
+        'Your reference points: C is just before the group of two black keys, F just before the group of three.',
+      ], { at: 51 }),
+      quizEx('mt02-names', '2 · Name the white key', 'name-white-key', [
+        'A white key lights up. What is its name?',
+        'Find the nearest C or F, then count along C D E F G A B.',
+      ], { at: 88 }),
       quizEx('mt02-steps', '3 · A tone or semitone away', 'semitone-step', [
         'Click the key a tone or a semitone above or below the one shown.',
         'Watch out for E–F and B–C: they are semitones with no black key between them.',
@@ -176,27 +181,32 @@ LESSONS.push(
     course: 'Music Theory · Foundations',
     title: 'Intervals',
     youtubeId: 'tpy1MFZKAV0',
-    intro: 'Naming the distance between two notes: seconds, thirds, fourths, fifths and the octave, by eye and by ear.',
+    intro: 'Naming the distance between two notes: seconds, thirds and sixths, sevenths (major or minor), fourths and fifths (perfect, augmented or diminished), the octave, and how intervals turn upside down.',
     exercises: [
       quizEx('mt03-name', '1 · Name the interval', 'name-interval', [
         'Two keys light up and play. Name the interval between them.',
-        'Count semitones if you need to: minor 2nd = 1, major 2nd = 2, minor 3rd = 3, major 3rd = 4, perfect 4th = 5, perfect 5th = 7, octave = 12.',
-      ]),
+        'Count semitones: minor 2nd 1, major 2nd 2, minor 3rd 3, major 3rd 4, perfect 4th 5, tritone 6, perfect 5th 7, minor 6th 8, major 6th 9, minor 7th 10, major 7th 11, octave 12.',
+      ], { pass: 7, options: { set: ALL_INTERVALS }, at: 57 }),
       quizEx('mt03-build', '2 · Build the interval', 'build-interval', [
         'Click the key that makes the interval asked for, above the note shown.',
-      ]),
+        'Once you know how many tones and semitones an interval has, you can build it from any note.',
+      ], { options: { set: [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12] }, at: 286 }),
       quizEx('mt03-hear', '3 · Hear the interval', 'hear-interval', [
-        'Listen to two notes and choose the interval: major 2nd, major 3rd, perfect 5th or octave.',
-        'Tip: link each one to a song you know.',
-      ], { pass: 7 }),
+        'Listen to two notes, one after the other and then together. Choose the interval.',
+        'Tip: the minor 2nd clashes, the 3rds sound sweet, the 5th sounds open.',
+      ], { pass: 7, options: { set: [1, 3, 4, 7, 12], together: true }, at: 125 }),
+      quizEx('mt03-invert', '4 · Turn it upside down', 'invert-interval', [
+        'Move the lower note up an octave: the interval turns upside down. What do you get?',
+        'The two always add up to 12 semitones: a major 7th becomes a minor 2nd, a perfect 4th becomes a perfect 5th.',
+      ], { at: 352 }),
       {
         id: 'mt03-melody',
-        title: '4 · Write a melody with steps and 3rds',
+        title: '5 · Write a melody with steps and 3rds',
         kind: 'creative',
         brief: [
-          'Write a 4-bar melody in C major using only steps (2nds) and 3rds: no bigger leaps.',
+          'Write a 4-bar melody in C major using only 2nds and 3rds: no bigger leaps.',
           'Click in the grid to add notes, drag to make them longer. Press Play to hear it.',
-          'End on C (degree 1). Check, then submit it to your teacher.',
+          'End on C (grade 1). Check, then submit it to your teacher.',
         ],
         start: { key: 'C', mode: 'major', bpm: 90, bars: 4 },
         lock: { key: true, bars: true },
@@ -206,7 +216,7 @@ LESSONS.push(
           { type: 'melody-ends-on-tonic' },
         ],
         rubric: [
-          { label: 'Uses steps and 3rds well', max: 5 },
+          { label: 'Uses 2nds and 3rds well', max: 5 },
           { label: 'Shape: it goes somewhere', max: 5 },
           { label: 'Rhythm and musicality', max: 5 },
         ],
@@ -218,19 +228,20 @@ LESSONS.push(
     course: 'Music Theory · Foundations',
     title: 'The major scale',
     youtubeId: 'v1_RLraa6ug',
-    intro: 'The pattern behind every major scale, T–T–S–T–T–T–S, and how to build it from any note.',
+    intro: 'The pattern behind every major scale, whole–whole–half–whole–whole–whole–half, the grades of the scale, and the letters in alphabetical order.',
     exercises: [
       quizEx('mt04-build', '1 · Build the scale', 'build-scale', [
-        'Click the 8 notes of the major scale asked for, from the keynote up to the next one.',
-        'As you click, the keys show T (tone) or S (semitone) from the note before. Follow T–T–S–T–T–T–S.',
-      ], { count: 6, pass: 5 }),
+        'Click the 8 notes of the major scale asked for, from the starting note up to the next one.',
+        'As you click, the keys show W (whole = a tone) or H (half = a semitone). Follow whole–whole–half–whole–whole–whole–half.',
+      ], { count: 6, pass: 5, at: 29 }),
       quizEx('mt04-mistake', '2 · Spot the mistake', 'spot-mistake', [
         'One note of this major scale is wrong. Click it.',
         'Listen too: the wrong note sticks out.',
-      ], { count: 8, pass: 6 }),
-      quizEx('mt04-degrees', '3 · Scale degrees', 'scale-degree', [
-        'Which note is degree 2, 3, 4… of the major scale asked for?',
-      ]),
+      ], { count: 8, pass: 6, at: 54 }),
+      quizEx('mt04-degrees', '3 · Grades of the scale', 'scale-degree', [
+        'Which note is grade 2, 3, 4… of the major scale asked for?',
+        'Follow the alphabet from the first note, then check the ♯ or ♭.',
+      ], { at: 163 }),
       {
         id: 'mt04-melody',
         title: '4 · An 8-bar melody in a major key',
@@ -238,7 +249,7 @@ LESSONS.push(
         brief: [
           'Choose any major key in the Key menu and write an 8-bar melody in it.',
           'The grid only offers the notes of your scale, so every note is in the key. Make it sing: steps, a few leaps, a high point.',
-          'End on the keynote (degree 1). Turn on Piano to see your scale on the keyboard. Check, then submit.',
+          'End on grade 1. Turn on Piano to see your scale on the keyboard. Check, then submit.',
         ],
         start: { key: 'G', mode: 'major', bpm: 96, bars: 8 },
         lock: { bars: true },
@@ -256,38 +267,33 @@ LESSONS.push(
       },
     ],
   },
-);
-
-// ---------- Module 1 · Foundations (continued) ----------
-
-LESSONS.push(
   {
     id: 'mt-05-minor-scale',
     course: 'Music Theory · Foundations',
     title: 'The minor scale',
     youtubeId: 'gsgkY6_pTD4',
-    intro: 'The natural minor scale, T–S–T–T–S–T–T, its darker colour, and how every major key has a relative minor with the same notes.',
+    intro: 'The natural minor scale, whole–half–whole–whole–half–whole–whole, its grades, and why it sounds different from the major scale.',
     exercises: [
-      quizEx('mt05-build', '1 · Build the minor scale', 'build-scale', [
-        'Click the 8 notes of the natural minor scale asked for, from the keynote up to the next one.',
-        'The keys show T or S as you go. Follow T–S–T–T–S–T–T.',
-      ], { count: 6, pass: 5, options: { mode: 'minor', keys: ['A', 'E', 'D', 'B', 'G', 'C'] } }),
-      quizEx('mt05-relative', '2 · Relative keys', 'relative-key', [
-        'Find the relative minor of a major key, or the relative major of a minor key.',
-        'Tip: the relative minor starts on degree 6 of the major scale, 3 semitones below its keynote.',
-      ]),
-      quizEx('mt05-hear', '3 · Major or minor?', 'hear-scale-mode', [
+      quizEx('mt05-build', '1 · Build the natural minor scale', 'build-scale', [
+        'Click the 8 notes of the natural minor scale asked for, from the starting note up to the next one.',
+        'The keys show W or H as you go. Follow whole–half–whole–whole–half–whole–whole.',
+      ], { count: 6, pass: 5, options: { mode: 'minor', keys: ['A', 'E', 'D', 'B', 'G', 'C'] }, at: 8 }),
+      quizEx('mt05-hear', '2 · Major or minor?', 'hear-scale-mode', [
         'Listen to a scale going up. Is it major or minor?',
-        'Listen to the 3rd note: bright (major) or dark (minor)?',
-      ]),
+        'Listen to the 3rd note: bright (major) or darker (minor)?',
+      ], { at: 47 }),
+      quizEx('mt05-grades', '3 · Grades of the minor scale', 'scale-degree', [
+        'Which note is grade 2, 3, 4… of the minor scale asked for?',
+        'The letters follow the alphabet as usual; then check which ones take a ♭ or ♯.',
+      ], { options: { mode: 'minor', keys: ['A', 'E', 'D', 'B', 'G', 'C', 'F'] }, at: 101 }),
       {
         id: 'mt05-melody',
         title: '4 · An 8-bar melody in a minor key',
         kind: 'creative',
         brief: [
           'Write an 8-bar melody in a minor key. Any minor key: choose it in the Key menu (the mode must stay minor).',
-          'Let the minor colour come through: lean on degree 3, and try the raised 7th just before the end.',
-          'End on the keynote (degree 1). Check, then submit.',
+          'Let the minor colour come through: lean on grade 3, which is what makes minor sound darker.',
+          'End on grade 1. Check, then submit.',
         ],
         start: { key: 'A', mode: 'minor', bpm: 84, bars: 8 },
         lock: { bars: true },
@@ -310,61 +316,94 @@ LESSONS.push(
     course: 'Music Theory · Foundations',
     title: 'Enharmony',
     youtubeId: 'k-ksTtq8OCU',
-    intro: 'One key, two names: why C♯ and D♭ are the same note on the piano, when E♯ and C♭ appear, and how a key decides which name is right.',
+    intro: 'One note, two names: C♯ and D♭ sound exactly the same, and the situation decides which name to use.',
     exercises: [
       quizEx('mt06-twins', '1 · The other name', 'enharmonic', [
-        'A key lights up with one of its names. Choose its other name.',
-        'Watch out: white keys have other names too (E♯, B♯, C♭, F♭).',
-      ]),
-      quizEx('mt06-find', '2 · Find the spelled note', 'find-spelled', [
-        'Click any key with the name shown. ♯ means a semitone up, ♭ a semitone down, whatever colour the key is.',
-      ]),
+        'A black key lights up with one of its names. Choose its other name.',
+        '♯ is a semitone up from the white key below; ♭ is a semitone down from the white key above.',
+      ], { at: 16 }),
+      quizEx('mt06-find', '2 · Find the note', 'find-spelled', [
+        'Click any key with the name shown. ♯ means a semitone up, ♭ a semitone down.',
+      ], { at: 16 }),
       quizEx('mt06-spelling', '3 · Which name does the scale use?', 'scale-spelling', [
-        'In a major scale, every letter is used once. Choose the right name for the degree asked.',
-        'Tip: write the letters out in order first (G A B C D E F…), then add the ♯ or ♭.',
-      ]),
+        'In a scale, every letter is used once, in order. So the scale decides whether a black key is a ♯ or a ♭.',
+        'Tip: write the letters out first (G A B C D E F…), then add the ♯ or ♭.',
+      ], { at: 49 }),
     ],
   },
 );
 
-// ---------- Module 2 · Chords and harmony ----------
+// ---------- Module 2 · Chords ----------
 
 LESSONS.push(
   {
-    id: 'mt-07-triads',
-    course: 'Music Theory · Chords and harmony',
-    title: 'Triads: building chords',
+    id: 'mt-07-chords',
+    course: 'Music Theory · Chords',
+    title: 'Building a chord',
     youtubeId: 'TyEcpdtXfbk',
-    videos: [
-      { id: 'TyEcpdtXfbk', title: 'Part 1 · Building a chord' },
-      { id: '9IuQ38Dq2MI', title: 'Part 2 · Chords over a scale' },
-    ],
-    intro: 'Stack two 3rds and you have a chord. Major, minor, diminished and augmented triads, and the chords that grow on every degree of the major scale.',
+    intro: 'Chords are built by 3rds. Stack a major and a minor 3rd in different ways and you get the four triads: major, minor, diminished and augmented.',
     exercises: [
       quizEx('mt07-build', '1 · Build the triad', 'build-chord', [
-        'Watch Part 1 first. Click the 3 notes of the triad asked for, from the root up.',
-        'The keys show m3 or M3 as you go. Major = M3 + m3. Minor = m3 + M3.',
-      ], { count: 8, pass: 6, options: { qualities: ['major', 'minor'] } }),
+        'Click the 3 notes of the triad asked for, from the fundamental up.',
+        'The keys show m3 or M3 as you go. Major = major 3rd + minor 3rd. Minor = minor 3rd + major 3rd.',
+      ], { count: 8, pass: 6, options: { qualities: ['major', 'minor'] }, at: 60 }),
       quizEx('mt07-quality', '2 · Major, minor, diminished or augmented?', 'chord-quality', [
-        'A triad lights up and plays. Name its quality.',
-        'Count the 3rds: M3 + m3 major, m3 + M3 minor, m3 + m3 diminished, M3 + M3 augmented.',
-      ]),
+        'A triad lights up and plays. Name it.',
+        'Major: M3 + m3. Minor: m3 + M3. Diminished: m3 + m3 (all minor). Augmented: M3 + M3 (all major).',
+      ], { at: 522 }),
       quizEx('mt07-hear', '3 · Hear major or minor', 'chord-quality', [
-        'Listen to a chord (first note by note, then together). Is it major or minor?',
-      ], { options: { ear: true, qualities: ['major', 'minor'] } }),
-      { ...quizEx('mt07-scale', '4 · Chords over the scale', 'diatonic-chord', [
-        'Watch Part 2 first. In a major key, what kind of chord grows on each degree?',
-        'The pattern is the same in every major key: I ii iii IV V vi vii°.',
-      ]), videoPart: 2 },
+        'Listen to a chord (note by note, then together). Is it major or minor?',
+      ], { options: { ear: true, qualities: ['major', 'minor'] }, at: 530 }),
+      quizEx('mt07-build-all', '4 · Build all four', 'build-chord', [
+        'Now all four: build the major, minor, diminished or augmented triad asked for.',
+      ], { count: 8, pass: 6, options: { qualities: ['major', 'minor', 'diminished', 'augmented'] }, at: 474 }),
+    ],
+  },
+  {
+    id: 'mt-08-sevenths',
+    course: 'Music Theory · Chords',
+    title: 'Chords of seventh',
+    youtubeId: '3Q3h4ASfl0A',
+    intro: 'Add one more 3rd on top of a triad and you get a chord of four notes: the 7th chord. The 7th can be major, minor or diminished, which gives a whole new palette.',
+    exercises: [
+      quizEx('mt08-build', '1 · Build the 7th chord', 'build-chord', [
+        'Click the 4 notes of the 7th chord asked for, from the fundamental up: the triad first, then the 7th on top.',
+        'Major 7th = 11 semitones above the fundamental, minor 7th = 10.',
+      ], { count: 8, pass: 6, options: { kind: 'seventh', qualities: ['major triad + major 7th', 'major triad + minor 7th', 'minor triad + minor 7th', 'diminished triad + minor 7th'] }, at: 41 }),
+      quizEx('mt08-quality', '2 · Name the 7th chord', 'chord-quality', [
+        'A 7th chord lights up and plays. Which one is it? First find the triad, then the 7th.',
+      ], { options: { kind: 'seventh', qualities: ['major triad + major 7th', 'major triad + minor 7th', 'minor triad + minor 7th', 'diminished triad + minor 7th', 'diminished triad + diminished 7th'] }, at: 179 }),
+      quizEx('mt08-hear', '3 · Major 7th or minor 7th?', 'chord-quality', [
+        'Listen to a major triad with a 7th on top. Is the 7th major (dreamy) or minor (it wants to move)?',
+      ], { options: { kind: 'seventh', ear: true, qualities: ['major triad + major 7th', 'major triad + minor 7th'] }, at: 73 }),
+    ],
+  },
+  {
+    id: 'mt-09-chords-scale',
+    course: 'Music Theory · Chords',
+    title: 'Chords over a scale',
+    youtubeId: '9IuQ38Dq2MI',
+    intro: 'A chord on every grade of the scale. Capital numerals (I IV V) are major, small ones (ii iii vi) minor, and vii° is diminished. In natural minor the pattern changes: i ii° III iv v VI VII.',
+    exercises: [
+      quizEx('mt09-major', '1 · Chords of the major scale', 'diatonic-chord', [
+        'In a major key, what kind of triad grows on each grade?',
+        'Remember the capitals: I, IV and V are major; ii, iii and vi minor; vii° diminished.',
+      ], { at: 52 }),
+      quizEx('mt09-build', '2 · Build the chord on a grade', 'build-diatonic', [
+        'Build the triad on the grade asked for, using only notes of the scale: skip one scale note each time.',
+      ], { count: 8, pass: 6, at: 571 }),
+      quizEx('mt09-minor', '3 · Chords of the natural minor scale', 'diatonic-chord', [
+        'Now in natural minor: i ii° III iv v VI VII. Which kind of triad grows on each grade?',
+      ], { options: { mode: 'minor' }, at: 373 }),
       {
-        id: 'mt07-colours',
-        title: '5 · Paint with major, minor and diminished',
+        id: 'mt09-colours',
+        title: '4 · Paint with major, minor and diminished',
         kind: 'creative',
-        videoPart: 2,
+        videoAt: 283,
         brief: [
           'Write an 8-bar chord progression in C major, one or two chords per bar.',
-          'Use at least two minor chords (ii, iii, vi) and the diminished chord (vii°) somewhere. Tip: vii° sounds great just before I.',
-          'Start on I and end on I. Listen to how each colour feels, then check and submit.',
+          'Use at least two minor chords (ii, iii, vi) and the diminished chord (vii°) somewhere.',
+          'Start on I and end on I. Listen to the different flavour of each chord, then check and submit.',
         ],
         start: { key: 'C', mode: 'major', bpm: 88, bars: 8 },
         lock: { key: true, bars: true, melody: true },
@@ -374,93 +413,156 @@ LESSONS.push(
           { type: 'chord-qualities', need: { min: 2, dim: 1 } },
         ],
         rubric: [
-          { label: 'Uses the chord colours with intention', max: 5 },
+          { label: 'Uses the chord flavours with intention', max: 5 },
           { label: 'Sense of direction and ending', max: 5 },
         ],
       },
     ],
   },
+);
+
+// ---------- Module 3 · Rhythm and harmony ----------
+
+LESSONS.push(
   {
-    id: 'mt-08-sevenths',
-    course: 'Music Theory · Chords and harmony',
-    title: 'Seventh chords',
-    youtubeId: '3Q3h4ASfl0A',
-    intro: 'Add one more 3rd on top of a triad: major 7th, dominant 7th, minor 7th and half-diminished 7th, and where each lives in a major key.',
+    id: 'mt-10-rhythm',
+    course: 'Music Theory · Rhythm and harmony',
+    title: 'Rhythm and notation',
+    youtubeId: '8wKBs7Q4sTo',
+    intro: 'Note durations from the whole note to the sixteenth, time signatures, strong and weak beats, and the two kinds of pulse: binary and ternary.',
     exercises: [
-      quizEx('mt08-build', '1 · Build the 7th chord', 'build-chord', [
-        'Click the 4 notes of the 7th chord asked for, from the root up.',
-        'Major 7th = major triad + M3. Dominant 7th = major triad + m3. Minor 7th = minor triad + m3. Half-diminished = diminished triad + M3.',
-      ], { count: 8, pass: 6, options: { kind: 'seventh', qualities: ['major 7th', 'dominant 7th', 'minor 7th', 'half-diminished 7th'] } }),
-      quizEx('mt08-quality', '2 · Name the 7th chord', 'chord-quality', [
-        'A 7th chord lights up and plays. Which one is it?',
-      ], { options: { kind: 'seventh', qualities: ['major 7th', 'dominant 7th', 'minor 7th', 'half-diminished 7th'] } }),
-      quizEx('mt08-scale', '3 · 7th chords over the scale', 'diatonic-chord', [
-        'In a major key, what 7th chord grows on each degree?',
-        'The pattern: Imaj7 ii7 iii7 IVmaj7 V7 vi7 viiø7. Only V has a dominant 7th.',
-      ], { options: { seventh: true } }),
+      quizEx('mt10-values', '1 · Note values', 'note-values', [
+        'How many of the shorter notes fit in the longer one?',
+        'Each value is half the one before: whole (semibreve) → half → quarter → eighth → sixteenth.',
+      ], { at: 39 }),
+      quizEx('mt10-signatures', '2 · Binary or ternary?', 'time-signature', [
+        'Is the time signature binary (each beat divides in two) or ternary (each beat divides in three)?',
+        'Binary: 2/4, 3/4, 4/4. Ternary: 6/8, 9/8, 12/8.',
+      ], { at: 516 }),
+      quizEx('mt10-hear', '3 · Hear the pulse', 'hear-meter', [
+        'Listen: the higher notes are the beats. Is each beat divided in two or in three?',
+      ], { at: 181 }),
       {
-        id: 'mt08-ii-v-i',
-        title: '4 · The ii7 – V7 – Imaj7',
+        id: 'mt10-durations',
+        title: '4 · A melody with long and short notes',
         kind: 'creative',
+        videoAt: 507,
         brief: [
-          'We are in F major. Switch on “Add 7th”, then build ii7 – V7 – Imaj7 – Imaj7, one chord per bar.',
-          'Then write a melody over it: put chord tones (including the 7ths!) on beats 1 and 3.',
-          'This is the most famous progression in jazz. Check, then submit.',
+          'The chords are given (4/4, C major). Write a 4-bar melody that uses a whole note, a half note, quarter notes and eighth notes.',
+          'In the grid, one square is an eighth note: drag a note to 2 squares for a quarter, 4 for a half, 8 for a whole.',
+          'Put your long notes on strong beats (1 and 3). End on grade 1. Check, then submit.',
         ],
-        start: { key: 'F', mode: 'major', bpm: 100, bars: 4 },
-        lock: { key: true, bars: true },
+        start: { key: 'C', mode: 'major', bpm: 90, bars: 4, progression: [1, 4, 5, 1] },
+        lock: { key: true, bars: true, chords: true },
         checks: [
-          { type: 'progression', sequence: ['ii7', 'V7', 'Imaj7', 'Imaj7'] },
-          { type: 'melody-fills', minNotes: 8 },
-          { type: 'melody-chord-tones', minRatio: 0.6 },
+          { type: 'melody-durations', lens: [8, 4, 2, 1] },
+          { type: 'melody-ends-on-tonic' },
         ],
         rubric: [
-          { label: 'Melody brings out the 7ths', max: 5 },
-          { label: 'Rhythm and phrasing', max: 5 },
-          { label: 'Overall musicality', max: 5 },
+          { label: 'Rhythmic variety', max: 5 },
+          { label: 'Long notes on strong beats', max: 5 },
+          { label: 'Musicality', max: 5 },
         ],
       },
     ],
   },
   {
-    id: 'mt-09-gravity',
-    course: 'Music Theory · Chords and harmony',
+    id: 'mt-11-gravity',
+    course: 'Music Theory · Rhythm and harmony',
     title: 'Harmonic gravity',
     youtubeId: '74xos8HvpGk',
-    intro: 'Tonality as it worked from Bach to Debussy: home (tonic), moving away (pre-dominant), tension (dominant), and the pull that brings us back.',
+    intro: 'Every new chord creates tension; the gravity system tells you which chords bring it back home. V and vii° pull the strongest, IV and ii next, while iii and vi don’t confirm the key on their own.',
     exercises: [
-      quizEx('mt09-function', '1 · Tonic, pre-dominant or dominant?', 'chord-function', [
-        'What job does each chord do? Tonic = home (I, iii, vi). Pre-dominant = moving away (ii, IV). Dominant = tension that pulls home (V, vii°).',
-      ]),
-      quizEx('mt09-tendency', '2 · Where does the note want to go?', 'tendency-tone', [
-        'Some notes of the scale are pulled by gravity. You hear the key, then one note: click the note it wants to move to.',
-      ]),
-      quizEx('mt09-cadence', '3 · Home or left hanging?', 'hear-cadence', [
-        'Listen to a short progression. Does it land home (on I), or stop on V and leave you hanging?',
-      ]),
+      quizEx('mt11-pull', '1 · How strong is the pull?', 'chord-pull', [
+        'How strongly does each chord pull back home to I?',
+        'Strongest: V and vii°. Strong: IV and ii (also called pre-dominant: they lead nicely to V). No direct pull: iii and vi.',
+      ], { at: 318 }),
+      quizEx('mt11-tendency', '2 · Where does the note go?', 'tendency-tone', [
+        'You hear the key, then one note of the V chord. Click the note it resolves to.',
+        'In C major, B pushes up a semitone to C, and D falls to C.',
+      ], { at: 201 }),
+      quizEx('mt11-cadence', '3 · Resolve or float?', 'hear-cadence', [
+        'Listen to a short progression. Does the last chord resolve the tension and confirm the key, or does it just float?',
+      ], { at: 138 }),
       {
-        id: 'mt09-journey',
-        title: '4 · A journey away and home, in minor',
+        id: 'mt11-journey',
+        title: '4 · Leave home and come back',
         kind: 'creative',
+        videoAt: 430,
         brief: [
-          'Gravity works in minor keys too. Choose any minor key and write 8 bars of chords.',
-          'Start home (i), move away with a pre-dominant (iv or ii°), build tension with V, and land home with V – i at the end.',
-          'In minor, V is major: its raised 7th is the leading tone that pulls home. Check, then submit.',
+          'Write 8 bars of chords in C major. Start on I.',
+          'Visit vi or iii (they float), then find your way home through the gravity system: from IV or ii, and V or vii°.',
+          'End with a cadence into I: perfect (V – I) or plagal (IV – I or ii – I). Check, then submit.',
         ],
-        start: { key: 'D', mode: 'minor', bpm: 80, bars: 8 },
-        lock: { bars: true, melody: true },
+        start: { key: 'C', mode: 'major', bpm: 84, bars: 8 },
+        lock: { key: true, bars: true, melody: true },
         checks: [
-          { type: 'mode-is', mode: 'minor' },
           { type: 'starts-on-tonic' },
           { type: 'all-bars-filled' },
-          { type: 'predominant-before-dominant' },
-          { type: 'ends-with-cadence', cadence: 'perfect' },
+          { type: 'uses-degrees', degrees: [3, 6], label: 'Visits vi or iii' },
+          { type: 'ends-with-cadence', cadence: 'resolving' },
         ],
         rubric: [
           { label: 'Clear tension and release', max: 5 },
           { label: 'Choice of chords', max: 5 },
         ],
       },
+    ],
+  },
+  {
+    id: 'mt-12-inversions',
+    course: 'Music Theory · Rhythm and harmony',
+    title: 'Inversions',
+    youtubeId: 'fKB3eR4DLY0',
+    intro: 'The same chord with a different note at the bottom: fundamental state, first and second inversion. Inversions keep the flow between chords smooth, while V and I stay in fundamental state to keep their power.',
+    exercises: [
+      quizEx('mt12-name', '1 · Which position?', 'name-inversion', [
+        'A chord lights up. Is it in fundamental state, first inversion or second inversion? Look at the lowest note.',
+      ], { at: 47 }),
+      quizEx('mt12-find', '2 · Find the chord', 'find-fundamental', [
+        'An inverted chord lights up. Rearrange its notes in 3rds in your head to find which chord it is.',
+      ], { count: 8, pass: 6, at: 541 }),
+      {
+        id: 'mt12-smooth',
+        title: '3 · Make it flow',
+        kind: 'creative',
+        videoAt: 353,
+        brief: [
+          'Here is I – iii – vi – V – I in C major, all in fundamental state: it jumps around.',
+          'Click iii and vi and choose another bass note (an inversion) so the chords move as little as possible. Play it and listen to the flow.',
+          'Keep V and I in fundamental state: they hold the power of the cadence. Check, then submit.',
+        ],
+        start: { key: 'C', mode: 'major', bpm: 76, bars: 4, progression: [1, 3, 6, [5, 1]] },
+        lock: { key: true, bars: true, melody: true },
+        checks: [
+          { type: 'progression-by-bar', sequence: ['I', 'iii', 'vi', ['V', 'I']] },
+          { type: 'inversions-used', min: 2, rootOn: [5, 1] },
+        ],
+        rubric: [
+          { label: 'Smooth movement between chords', max: 5 },
+          { label: 'Strong ending', max: 5 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'mt-13-modulation',
+    course: 'Music Theory · Rhythm and harmony',
+    title: 'Modulation',
+    youtubeId: 'lo-s71CZgoY',
+    intro: 'Moving from one key to another: through a chord that belongs to both keys (like the relative major and minor), or straight in with the chord on the fifth grade, which can enter at any time.',
+    exercises: [
+      quizEx('mt13-relative', '1 · Keys that share their chords', 'relative-key', [
+        'Which major and minor keys share exactly the same notes and chords?',
+        'A minor’s chord i is chord vi of C major: the relative minor starts on grade 6.',
+      ], { at: 7 }),
+      quizEx('mt13-common', '2 · One chord, two keys', 'common-chord', [
+        'A chord belongs to a major key and to its relative minor. Which grade is it in the minor key?',
+        'Natural minor grades: i ii° III iv v VI VII.',
+      ], { at: 190 }),
+      quizEx('mt13-fifth', '3 · The fifth enters at any time', 'modulation-fifth', [
+        'To jump straight into a new key, play the chord on its fifth grade, then its I.',
+      ], { at: 374 }),
     ],
   },
 );
