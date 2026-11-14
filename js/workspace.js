@@ -1,12 +1,12 @@
 // Workspace = toolbar (transport, key, tempo, bars, view, mutes, MIDI out) + composer + staff view.
 
-import { Player, listMidiOutputs } from './audio.js?v=202611141651';
-import { Composer } from './composer.js?v=202611141651';
-import { BAR_OPTIONS, cloneProject, normalizeProject, setBars, sliceProject } from './project.js?v=202611141651';
-import { renderStaff } from './staff.js?v=202611141651';
-import { ChordSheet, PianoView } from './piano.js?v=202611141651';
-import { KEY_OPTIONS } from './theory.js?v=202611141651';
-import { h, store, toast } from './util.js?v=202611141651';
+import { Player, listMidiOutputs } from './audio.js?v=202611141938';
+import { Composer } from './composer.js?v=202611141938';
+import { BAR_OPTIONS, cloneProject, normalizeProject, setBars, sliceProject } from './project.js?v=202611141938';
+import { renderStaff } from './staff.js?v=202611141938';
+import { ChordSheet, PianoView } from './piano.js?v=202611141938';
+import { KEY_OPTIONS } from './theory.js?v=202611141938';
+import { h, store, toast } from './util.js?v=202611141938';
 
 export class Workspace {
   constructor(root, { readOnly = false, onChange = () => {}, player = null } = {}) {

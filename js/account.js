@@ -1,16 +1,17 @@
 // Account page: sign in / create account, then "My profile": progress, submissions and the teacher's feedback.
 
-import { leaderboard, listPieces, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611141651';
-import { journeyCard, leaderboardList, summarise } from './game.js?v=202611141651';
-import { COURSE, courseLessons } from './course.js?v=202611141651';
-import { findExercise } from './lessons.js?v=202611141651';
-import { h, store, toast } from './util.js?v=202611141651';
+import { leaderboard, listPieces, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, resendConfirmation, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611141938';
+import { journeyCard, leaderboardList, summarise } from './game.js?v=202611141938';
+import { COURSE, courseLessons } from './course.js?v=202611141938';
+import { findExercise } from './lessons.js?v=202611141938';
+import { h, store, toast } from './util.js?v=202611141938';
 
 const main = document.getElementById('main');
 const next = new URLSearchParams(location.search).get('next');
-// Arriving from a password-reset email: read the link before Supabase tidies the address bar.
+// Arriving from a password-reset or confirmation email: read the link before Supabase tidies the address bar.
 const linkHash = new URLSearchParams(location.hash.slice(1));
 let recovering = linkHash.get('type') === 'recovery';
+const confirmed = linkHash.get('type') === 'signup';
 const linkError = linkHash.get('error_description');
 
 function goNext() {
@@ -45,7 +46,8 @@ function renderSignIn(mode = 'signin') {
         await signIn({ email: f.email.value.trim(), password: f.password.value });
         goNext();
       } catch (err) {
-        msg.textContent = err.message;
+        msg.replaceChildren(err.message);
+        if (err.unconfirmed) msg.append(' ', resendLink(f.email.value.trim()));
         busy(f, false);
       }
     },
@@ -63,7 +65,15 @@ function renderSignIn(mode = 'signin') {
       busy(f, true);
       msg.textContent = 'Creating your account…';
       try {
-        await signUp({ name: f.name.value.trim(), email: f.email.value.trim(), password: f.password.value, code: f.code.value.trim() });
+        const email = f.email.value.trim();
+        const r = await signUp({ name: f.name.value.trim(), email, password: f.password.value, code: f.code.value.trim() });
+        if (r.needsConfirm) {
+          f.replaceWith(h('div', { class: 'auth-form' },
+            h('p', {}, h('strong', {}, 'Almost there! '), `We’ve sent an email to ${email}. Open the link in it to confirm your account, and you’ll be signed in.`),
+            h('p', { class: 'muted small' }, 'Nothing after a few minutes? Check your spam folder, or ', resendLink(email), '.')));
+          msg.textContent = '';
+          return;
+        }
         toast('Welcome! Your account is ready.');
         goNext();
       } catch (err) {
@@ -87,7 +97,18 @@ function renderSignIn(mode = 'signin') {
     mode === 'signin' ? signinForm : signupForm,
     msg,
     mode === 'signin' ? h('p', { class: 'muted small' }, h('a', { href: '#', onclick: (e) => { e.preventDefault(); renderForgot(); } }, 'Forgot your password?')) : ''));
-  if (linkError && mode === 'signin') msg.textContent = /expired|invalid/i.test(linkError) ? 'That reset link has expired or was already used. Ask for a new one below.' : linkError;
+  if (linkError && mode === 'signin') msg.textContent = /expired|invalid/i.test(linkError) ? 'That email link has expired or was already used. Sign in below, or ask for a new link.' : linkError;
+}
+
+// "Send it again" link for the confirmation email.
+function resendLink(email) {
+  const a = h('a', { href: '#', onclick: async (e) => {
+    e.preventDefault();
+    a.textContent = 'sending…';
+    try { await resendConfirmation(email); a.replaceWith('a new confirmation email is on its way'); }
+    catch (err) { a.replaceWith(err.message); }
+  } }, 'send the confirmation email again');
+  return a;
 }
 
 // ---------- Forgotten password ----------
@@ -276,4 +297,4 @@ async function renderProfile(p) {
 }
 
 onPasswordRecovery(() => { recovering = true; renderNewPassword(); });
-render();
+render().then(() => { if (confirmed && !linkError) toast('Email confirmed. Welcome to the Academy!'); });

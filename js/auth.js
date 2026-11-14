@@ -2,8 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611141651';
-import { celebrate, summarise, xpChip } from './game.js?v=202611141651';
+import { h } from './util.js?v=202611141938';
+import { celebrate, summarise, xpChip } from './game.js?v=202611141938';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
@@ -49,6 +49,8 @@ function friendly(error) {
   if (/password should be at least/i.test(m)) return 'The password needs at least 8 characters.';
   if (/rate limit/i.test(m)) return 'Too many attempts. Please wait a few minutes and try again.';
   if (/same.*(old|previous|current).*password|different from the old/i.test(m)) return 'Choose a password you haven’t used before.';
+  if (/email not confirmed/i.test(m)) return 'Please confirm your email first: open the link in the email we sent you (check your spam folder too).';
+  if (/error sending confirmation email/i.test(m)) return 'The confirmation email couldn’t be sent right now. Please try again later, or ask your teacher.';
   if (/error sending (recovery|reset) email|smtp/i.test(m)) return 'The reset email couldn’t be sent right now. Please try again later, or ask your teacher.';
   return m || 'Something went wrong.';
 }
@@ -56,18 +58,32 @@ function friendly(error) {
 export async function signUp({ name, email, password, code }) {
   const c = sb();
   if (!c) throw new Error('Accounts are unavailable right now. Please reload the page.');
-  const { data, error } = await c.auth.signUp({ email, password, options: { data: { full_name: name, class_code: code } } });
+  const emailRedirectTo = new URL('account.html', location.href).href;
+  const { data, error } = await c.auth.signUp({ email, password, options: { emailRedirectTo, data: { full_name: name, class_code: code } } });
   if (error) throw new Error(friendly(error));
-  if (!data.session) throw new Error('Account created. Check your email to confirm it, then sign in.');
+  // With "Confirm email" on, there is no session until the student clicks the link in the email.
+  if (!data.session) return { needsConfirm: true };
   myProfile(true);
-  return data.user;
+  return { user: data.user };
+}
+
+export async function resendConfirmation(email) {
+  const c = sb();
+  if (!c) throw new Error('Accounts are unavailable right now. Please reload the page.');
+  const emailRedirectTo = new URL('account.html', location.href).href;
+  const { error } = await c.auth.resend({ type: 'signup', email, options: { emailRedirectTo } });
+  if (error) throw new Error(friendly(error));
 }
 
 export async function signIn({ email, password }) {
   const c = sb();
   if (!c) throw new Error('Accounts are unavailable right now. Please reload the page.');
   const { error } = await c.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(friendly(error));
+  if (error) {
+    const err = new Error(friendly(error));
+    if (/email not confirmed/i.test(error.message || '')) err.unconfirmed = true;
+    throw err;
+  }
   myProfile(true);
 }
 
