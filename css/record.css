@@ -1,0 +1,62 @@
+/* Recording mode (record.html): a 9:16 frame for short vertical videos. Only used by that page. */
+
+.rec-body {
+  --rec-bg: #15140f; --rec-ink: #f6f1e7; --rec-muted: #b9b1a3; --rec-card: #221f19; --rec-line: #3a352c;
+  --rec-right: #2f8f5b; --rec-right-ink: #fff; --rec-accent: var(--accent);
+  margin: 0; min-height: 100dvh; background: #0b0a08; overflow: hidden;
+  display: flex; justify-content: center; align-items: flex-start; gap: 24px;
+}
+.rec-body[data-theme="light"] { --rec-bg: #f6f4ef; --rec-ink: #1d1b18; --rec-muted: #5d5850; --rec-card: #ffffff; --rec-line: #e2ddd2; }
+.rec-body[data-theme="brand"] { --rec-bg: #e8743b; --rec-ink: #ffffff; --rec-muted: #ffe6d6; --rec-card: rgba(255, 255, 255, 0.14); --rec-line: rgba(255, 255, 255, 0.35); --rec-accent: #1d1b18; --rec-right: #ffffff; --rec-right-ink: #1d1b18; }
+
+.rec-stage {
+  position: relative; box-sizing: border-box;
+  height: 100dvh; width: min(100vw, calc(100dvh * 9 / 16));
+  padding: calc(28px + env(safe-area-inset-top)) 22px calc(28px + env(safe-area-inset-bottom));
+  background: var(--rec-bg); color: var(--rec-ink);
+  display: flex; flex-direction: column; gap: 18px; overflow: hidden;
+}
+.rec-brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.95rem; opacity: 0.9; }
+.rec-brand .logo { background: var(--rec-accent); }
+.rec-hook { font-size: clamp(1.7rem, 7.5vw, 2.3rem); line-height: 1.12; margin: 6px 0 0; letter-spacing: -0.02em; text-wrap: balance; }
+.rec-card { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; min-height: 0; }
+.rec-count { margin: 0; color: var(--rec-muted); font-weight: 700; }
+.rec-q { font-size: clamp(1.15rem, 5vw, 1.45rem); line-height: 1.3; margin: 0; font-weight: 600; text-wrap: balance; }
+.rec-kbd { background: var(--rec-card); border-radius: 14px; padding: 10px; }
+.rec-kbd .kbd { min-width: 0; }
+.rec-choices { display: grid; gap: 12px; }
+.rec-choices.grid { grid-template-columns: 1fr 1fr; }
+.rec-choice {
+  display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center; min-height: 64px; padding: 10px 12px;
+  border-radius: 16px; border: 2px solid var(--rec-line); background: var(--rec-card);
+  font-size: clamp(1.05rem, 4.8vw, 1.35rem); font-weight: 700; transition: opacity 0.3s, background 0.3s, transform 0.3s;
+}
+.rec-choice.right { background: var(--rec-right); border-color: var(--rec-right); color: var(--rec-right-ink); transform: scale(1.04); }
+.rec-choice.right::after { content: "✓"; }
+.rec-choice.dim { opacity: 0.3; }
+.rec-timer {
+  align-self: center; display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%;
+  border: 4px solid var(--rec-accent); font-size: 2.4rem; font-weight: 800;
+}
+.rec-timer.tick { animation: rec-tick 1s ease-out; }
+@keyframes rec-tick { 0% { transform: scale(1.25); } 30% { transform: scale(1); } }
+.rec-reveal { margin: 0; font-size: 1.05rem; line-height: 1.4; color: var(--rec-ink); background: var(--rec-card); border-radius: 14px; padding: 12px 14px; }
+.rec-end { text-align: center; display: grid; gap: 10px; }
+.rec-end p { margin: 0; color: var(--rec-muted); font-size: 1.1rem; }
+.rec-end .rec-end-big { color: var(--rec-ink); font-size: 2rem; font-weight: 800; line-height: 1.15; }
+.rec-end .rec-url { color: var(--rec-ink); font-weight: 800; font-size: 1.05rem; }
+.rec-foot { text-align: center; color: var(--rec-muted); font-weight: 700; font-size: 0.95rem; }
+
+/* Settings: beside the frame on a laptop, a sheet at the bottom on a phone. Hidden while recording. */
+.rec-panel {
+  position: relative; margin-top: 16px; flex: none; width: 330px; max-height: calc(100dvh - 32px); overflow: auto;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; box-shadow: var(--shadow); z-index: 10;
+}
+.rec-panel h2 { margin-bottom: 4px; }
+.rec-panel .row .field { flex: 1 1 90px; }
+.rec-panel select, .rec-panel input[type="text"] { width: 100%; }
+@media (max-width: 760px) {
+  .rec-panel { position: fixed; margin: 0; left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 52dvh; border-radius: 16px 16px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+}
+.rolling .rec-panel, .panel-off .rec-panel { visibility: hidden; } /* keeps the frame exactly where it was */

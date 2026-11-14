@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Recording mode · EverythingSound Academy</title>
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css?v=202611142350">
+  <link rel="stylesheet" href="css/record.css?v=202611142350">
+  <script src="https://cdn.jsdelivr.net/npm/tone@15.0.4/build/Tone.js"></script>
+</head>
+<!-- Recording mode for short vertical videos (TikTok, Shorts, Reels).
+     A separate page: not linked from the course, no accounts, no progress or XP. -->
+<body class="rec-body">
+  <main class="rec-stage" id="stage">
+    <div class="rec-brand"><span class="logo" aria-hidden="true">♪</span> EverythingSound Academy</div>
+    <h1 class="rec-hook" id="hook"></h1>
+    <section class="rec-card" id="card"></section>
+    <footer class="rec-foot" id="foot">Free lessons · link in bio</footer>
+  </main>
+
+  <aside class="rec-panel" id="panel">
+    <h2>Recording mode</h2>
+    <p class="muted small">Pick an exercise, write your hook, start your screen recording, then tap Go. Everything except the video frame hides while it plays. Hidden settings come back when you tap the frame.</p>
+    <label class="field">Exercise <select id="exercise"></select></label>
+    <label class="field">Hook (big text at the top) <input id="hook-input" type="text" maxlength="80" placeholder="90% get this wrong"></label>
+    <div class="row wrap">
+      <label class="field">Questions <select id="count"><option>1</option><option>3</option><option>5</option></select></label>
+      <label class="field">Thinking time <select id="think"><option value="3">3 s</option><option value="5">5 s</option><option value="2">2 s</option></select></label>
+      <label class="field">Theme <select id="theme"><option value="dark">Dark</option><option value="light">Light</option><option value="brand">Orange</option></select></label>
+    </div>
+    <label class="field">Footer <input id="foot-input" type="text" maxlength="60" value="Free lessons · link in bio"></label>
+    <label class="check-row"><input type="checkbox" id="replay" checked> Play the sound again with the answer</label>
+    <div class="row wrap">
+      <button type="button" class="btn primary" id="go">Go</button>
+      <button type="button" class="btn" id="preview">New question</button>
+      <button type="button" class="btn ghost" id="hide">Hide settings</button>
+    </div>
+  </aside>
+
+  <script type="module" src="js/record.js?v=202611142350"></script>
+</body>
+</html>
