@@ -1,17 +1,17 @@
 // Student lesson page: video, exercises, composer, checks, DAW round-trip, submission, feedback.
 
-import { chordsFound, runChecks } from './checks.js?v=202611142301';
-import { FORM_LABELS } from './form.js?v=202611142301';
-import { QuizView } from './quiz.js?v=202611142301';
-import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js?v=202611142301';
-import { COURSE, courseLessons, lessonNeighbours } from './course.js?v=202611142301';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611142301';
-import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611142301';
-import { newProject, normalizeProject, setBars } from './project.js?v=202611142301';
-import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js?v=202611142301';
-import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js?v=202611142301';
-import { Workspace } from './workspace.js?v=202611142301';
-import { awardXp, getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js?v=202611142301';
+import { chordsFound, runChecks } from './checks.js?v=202611142330';
+import { FORM_LABELS } from './form.js?v=202611142330';
+import { QuizView } from './quiz.js?v=202611142330';
+import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js?v=202611142330';
+import { COURSE, courseLessons, lessonNeighbours } from './course.js?v=202611142330';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611142330';
+import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611142330';
+import { newProject, normalizeProject, setBars } from './project.js?v=202611142330';
+import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js?v=202611142330';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js?v=202611142330';
+import { Workspace } from './workspace.js?v=202611142330';
+import { awardXp, getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js?v=202611142330';
 
 const $ = (sel) => document.querySelector(sel);
 const params = new URLSearchParams(location.search);
@@ -77,7 +77,7 @@ function renderLesson() {
   $('#lesson-pager').replaceChildren(
     nb.prev ? link(nb.prev, `← ${nb.prev.title}`) : h('span'),
     nb.next ? link(nb.next, `Next lesson: ${nb.next.title} →`) : h('a', { class: 'btn small', href: 'index.html' }, 'Back to the course'));
-  $('#crumb').textContent = lesson.course;
+  $('#crumb').replaceChildren(h('span', { class: 'crumb-wide' }, lesson.course), h('span', { class: 'crumb-narrow' }, lesson.title));
   $('#lesson-course').textContent = lesson.course;
   $('#lesson-title').textContent = lesson.title;
   $('#lesson-intro').textContent = lesson.intro;
@@ -520,7 +520,8 @@ const studentName = () => nameInput.value.trim();
 
 function requireName() {
   if (studentName() || profile) return true;
-  toast('Add your name at the top first.');
+  toast('Add your name first.');
+  nameInput.closest('details')?.setAttribute('open', '');
   nameInput.focus();
   return false;
 }

@@ -1,8 +1,8 @@
 // Auto-checks. Each exercise lists checks as data; each check returns {label, pass, detail}.
 
-import { chordAtBeat, chordEvents } from './project.js?v=202611142301';
-import { chordDegrees, chordInfo } from './theory.js?v=202611142301';
-import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js?v=202611142301';
+import { chordAtBeat, chordEvents } from './project.js?v=202611142330';
+import { chordDegrees, chordInfo } from './theory.js?v=202611142330';
+import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js?v=202611142330';
 
 const pct = (x) => `${Math.round(x * 100)}%`;
 const listBars = (arr) => arr.join(', ');

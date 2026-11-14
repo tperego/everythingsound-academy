@@ -1,15 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611142301';
-import { LESSONS } from './lessons.js?v=202611142301';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611142301';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611142301';
-import { projectToAbc } from './staff.js?v=202611142301';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611142301';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611142301';
-import { pack, unpack } from './util.js?v=202611142301';
-import { makeQuestion } from './quiz.js?v=202611142301';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611142301';
+import { runChecks } from './checks.js?v=202611142330';
+import { LESSONS } from './lessons.js?v=202611142330';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611142330';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611142330';
+import { projectToAbc } from './staff.js?v=202611142330';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611142330';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611142330';
+import { pack, unpack } from './util.js?v=202611142330';
+import { makeQuestion } from './quiz.js?v=202611142330';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611142330';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);

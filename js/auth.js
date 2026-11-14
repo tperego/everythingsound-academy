@@ -2,8 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611142301';
-import { celebrate, summarise, xpChip } from './game.js?v=202611142301';
+import { h } from './util.js?v=202611142330';
+import { celebrate, summarise, xpChip } from './game.js?v=202611142330';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
@@ -130,9 +130,24 @@ export async function updateMyName(name) {
 }
 
 /** Header: "Sign in" or the student's name with a menu. */
+// Phone tab bar (static in each page): Profile becomes Sign in, the teacher gets Inbox, Chat shows unread messages.
+function updateTabbar(p) {
+  const bar = document.getElementById('tabbar');
+  if (!bar) return;
+  const me = bar.querySelector('[data-tab="me"] .tab-label');
+  if (me) me.textContent = p ? 'Profile' : 'Sign in';
+  if (p?.role === 'teacher' && !bar.querySelector('[data-tab="inbox"]')) {
+    const inbox = h('a', { href: 'mark.html', 'data-tab': 'inbox' }, h('span', { class: 'tab-label' }, 'Inbox'));
+    inbox.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></svg>');
+    if (/mark\.html$/.test(location.pathname)) inbox.setAttribute('aria-current', 'page');
+    bar.querySelector('[data-tab="me"]')?.before(inbox);
+  }
+}
+
 export async function renderAccountWidget(el) {
   if (!el) return;
   const p = await myProfile();
+  updateTabbar(p);
   if (!p) {
     el.replaceChildren(h('a', { class: 'btn small primary', href: 'account.html' }, 'Sign in'));
     return;
@@ -147,7 +162,10 @@ export async function renderAccountWidget(el) {
     myXpEvents().then((ev) => { if (ev) el.prepend(xpChip(summarise(ev))); }).catch(() => {});
   }
   unreadChatCount().then((n) => {
-    if (n > 0) { badge.textContent = n > 9 ? '9+' : String(n); badge.hidden = false; }
+    if (n > 0) {
+      const text = n > 9 ? '9+' : String(n);
+      for (const b of [badge, document.querySelector('#tabbar .tab-badge')]) if (b) { b.textContent = text; b.hidden = false; }
+    }
   }).catch(() => {});
 }
 

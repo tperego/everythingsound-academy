@@ -64,6 +64,10 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+/* Phone feel: no text inflation, no double-tap zoom (pinch still works), no grey tap flash, no sideways drift. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+body { overflow-x: clip; }
+button, .btn, .seg, .ex-tab, .tabbar, .piano, .comp-grid, .quiz-choices { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 body {
   background: var(--bg);
   color: var(--ink);
@@ -611,4 +615,47 @@ a.btn { text-decoration: none; display: inline-block; }
 @media (prefers-reduced-motion: reduce) {
   #xp-pop.show { animation: none; opacity: 1; }
   .xp-banner { transition: none; }
+}
+
+/* ---------- Phone: app-style top bar and bottom tab bar ---------- */
+.tabbar { display: none; }
+.crumb-narrow { display: none; }
+@media (max-width: 860px), (pointer: coarse) {
+  /* 16px keeps iPhone Safari from zooming in when a text box or menu is tapped. */
+  input, select, textarea { font-size: 16px !important; }
+}
+@media (max-width: 700px) {
+  .topbar {
+    position: sticky; top: 0; flex-wrap: nowrap; gap: 10px; min-height: 52px;
+    padding: 8px max(14px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left));
+  }
+  .topbar .brand-name, .topbar > a.btn, .crumb-wide { display: none; }
+  .crumb-narrow { display: inline; }
+  .topbar .crumb { color: var(--ink); font-weight: 700; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #account-widget { margin: 0; flex: none; }
+  #account-widget > a.btn:not(.primary) { display: none; }
+  body { padding-bottom: calc(62px + env(safe-area-inset-bottom)); }
+  .page { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .tabbar {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    padding: 6px max(6px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+  }
+  .tabbar a { position: relative; display: grid; justify-items: center; gap: 2px; padding: 4px 0; color: var(--ink-2); text-decoration: none; font-size: 0.68rem; font-weight: 600; }
+  .tabbar a[aria-current="page"] { color: var(--accent); }
+  .tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .tabbar .tab-badge { position: absolute; top: 0; left: calc(50% + 6px); margin: 0; }
+  #toast { bottom: calc(76px + env(safe-area-inset-bottom)); }
+  #xp-pop { bottom: calc(80px + env(safe-area-inset-bottom)); right: 14px; }
+  .xp-banner { top: calc(10px + env(safe-area-inset-top)); }
+  body.chat-page { padding-bottom: 0; }
+  .chat-page .chat-layout { height: calc(100dvh - 53px - 62px - env(safe-area-inset-bottom)); min-height: 0; border: 0; }
+}
+/* Opened from the home screen: no browser bar, so give the top bar the status-bar inset. */
+@media (display-mode: standalone) and (max-width: 700px) {
+  .topbar { padding-top: calc(8px + env(safe-area-inset-top)); }
+  .chat-page .chat-layout { height: calc(100dvh - 53px - env(safe-area-inset-top) - 62px - env(safe-area-inset-bottom)); }
 }
