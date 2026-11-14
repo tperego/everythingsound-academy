@@ -1,15 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611141938';
-import { LESSONS } from './lessons.js?v=202611141938';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611141938';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611141938';
-import { projectToAbc } from './staff.js?v=202611141938';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611141938';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611141938';
-import { pack, unpack } from './util.js?v=202611141938';
-import { makeQuestion } from './quiz.js?v=202611141938';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611141938';
+import { runChecks } from './checks.js?v=202611142301';
+import { LESSONS } from './lessons.js?v=202611142301';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611142301';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611142301';
+import { projectToAbc } from './staff.js?v=202611142301';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611142301';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611142301';
+import { pack, unpack } from './util.js?v=202611142301';
+import { makeQuestion } from './quiz.js?v=202611142301';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611142301';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -296,6 +296,25 @@ await test('quiz: every question type makes valid questions', async () => {
     }
     view.destroy();
   }
+});
+
+await test('gravity drill follows the gravity map', () => {
+  const lvl = (c) => (['V', 'vii°'].includes(c) ? 1 : ['IV', 'ii'].includes(c) ? 2 : ['vi', 'iii'].includes(c) ? 3 : c === 'I' ? 0 : -1);
+  const comesHome = (p) => { const c = p.split(' – '); return c.at(-1) === 'I' && [1, 2].includes(lvl(c.at(-2))); };
+  for (let i = 0; i < 400; i++) {
+    const q = makeQuestion('gravity-path');
+    for (const c of q.choices) for (const part of c.split(' – ')) assert(lvl(part) >= 0, `unknown chord ${part} in ${c}`);
+    if (/fill the gap/i.test(q.text)) {
+      assert([1, 2].includes(lvl(q.answer)) && q.choices.filter((c) => [1, 2].includes(lvl(c))).length === 1, `gap: ${q.text} ${q.choices}`);
+    } else if (/confirms the key\?$/.test(q.text)) {
+      assert(comesHome(q.answer) && q.choices.filter(comesHome).length === 1, `confirms: ${q.choices}`);
+      assert(!q.answer.split(' – ').slice(1, -1).includes('I'), 'no I in the middle');
+    } else {
+      assert(q.answer.split(' – ').map(lvl).join() === '3,2,1,0', `walk: ${q.answer}`);
+    }
+  }
+  const named = makeQuestion('gravity-path', { names: true });
+  assert(/^In .+ major, /.test(named.text) && !named.choices.some((c) => /[iv]{2}|\bV\b/.test(c)), `names mode shows grades: ${named.choices}`);
 });
 
 await test('quiz score and steps-and-3rds checks', () => {

@@ -8,9 +8,9 @@
 //        note-values, time-signature, hear-meter, chord-pull, tendency-tone, hear-cadence,
 //        name-inversion, find-fundamental, common-chord, modulation-fifth
 
-import { keyboardSvg } from './piano.js?v=202611141938';
-import { KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611141938';
-import { h } from './util.js?v=202611141938';
+import { keyboardSvg } from './piano.js?v=202611142301';
+import { KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611142301';
+import { h } from './util.js?v=202611142301';
 
 const NATURAL = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B' };
 const BLACK_PAIRS = { 1: 'C♯ / D♭', 3: 'D♯ / E♭', 6: 'F♯ / G♭', 8: 'G♯ / A♭', 10: 'A♯ / B♭' };
@@ -487,7 +487,7 @@ const GEN = {
       5: 'it has the note a semitone below home that pushes up to it, and a note that falls down to it: the perfect cadence (V – I).',
       7: 'like V, it holds the note a semitone below home that pushes up to it.',
       4: 'it resolves home too, a little less strongly than V: the plagal cadence. It also leads nicely to V (it is a “pre-dominant”).',
-      2: 'it resolves home too, a little less strongly than V. It also leads nicely to V (it is a “pre-dominant”).',
+      2: 'it resolves home too, a little less strongly than V: the plagal cadence, like IV. It also leads nicely to V (it is a “pre-dominant”).',
       3: 'it shares two notes with I, so going back to I releases no tension: it doesn’t confirm the key.',
       6: 'it shares two notes with I, so going back to I releases no tension: it doesn’t confirm the key.',
     }[deg];
@@ -511,6 +511,48 @@ const GEN = {
       text: `In ${pretty(key)} major, ${prettyAll(names[tend.fd - 1])} (grade ${tend.fd}, a note of the V chord) wants to resolve. Click the note it goes to.`,
       marks: [from], play: [t, t + 4, t + 7, t + 12, from], clickPc: pcOf(key),
       reveal: `${prettyAll(names[0])}, home: ${tend.why}.`,
+    };
+  },
+
+  // Learn the gravity map by heart: written progressions, in grades or (names: true) as chord names in a key.
+  'gravity-path'({ names = false, keys = MAJOR_KEYS } = {}) {
+    const L1 = [5, 7], L2 = [4, 2], L3 = [6, 3];
+    const key = names ? pick(keys) : 'C';
+    const label = (d) => (names ? symbolText(chordInfo(key, 'major', { deg: d })) : chordInfo(key, 'major', { deg: d }).roman);
+    const prog = (degs) => degs.map(label).join(' – ');
+    const keep = (t) => t.replaceAll(' – ', '\u00a0\u2060–\u2060\u00a0'); // keep a progression on one line (WJ: no break after the dash)
+    const ask = (t) => (names ? `In ${pretty(key)} major, ${t}` : t[0].toUpperCase() + t.slice(1));
+    const kind = pick(['gap', 'gap', 'confirms', 'walk']);
+    if (kind === 'gap') {
+      // The chord right before the final I has to come from the strong levels.
+      const prev = pick([...L3, ...L2]);
+      const correct = L2.includes(prev) ? pick(L1) : pick([...L1, ...L2]);
+      const answer = label(correct);
+      return {
+        text: ask(`fill the gap so that the progression comes home and confirms the key:  ${keep(`${prog([1, prev])} – ? – ${label(1)}`)}`),
+        choices: shuffle([answer, ...L3.map(label)]), answer,
+        reveal: `${answer}: ${L1.includes(correct) ? 'V and vii° have the strongest pull home (perfect cadence).' : 'IV and ii resolve home too (plagal cadence).'} vi and iii don’t confirm the key: they float.`,
+      };
+    }
+    if (kind === 'confirms') {
+      const mid = pick(L3);
+      const good = pick([[1, mid, pick(L2), pick(L1), 1], [1, mid, pick(L1), 1], [1, mid, pick(L2), 1], [1, pick(L2), pick(L1), 1]]);
+      const bad = shuffle([[1, pick(L2), pick(L1), pick(L3)], [1, pick(L1), pick(L3), 1], [1, pick(L2), pick(L3), 1], [1, mid, pick(L3), 1]]).slice(0, 3);
+      const answer = prog(good);
+      return {
+        text: ask('which progression comes home and confirms the key?'),
+        choices: shuffle([answer, ...new Set(bad.map(prog))].filter((x, i, a) => a.indexOf(x) === i)), answer,
+        reveal: `${answer}: the chord before the last ${label(1)} is ${label(good.at(-2))}, from the ${L1.includes(good.at(-2)) ? 'strongest level (V, vii°)' : 'strong level (IV, ii)'}. The others end on vi or iii, or arrive at ${label(1)} from vi or iii, so they float.`,
+      };
+    }
+    // walk: one step down the map at a time
+    const steps = [pick(L3), pick(L2), pick(L1)];
+    const answer = prog([...steps, 1]);
+    const wrong = [[steps[1], steps[0], steps[2]], [steps[2], steps[1], steps[0]], [steps[0], steps[2], steps[1]], [steps[1], steps[2], steps[0]]];
+    return {
+      text: ask('which path walks down the gravity map one level at a time, back home?'),
+      choices: shuffle([answer, ...shuffle(wrong).slice(0, 3).map((w) => prog([...w, 1]))]), answer,
+      reveal: `${answer}: from ${label(steps[0])} (no direct pull) to ${label(steps[1])} (strong pull) to ${label(steps[2])} (strongest pull), then home to ${label(1)}.`,
     };
   },
 

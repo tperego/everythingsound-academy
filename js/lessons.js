@@ -477,16 +477,20 @@ LESSONS.push(
         'How strongly does each chord pull back home to I?',
         'Strongest: V and vii°. Strong: IV and ii (also called pre-dominant: they lead nicely to V). No direct pull: iii and vi.',
       ], { at: 318 }),
-      quizEx('mt11-tendency', '2 · Where does the note go?', 'tendency-tone', [
-        'You hear the key, then one note of the V chord. Click the note it resolves to.',
-        'In C major, B pushes up a semitone to C, and D falls to C.',
-      ], { at: 201 }),
-      quizEx('mt11-cadence', '3 · Resolve or float?', 'hear-cadence', [
+      quizEx('mt11-path', '2 · Find the way home', 'gravity-path', [
+        'Learn the gravity map by heart. Fill the gap, pick the progression that comes home, or walk down the map one level at a time.',
+        'The map: vi and iii (no direct pull) → IV and ii (strong) → V and vii° (strongest) → I.',
+      ], { at: 376 }),
+      quizEx('mt11-path-keys', '3 · The map in any key', 'gravity-path', [
+        'The same gravity map, now with chord names in different major keys.',
+        'Work out the grade of each chord first: then the map tells you where it goes.',
+      ], { options: { names: true }, at: 457 }),
+      quizEx('mt11-cadence', '4 · Resolve or float?', 'hear-cadence', [
         'Listen to a short progression. Does the last chord resolve the tension and confirm the key, or does it just float?',
       ], { at: 138 }),
       {
         id: 'mt11-journey',
-        title: '4 · Leave home and come back',
+        title: '5 · Leave home and come back',
         kind: 'creative',
         videoAt: 430,
         brief: [
