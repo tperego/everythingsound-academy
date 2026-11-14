@@ -1,9 +1,9 @@
 // Piano view: a keyboard showing the chord (left hand bass + right hand chord, with finger numbers)
 // and the melody note, following the playhead. Plus a chord sheet with a mini keyboard per chord.
 
-import { STEPS_PER_BAR, chordAtBeat, chordEvents } from './project.js?v=202611141607';
-import { bassName, chordInfo, chordVoicing, degreeName, midiForDegree } from './theory.js?v=202611141607';
-import { h } from './util.js?v=202611141607';
+import { STEPS_PER_BAR, chordAtBeat, chordEvents } from './project.js?v=202611141612';
+import { bassName, chordInfo, chordVoicing, degreeName, midiForDegree } from './theory.js?v=202611141612';
+import { h } from './util.js?v=202611141612';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];

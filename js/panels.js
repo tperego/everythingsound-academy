@@ -1,7 +1,7 @@
 // Shared display pieces used on both the student and the teacher page.
 
-import { midiNoteName } from './midi.js?v=202611141607';
-import { h } from './util.js?v=202611141607';
+import { midiNoteName } from './midi.js?v=202611141612';
+import { h } from './util.js?v=202611141612';
 
 export function renderChecks(results) {
   if (!results.length) return h('p', { class: 'muted' }, 'No automatic checks for this exercise.');

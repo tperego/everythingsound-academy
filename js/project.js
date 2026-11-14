@@ -6,7 +6,7 @@
 //   melody: [ {start, len, deg, oct}, ... ]  // start/len in 8th-note steps, deg 1..7, oct -1..1
 // }
 
-import { KEY_OPTIONS, chordInfo, chordVoicing, midiForDegree } from './theory.js?v=202611141607';
+import { KEY_OPTIONS, chordInfo, chordVoicing, midiForDegree } from './theory.js?v=202611141612';
 
 export const STEPS_PER_BAR = 8;
 export const SLOTS_PER_BAR = 2;

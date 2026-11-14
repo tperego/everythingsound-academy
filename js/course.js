@@ -1,8 +1,8 @@
 // The course: modules in order, each listing lesson ids from js/lessons.js.
 // Add your lessons to js/lessons.js, then list them here in the order students should take them.
 
-import { LESSONS, findLesson } from './lessons.js?v=202611141607';
-import { store } from './util.js?v=202611141607';
+import { LESSONS, findLesson } from './lessons.js?v=202611141612';
+import { store } from './util.js?v=202611141612';
 
 export const COURSE = {
   id: 'music-theory',
@@ -16,8 +16,9 @@ export const COURSE = {
     { id: 'course:general', name: 'General', icon: '#', about: 'Say hello, share what you’re working on, ask anything.' },
     { id: 'course:foundations', name: 'Foundations Q&A', icon: '#', about: 'Questions about Module 1: pitch, the keyboard, intervals, scales and enharmony.' },
     { id: 'course:chords', name: 'Chords & harmony Q&A', icon: '#', about: 'Questions about Modules 2 and 3: chords, rhythm, gravity, inversions, modulation.' },
-    { id: 'course:class-lessons', name: 'Chords & form Q&A', icon: '#', about: 'Questions about the lessons from class.' },
   ],
+  // The two lessons from class (progressions-1, listen-form-1) are hidden: not part of the course,
+  // but they still open from a direct link (lesson.html?lesson=…).
   modules: [
     {
       title: 'Foundations',
@@ -33,11 +34,6 @@ export const COURSE = {
       title: 'Rhythm and harmony',
       intro: 'Note durations and time signatures, the harmonic gravity system, inversions and modulation.',
       lessons: ['mt-10-rhythm', 'mt-11-gravity', 'mt-12-inversions', 'mt-13-modulation'],
-    },
-    {
-      title: 'From class: chords, listening and form',
-      intro: 'The lessons we used in class. More modules will appear here, step by step.',
-      lessons: ['progressions-1', 'listen-form-1'],
     },
   ],
 };
