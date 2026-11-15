@@ -1,7 +1,7 @@
 // Staff view: turns a project into ABC notation and renders it with abcjs (global `ABCJS`).
 
-import { chordEvents } from './project.js?v=202611151938';
-import { chordInfo, degreeName, midiForDegree, accidentalOffset } from './theory.js?v=202611151938';
+import { chordEvents } from './project.js?v=202611151949';
+import { chordInfo, degreeName, midiForDegree, accidentalOffset } from './theory.js?v=202611151949';
 
 function abcPitch(p, note) {
   const name = degreeName(p.key, p.mode, note.deg);

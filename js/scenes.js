@@ -1,14 +1,15 @@
 // Scenes (record2.html): scripted, vertical scenes for short videos, one per hook in the TikTok plan.
 // Separate from the course: nothing here signs in, saves progress or awards XP.
 
-import { Player } from './audio.js?v=202611151938';
-import { keyboardSvg } from './piano.js?v=202611151938';
-import { SCENES as WEEKS_1_3 } from './scene-list.js?v=202611151938';
-import { SCENES as WEEKS_4_10 } from './scene-list-2.js?v=202611151938';
-import { h } from './util.js?v=202611151938';
+import { Player } from './audio.js?v=202611151949';
+import { keyboardSvg } from './piano.js?v=202611151949';
+import { SCENES as WEEKS_1_3 } from './scene-list.js?v=202611151949';
+import { SCENES as WEEKS_4_10 } from './scene-list-2.js?v=202611151949';
+import { SCENES as SPECIALS } from './scene-specials.js?v=202611151949';
+import { h } from './util.js?v=202611151949';
 
 const $ = (s) => document.querySelector(s);
-const SCENES = [...WEEKS_1_3, ...WEEKS_4_10];
+const SCENES = [...WEEKS_1_3, ...WEEKS_4_10, ...SPECIALS];
 const player = new Player();
 // ?speed=10 runs scenes faster (for checking them); normal use is 1.
 const SPEED = Math.max(1, Number(new URLSearchParams(location.search).get('speed')) || 1);
@@ -307,8 +308,11 @@ const weekLabel = (w) => {
   const days = SCENES.filter((s) => s.week === w).map((s) => s.day);
   return `Week ${w} · ${short(Math.min(...days))} – ${short(Math.max(...days))}`;
 };
-const groups = [...new Set(SCENES.map((s) => s.week))].map((w) => h('optgroup', { label: weekLabel(w) },
-  SCENES.filter((s) => s.week === w).map((s) => h('option', { value: s.id }, `Day ${s.day} · ${s.slot} · ${s.hook}`))));
+// Dated scenes group by week; extra sets (like the producer specials) carry their own group name.
+const groupOf = (s) => s.group || weekLabel(s.week);
+const where = (s) => (s.group ? `${s.group} · ${s.n}` : `Day ${s.day} · ${short(s.day)} · ${s.slot}`);
+const groups = [...new Set(SCENES.map(groupOf))].map((g) => h('optgroup', { label: g },
+  SCENES.filter((s) => groupOf(s) === g).map((s) => h('option', { value: s.id }, s.group ? `${s.n} · ${s.hook}` : `Day ${s.day} · ${s.slot} · ${s.hook}`))));
 select.replaceChildren(...groups);
 const saved = (k, d) => { try { return localStorage.getItem(`es.scn.${k}`) ?? d; } catch { return d; } };
 const save = (k, v) => { try { localStorage.setItem(`es.scn.${k}`, v); } catch { /* private mode */ } };
@@ -336,7 +340,7 @@ function applyText() {
 function showCover() {
   const sc = current();
   $('#card').replaceChildren(h('div', { class: 'rec-end' },
-    h('p', { class: 'muted' }, `Day ${sc.day} · ${short(sc.day)} · ${sc.slot}`),
+    h('p', { class: 'muted' }, where(sc)),
     h('p', { class: 'rec-end-big' }, 'Ready'),
     h('p', {}, document.body.classList.contains('panel-off') ? 'Tap here to start.' : 'Tap Go to play this scene.')));
 }
