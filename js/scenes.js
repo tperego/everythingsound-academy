@@ -1,10 +1,10 @@
 // Scenes (record2.html): scripted, vertical scenes for short videos, one per hook in the TikTok plan.
 // Separate from the course: nothing here signs in, saves progress or awards XP.
 
-import { Player } from './audio.js?v=202611151658';
-import { keyboardSvg } from './piano.js?v=202611151658';
-import { SCENES } from './scene-list.js?v=202611151658';
-import { h } from './util.js?v=202611151658';
+import { Player } from './audio.js?v=202611151713';
+import { keyboardSvg } from './piano.js?v=202611151713';
+import { SCENES } from './scene-list.js?v=202611151713';
+import { h } from './util.js?v=202611151713';
 
 const $ = (s) => document.querySelector(s);
 const player = new Player();
@@ -289,7 +289,7 @@ const groups = [1, 2, 3].map((w) => h('optgroup', { label: `Week ${w}` },
 select.replaceChildren(...groups);
 const saved = (k, d) => { try { return localStorage.getItem(`es.scn.${k}`) ?? d; } catch { return d; } };
 const save = (k, v) => { try { localStorage.setItem(`es.scn.${k}`, v); } catch { /* private mode */ } };
-for (const [id, key, d, prop] of [['#scene', 'scene', SCENES[0].id, 'value'], ['#theme', 'theme', 'dark', 'value'], ['#foot-input', 'foot', 'Free lessons · link in bio', 'value'], ['#show-hook', 'hook', 'true', 'checked'], ['#auto-next', 'next', 'true', 'checked']]) {
+for (const [id, key, d, prop] of [['#scene', 'scene', SCENES[0].id, 'value'], ['#theme', 'theme', 'dark', 'value'], ['#foot-input', 'foot', 'Free lessons · link in bio', 'value'], ['#show-hook', 'hook', 'true', 'checked'], ['#auto-next', 'next', 'true', 'checked'], ['#auto-play', 'play', 'false', 'checked']]) {
   const el = $(id);
   const v = saved(key, d);
   if (prop === 'checked') el.checked = v === 'true';
@@ -315,12 +315,13 @@ function showCover() {
   $('#card').replaceChildren(h('div', { class: 'rec-end' },
     h('p', { class: 'muted' }, `Day ${sc.day} · ${sc.slot}`),
     h('p', { class: 'rec-end-big' }, 'Ready'),
-    h('p', {}, 'Tap Go to play this scene.')));
+    h('p', {}, document.body.classList.contains('panel-off') ? 'Tap here to start.' : 'Tap Go to play this scene.')));
 }
 
 // ---------- Running ----------
 
 let running = false;
+let stopAfter = false; // a tap during auto-play stops it after the current scene
 async function run() {
   if (running) return;
   running = true;
@@ -340,14 +341,24 @@ async function run() {
   await sleep(3.5);
   document.body.classList.remove('rolling');
   running = false;
+  let moved = false;
   if ($('#auto-next').checked) {
     const i = SCENES.indexOf(sc);
-    if (i + 1 < SCENES.length) { select.value = SCENES[i + 1].id; save('scene', select.value); }
+    if (i + 1 < SCENES.length) { select.value = SCENES[i + 1].id; save('scene', select.value); moved = true; }
   }
   applyText();
+  // One long recording: play the next scene by itself after a short pause.
+  if (moved && $('#auto-play').checked && !stopAfter) setTimeout(run, 1500);
+  stopAfter = false;
 }
 
 $('#go').addEventListener('click', run);
-$('#hide').addEventListener('click', () => document.body.classList.add('panel-off'));
-$('#stage').addEventListener('click', () => { if (!running) document.body.classList.remove('panel-off'); });
+$('#hide').addEventListener('click', () => { document.body.classList.add('panel-off'); applyText(); });
+// Settings hidden: tapping the frame starts the run; the ⚙ button brings the settings back.
+$('#stage').addEventListener('click', (e) => {
+  if (e.target.closest('#gear')) return;
+  if (running) { stopAfter = true; return; }
+  if (document.body.classList.contains('panel-off')) run();
+});
+$('#gear').addEventListener('click', () => { document.body.classList.remove('panel-off'); applyText(); });
 applyText();

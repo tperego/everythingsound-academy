@@ -37,14 +37,15 @@ const SCENES = [
     week: 1, day: 1, slot: 'Afternoon', hook: 'Church bells use just 4 notes. Here they are.', note: 'Starts with a card for your church-bell clip.',
     async run(S) {
       await S.clip('Your clip: church bells');
-      S.cap('The Westminster chime: just 4 notes');
+      S.cap('The Big Ben hour chime: just 4 notes');
       S.kb('A3', 'B4');
-      await S.notes([['G#4', 0.8], ['F#4', 0.8], ['E4', 0.8], ['B3', 1.4]], { keep: true });
-      S.tag('G♯ · F♯ · E · B');
-      await S.notes([['E4', 0.8], ['G#4', 0.8], ['F#4', 0.8], ['B3', 1.4]], { keep: true });
-      S.cap('The big drop: E down to B');
+      await S.notes([['G#4', 0.8], ['E4', 0.8], ['F#4', 0.8], ['B3', 1.5]], { keep: true });
+      await S.notes([['B3', 0.8], ['F#4', 0.8], ['G#4', 0.8], ['E4', 1.5]], { keep: true });
+      S.tag('G♯ · E · F♯ · B');
+      await S.wait(1.5);
+      S.cap('The big drop: F♯ down to B');
       S.tag('');
-      await interval(S, 'E4', 'B3', 'Perfect 4th · 5 semitones');
+      await interval(S, 'F#4', 'B3', 'Perfect 5th · 7 semitones');
     },
   },
   {

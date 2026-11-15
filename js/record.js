@@ -2,11 +2,11 @@
 // Separate from the course: it only reads the lesson list and the question generators.
 // Nothing here signs in, saves progress or awards XP.
 
-import { Player } from './audio.js?v=202611151658';
-import { LESSONS } from './lessons.js?v=202611151658';
-import { keyboardSvg } from './piano.js?v=202611151658';
-import { makeQuestion } from './quiz.js?v=202611151658';
-import { h } from './util.js?v=202611151658';
+import { Player } from './audio.js?v=202611151713';
+import { LESSONS } from './lessons.js?v=202611151713';
+import { keyboardSvg } from './piano.js?v=202611151713';
+import { makeQuestion } from './quiz.js?v=202611151713';
+import { h } from './util.js?v=202611151713';
 
 const $ = (s) => document.querySelector(s);
 const player = new Player();
@@ -138,7 +138,12 @@ function preview() {
 
 $('#go').addEventListener('click', run);
 $('#hide').addEventListener('click', () => document.body.classList.add('panel-off'));
-$('#stage').addEventListener('click', () => { if (!running) document.body.classList.remove('panel-off'); });
+// Settings hidden: tapping the frame starts the run; the ⚙ button brings the settings back.
+$('#stage').addEventListener('click', (e) => {
+  if (running || e.target.closest('#gear')) return;
+  if (document.body.classList.contains('panel-off')) run();
+});
+$('#gear').addEventListener('click', () => document.body.classList.remove('panel-off'));
 $('#preview').addEventListener('click', preview);
 select.addEventListener('change', preview);
 applyText();

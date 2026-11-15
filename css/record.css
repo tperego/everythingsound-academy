@@ -60,3 +60,11 @@
   .rec-panel { position: fixed; margin: 0; left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 52dvh; border-radius: 16px 16px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
 }
 .rolling .rec-panel, .panel-off .rec-panel { visibility: hidden; } /* keeps the frame exactly where it was */
+
+/* Settings button in the frame's corner (only while the settings are hidden and nothing is playing). */
+.rec-gear {
+  position: absolute; top: calc(18px + env(safe-area-inset-top)); right: 16px; z-index: 5;
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--rec-line);
+  background: var(--rec-card); color: var(--rec-ink); font-size: 1.2rem; cursor: pointer; display: none;
+}
+.panel-off:not(.rolling) .rec-gear { display: grid; place-items: center; }

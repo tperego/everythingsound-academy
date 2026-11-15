@@ -6,15 +6,16 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Recording 2 · Scenes · Everything Sound Academy</title>
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="css/app.css?v=202611151658">
-  <link rel="stylesheet" href="css/record.css?v=202611151658">
-  <link rel="stylesheet" href="css/scenes.css?v=202611151658">
+  <link rel="stylesheet" href="css/app.css?v=202611151713">
+  <link rel="stylesheet" href="css/record.css?v=202611151713">
+  <link rel="stylesheet" href="css/scenes.css?v=202611151713">
   <script src="https://cdn.jsdelivr.net/npm/tone@15.0.4/build/Tone.js"></script>
 </head>
 <!-- Scenes for short vertical videos: one scripted scene per hook in the TikTok plan (Day 1–21, morning,
      afternoon, evening). A separate page: not linked from the course, no accounts, no progress or XP. -->
 <body class="rec-body">
   <main class="rec-stage" id="stage">
+    <button type="button" class="rec-gear" id="gear" aria-label="Show settings">⚙</button>
     <div class="rec-brand"><span class="logo" aria-hidden="true">♪</span> Everything Sound Academy</div>
     <h1 class="rec-hook" id="hook"></h1>
     <section class="rec-card sc-card" id="card"></section>
@@ -23,11 +24,12 @@
 
   <aside class="rec-panel" id="panel">
     <h2>Scenes</h2>
-    <p class="muted small">One scene for each hook in your TikTok plan. Pick it, start your screen recording, then tap Go. Hidden settings come back when you tap the frame.</p>
+    <p class="muted small">One scene for each hook in your TikTok plan. Pick it, start your screen recording, then tap Go. Or tap Hide settings, then tap the frame to start; the ⚙ button brings the settings back.</p>
     <label class="field">Scene <select id="scene"></select></label>
     <p class="small" id="scene-note"></p>
     <label class="check-row"><input type="checkbox" id="show-hook" checked> Show the hook as big text at the top</label>
     <label class="check-row"><input type="checkbox" id="auto-next" checked> After each run, move to the next scene</label>
+    <label class="check-row"><input type="checkbox" id="auto-play"> …and play it by itself (one long recording, cut it in CapCut; tap the frame to stop after the current scene)</label>
     <div class="row wrap">
       <label class="field">Theme <select id="theme"><option value="dark">Dark</option><option value="light">Light</option><option value="brand">Orange</option></select></label>
       <label class="field">Footer <input id="foot-input" type="text" maxlength="60" value="Free lessons · link in bio"></label>
@@ -38,6 +40,6 @@
     </div>
   </aside>
 
-  <script type="module" src="js/scenes.js?v=202611151658"></script>
+  <script type="module" src="js/scenes.js?v=202611151713"></script>
 </body>
 </html>

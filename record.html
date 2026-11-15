@@ -6,14 +6,15 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Recording mode · Everything Sound Academy</title>
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="css/app.css?v=202611151658">
-  <link rel="stylesheet" href="css/record.css?v=202611151658">
+  <link rel="stylesheet" href="css/app.css?v=202611151713">
+  <link rel="stylesheet" href="css/record.css?v=202611151713">
   <script src="https://cdn.jsdelivr.net/npm/tone@15.0.4/build/Tone.js"></script>
 </head>
 <!-- Recording mode for short vertical videos (TikTok, Shorts, Reels).
      A separate page: not linked from the course, no accounts, no progress or XP. -->
 <body class="rec-body">
   <main class="rec-stage" id="stage">
+    <button type="button" class="rec-gear" id="gear" aria-label="Show settings">⚙</button>
     <div class="rec-brand"><span class="logo" aria-hidden="true">♪</span> Everything Sound Academy</div>
     <h1 class="rec-hook" id="hook"></h1>
     <section class="rec-card" id="card"></section>
@@ -22,7 +23,7 @@
 
   <aside class="rec-panel" id="panel">
     <h2>Recording mode</h2>
-    <p class="muted small">Pick an exercise, write your hook, start your screen recording, then tap Go. Everything except the video frame hides while it plays. Hidden settings come back when you tap the frame.</p>
+    <p class="muted small">Pick an exercise, write your hook, start your screen recording, then tap Go. Everything except the video frame hides while it plays. Or tap Hide settings, then tap the frame to start; the ⚙ button brings the settings back.</p>
     <label class="field">Exercise <select id="exercise"></select></label>
     <label class="field">Hook (big text at the top) <input id="hook-input" type="text" maxlength="80" placeholder="90% get this wrong"></label>
     <div class="row wrap">
@@ -39,6 +40,6 @@
     </div>
   </aside>
 
-  <script type="module" src="js/record.js?v=202611151658"></script>
+  <script type="module" src="js/record.js?v=202611151713"></script>
 </body>
 </html>
