@@ -2,11 +2,11 @@
 // Separate from the course: it only reads the lesson list and the question generators.
 // Nothing here signs in, saves progress or awards XP.
 
-import { Player } from './audio.js?v=202611142350';
-import { LESSONS } from './lessons.js?v=202611142350';
-import { keyboardSvg } from './piano.js?v=202611142350';
-import { makeQuestion } from './quiz.js?v=202611142350';
-import { h } from './util.js?v=202611142350';
+import { Player } from './audio.js?v=202611151533';
+import { LESSONS } from './lessons.js?v=202611151533';
+import { keyboardSvg } from './piano.js?v=202611151533';
+import { makeQuestion } from './quiz.js?v=202611151533';
+import { h } from './util.js?v=202611151533';
 
 const $ = (s) => document.querySelector(s);
 const player = new Player();
@@ -125,7 +125,7 @@ async function run() {
   $('#card').replaceChildren(h('div', { class: 'rec-end' },
     h('p', { class: 'rec-end-big' }, total > 1 ? 'How many did you get?' : 'Did you get it?'),
     h('p', {}, 'Practise with the free lessons and the Sandbox.'),
-    h('p', { class: 'rec-url' }, 'theory.everythingsoundacademy.com')));
+    h('p', { class: 'rec-url' }, 'everythingsoundacademy.com')));
   await wait(3.5);
   document.body.classList.remove('rolling');
   running = false;
