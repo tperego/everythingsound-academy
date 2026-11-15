@@ -1,12 +1,14 @@
 // Scenes (record2.html): scripted, vertical scenes for short videos, one per hook in the TikTok plan.
 // Separate from the course: nothing here signs in, saves progress or awards XP.
 
-import { Player } from './audio.js?v=202611151713';
-import { keyboardSvg } from './piano.js?v=202611151713';
-import { SCENES } from './scene-list.js?v=202611151713';
-import { h } from './util.js?v=202611151713';
+import { Player } from './audio.js?v=202611151938';
+import { keyboardSvg } from './piano.js?v=202611151938';
+import { SCENES as WEEKS_1_3 } from './scene-list.js?v=202611151938';
+import { SCENES as WEEKS_4_10 } from './scene-list-2.js?v=202611151938';
+import { h } from './util.js?v=202611151938';
 
 const $ = (s) => document.querySelector(s);
+const SCENES = [...WEEKS_1_3, ...WEEKS_4_10];
 const player = new Player();
 // ?speed=10 runs scenes faster (for checking them); normal use is 1.
 const SPEED = Math.max(1, Number(new URLSearchParams(location.search).get('speed')) || 1);
@@ -102,6 +104,7 @@ class Stage {
   async notes(list, { gap = 0.55, len = null, light = true, keep = false, cls = 'rh', labels = true, synth = 'auto', vel = 0.75 } = {}) {
     for (let i = 0; i < list.length; i++) {
       const [x, d] = Array.isArray(list[i]) ? list[i] : [list[i], gap];
+      if (x == null) { await sleep(d); continue; } // a rest
       if (light && this.kbBox) this.mark(x, cls, Array.isArray(labels) ? labels[i] : labels);
       this.sound(x, len ?? Math.min(0.9, d * 0.9), { synth, vel });
       await sleep(d);
@@ -178,22 +181,33 @@ class Stage {
     this.roll = { svg, lo, hi, rowH, bw, rects: [] };
     this.slots.vis.append(h('div', { class: 'sc-roll' }, svg));
   }
-  async rollPlay(events, { bpm = 100, keepRoll = true } = {}) {
+  /** events can carry a 4th item, the synth ('chords' for a second voice).
+   *  chords: [[label, voicing, startBeat, beats], ...] played under the melody, lighting chips. */
+  async rollPlay(events, { bpm = 100, keepRoll = true, chords = null, chips = true } = {}) {
     if (!this.roll) this.rollSetup(events);
     const r = this.roll;
     if (!keepRoll) { r.rects.forEach((x) => x.remove()); r.rects = []; }
     const spb = 60 / bpm;
+    if (chords) {
+      if (chips) this.chips(chords.map(([label]) => label));
+      chords.forEach(([, voicing, start, dur], i) => setTimeout(() => {
+        if (chips) this.chipOn(i);
+        this.sound(voicing, dur * spb * 0.95, { synth: 'chords', vel: 0.55 });
+      }, (start * spb * 1000) / SPEED));
+    }
+    events = [...events].sort((a, b) => a[1] - b[1]);
     let t = 0;
-    for (const [x, start, dur] of events) {
+    for (const [x, start, dur, voice = 'auto'] of events) {
       if (start > t) { await sleep((start - t) * spb); t = start; }
       const rect = svgEl('rect', { x: start * r.bw + 1, y: (r.hi - n(x)) * r.rowH + 1, width: dur * r.bw - 2, height: r.rowH - 2, class: 'nt now', rx: 3 });
       r.svg.append(rect); r.rects.push(rect);
-      this.sound(x, dur * spb * 0.9);
+      this.sound(x, dur * spb * 0.9, { synth: voice });
       if (this.kbBox) this.mark(x, 'rh');
       setTimeout(() => { rect.classList.remove('now'); if (this.kbBox) this.unmark(x); }, (dur * spb * 900) / SPEED);
     }
-    const end = Math.max(...events.map(([, s, d]) => s + d));
+    const end = Math.max(...events.map(([, s, d]) => s + d), ...(chords || []).map(([, , s, d]) => s + d));
     await sleep((end - t) * spb + 0.2);
+    if (chords && chips) this.chipsOff();
   }
 
   // --- note values (whole … 16th) ---
@@ -279,12 +293,21 @@ const ENDS = {
   learn: ['Learn it free', 'Lessons, exercises and the Sandbox.'],
   part2: ['Part 2 tomorrow', 'Follow so you don’t miss it.'],
   challenge: ['Your turn', 'Duet me with your 4 bars.'],
+  next: ['Next part tomorrow', 'Follow so you don’t miss it.'],
+  series: ['Part 1 tomorrow', 'Music theory from zero. Follow so you don’t miss it.'],
 };
 
 // ---------- Settings ----------
 
 const select = $('#scene');
-const groups = [1, 2, 3].map((w) => h('optgroup', { label: `Week ${w}` },
+// Day 1 is Saturday 28 November 2026; each week runs Saturday to Friday.
+const dayDate = (d) => new Date(2026, 10, 27 + d);
+const short = (d) => dayDate(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+const weekLabel = (w) => {
+  const days = SCENES.filter((s) => s.week === w).map((s) => s.day);
+  return `Week ${w} · ${short(Math.min(...days))} – ${short(Math.max(...days))}`;
+};
+const groups = [...new Set(SCENES.map((s) => s.week))].map((w) => h('optgroup', { label: weekLabel(w) },
   SCENES.filter((s) => s.week === w).map((s) => h('option', { value: s.id }, `Day ${s.day} · ${s.slot} · ${s.hook}`))));
 select.replaceChildren(...groups);
 const saved = (k, d) => { try { return localStorage.getItem(`es.scn.${k}`) ?? d; } catch { return d; } };
@@ -313,7 +336,7 @@ function applyText() {
 function showCover() {
   const sc = current();
   $('#card').replaceChildren(h('div', { class: 'rec-end' },
-    h('p', { class: 'muted' }, `Day ${sc.day} · ${sc.slot}`),
+    h('p', { class: 'muted' }, `Day ${sc.day} · ${short(sc.day)} · ${sc.slot}`),
     h('p', { class: 'rec-end-big' }, 'Ready'),
     h('p', {}, document.body.classList.contains('panel-off') ? 'Tap here to start.' : 'Tap Go to play this scene.')));
 }
