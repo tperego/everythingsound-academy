@@ -1,8 +1,8 @@
 // Submission and feedback formats. Both travel as files or links, so everything is validated on load.
 
-import { normalizeProject } from './project.js?v=202611151533';
-import { slug, uid } from './util.js?v=202611151533';
-import { FORM_LABELS } from './form.js?v=202611151533';
+import { normalizeProject } from './project.js?v=202611151658';
+import { slug, uid } from './util.js?v=202611151658';
+import { FORM_LABELS } from './form.js?v=202611151658';
 
 export const SUBMISSION_FORMAT = 'everythingsound-submission';
 export const FEEDBACK_FORMAT = 'everythingsound-feedback';
@@ -52,7 +52,7 @@ export function makeSubmission({ lessonId, exerciseId, exerciseTitle, student, m
 }
 
 export function parseSubmission(raw) {
-  if (!raw || raw.format !== SUBMISSION_FORMAT) throw new Error('This is not an EverythingSound submission file.');
+  if (!raw || raw.format !== SUBMISSION_FORMAT) throw new Error('This is not an Everything Sound Academy submission file.');
   return {
     format: SUBMISSION_FORMAT,
     version: 1,
@@ -95,7 +95,7 @@ export function makeFeedback({ submission, scores, comment, checks }) {
 }
 
 export function parseFeedback(raw) {
-  if (!raw || raw.format !== FEEDBACK_FORMAT) throw new Error('This is not an EverythingSound feedback link.');
+  if (!raw || raw.format !== FEEDBACK_FORMAT) throw new Error('This is not an Everything Sound Academy feedback link.');
   return {
     submissionId: str(raw.submissionId, 64),
     markedAt: str(raw.markedAt, 40),

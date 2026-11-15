@@ -1,12 +1,12 @@
 // The course: modules in order, each listing lesson ids from js/lessons.js.
 // Add your lessons to js/lessons.js, then list them here in the order students should take them.
 
-import { LESSONS, findLesson } from './lessons.js?v=202611151533';
-import { store } from './util.js?v=202611151533';
+import { LESSONS, findLesson } from './lessons.js?v=202611151658';
+import { store } from './util.js?v=202611151658';
 
 export const COURSE = {
   id: 'music-theory',
-  academy: 'EverythingSound Academy',
+  academy: 'Everything Sound Academy',
   title: 'Music Theory',
   intro:
     'Learn music theory by doing it. Each lesson has a short video and exercises you play, build and compose in the browser, with instant feedback where there is a right answer and personal feedback from your teacher where there isn’t.',

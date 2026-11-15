@@ -1,4 +1,4 @@
--- EverythingSound Academy: two settings only you (the teacher) make. Run in Supabase SQL Editor.
+-- Everything Sound Academy: two settings only you (the teacher) make. Run in Supabase SQL Editor.
 -- Replace the placeholder text first. Don't save your real values in this file.
 
 -- 1) The class code students need to create an account (change it any time; old accounts keep working).

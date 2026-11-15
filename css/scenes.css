@@ -1,0 +1,58 @@
+/* Scenes (record2.html): pieces drawn inside the recording frame. Only used by that page. */
+
+.sc-card { justify-content: center; gap: 14px; }
+.sc-vis { display: grid; gap: 12px; }
+.sc-vis:empty { display: none; }
+.sc-kbd { background: var(--rec-card); border-radius: 14px; padding: 10px; }
+.sc-kbd .kbd { min-width: 0; }
+.sc-kbd .kbd .klabel { font-weight: 800; }
+
+.sc-tag {
+  margin: 0; align-self: center; text-align: center; font-weight: 800; font-size: clamp(1.05rem, 4.6vw, 1.3rem);
+  padding: 10px 16px; border-radius: 99px; background: var(--rec-accent); color: #fff;
+}
+.rec-body[data-theme="brand"] .sc-tag { background: #1d1b18; }
+
+.sc-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.sc-chip {
+  min-width: 46px; padding: 8px 12px; border-radius: 12px; text-align: center; font-weight: 800; font-size: 1.15rem;
+  background: var(--rec-card); border: 2px solid var(--rec-line); transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+.sc-chip.on { background: var(--rec-accent); border-color: var(--rec-accent); color: #fff; transform: scale(1.08); }
+.sc-chip.done { border-color: var(--rec-accent); }
+.rec-body[data-theme="brand"] .sc-chip.on { background: #1d1b18; border-color: #1d1b18; }
+
+.sc-clip {
+  display: grid; place-items: center; text-align: center; gap: 6px; min-height: 220px; padding: 20px;
+  border: 3px dashed var(--rec-line); border-radius: 18px; color: var(--rec-muted); font-weight: 700;
+}
+.sc-clip strong { color: var(--rec-ink); font-size: 1.4rem; }
+
+/* Gravity map: four levels, top to bottom. */
+.sc-map { display: grid; gap: 8px; }
+.sc-level { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--rec-card); opacity: 0.25; transition: opacity 0.3s; }
+.sc-level.shown { opacity: 1; }
+.sc-level .sc-chords { display: flex; gap: 6px; }
+.sc-level .sc-chip { min-width: 52px; padding: 6px 10px; }
+.sc-level small { color: var(--rec-muted); font-weight: 700; font-size: 0.85rem; }
+
+/* Piano roll and note values. */
+.sc-roll, .sc-values { background: var(--rec-card); border-radius: 14px; padding: 8px; }
+.sc-roll svg, .sc-values svg { display: block; width: 100%; height: auto; }
+.sc-roll .grid-beat { stroke: var(--rec-line); stroke-width: 1; }
+.sc-roll .grid-bar { stroke: var(--rec-muted); stroke-width: 2; }
+.sc-roll .nt { fill: var(--rec-accent); rx: 4; transition: fill 0.2s; }
+.sc-roll .nt.now { fill: var(--rec-ink); }
+.sc-roll .row-c { fill: var(--rec-line); opacity: 0.35; }
+.sc-roll text { fill: var(--rec-muted); font-size: 11px; font-weight: 700; }
+.sc-values rect { fill: var(--rec-line); transition: fill 0.15s; }
+.sc-values rect.on { fill: var(--rec-accent); }
+.sc-values text { fill: var(--rec-muted); font-size: 12px; font-weight: 700; }
+
+/* Pulse dots. */
+.sc-beats { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; }
+.sc-group { display: flex; gap: 8px; align-items: center; }
+.sc-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--rec-line); transition: background 0.1s, transform 0.1s; }
+.sc-dot.big { width: 28px; height: 28px; }
+.sc-dot.on { background: var(--rec-accent); transform: scale(1.25); }
+.rec-body[data-theme="brand"] .sc-dot.on { background: #1d1b18; }

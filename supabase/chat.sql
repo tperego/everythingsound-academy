@@ -1,4 +1,4 @@
--- EverythingSound Academy: chat (course channels + private chat with the teacher).
+-- Everything Sound Academy: chat (course channels + private chat with the teacher).
 -- Run once in Supabase: SQL Editor → New query → paste all of this → Run. (Run schema.sql first.)
 -- Safe to run again.
 

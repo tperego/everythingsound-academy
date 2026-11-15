@@ -1,4 +1,4 @@
--- EverythingSound Academy: XP, levels, streaks, badges and the class leaderboard.
+-- Everything Sound Academy: XP, levels, streaks, badges and the class leaderboard.
 -- Run once in Supabase: SQL Editor → New query → paste all of this → Run. Safe to run again.
 -- Run it after schema.sql and chat.sql.
 --

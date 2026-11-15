@@ -1,7 +1,7 @@
 // Standard MIDI File writer and reader. Works with Ableton Live, Logic Pro and Pro Tools.
 
-import { buildEvents } from './project.js?v=202611151533';
-import { detectChord, inKeyPcs, keySignatureSf } from './theory.js?v=202611151533';
+import { buildEvents } from './project.js?v=202611151658';
+import { detectChord, inKeyPcs, keySignatureSf } from './theory.js?v=202611151658';
 
 export const PPQ = 480;
 
@@ -45,7 +45,7 @@ function encodeTrack(events) {
  * tracks: [{ name, channel (0-15), program (GM, optional), notes: [{pitch, start, dur, vel(0..1)}] }]
  * start/dur in beats (quarter notes).
  */
-export function writeMidi({ name = 'EverythingSound', bpm, key, mode, tracks }) {
+export function writeMidi({ name = 'Everything Sound Academy', bpm, key, mode, tracks }) {
   const mpqn = Math.round(60000000 / bpm);
   const sf = keySignatureSf(key, mode);
   const conductor = [
@@ -79,7 +79,7 @@ const TRACK_DEFS = {
 };
 
 /** Project -> MIDI file bytes. `only` limits to one track ('chords' | 'bass' | 'melody'). */
-export function projectToMidi(project, { name = 'EverythingSound', only = null } = {}) {
+export function projectToMidi(project, { name = 'Everything Sound Academy', only = null } = {}) {
   const events = buildEvents(project);
   const tracks = Object.entries(TRACK_DEFS)
     .filter(([id]) => !only || id === only)

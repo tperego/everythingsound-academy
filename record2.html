@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Recording 2 · Scenes · Everything Sound Academy</title>
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css?v=202611151658">
+  <link rel="stylesheet" href="css/record.css?v=202611151658">
+  <link rel="stylesheet" href="css/scenes.css?v=202611151658">
+  <script src="https://cdn.jsdelivr.net/npm/tone@15.0.4/build/Tone.js"></script>
+</head>
+<!-- Scenes for short vertical videos: one scripted scene per hook in the TikTok plan (Day 1–21, morning,
+     afternoon, evening). A separate page: not linked from the course, no accounts, no progress or XP. -->
+<body class="rec-body">
+  <main class="rec-stage" id="stage">
+    <div class="rec-brand"><span class="logo" aria-hidden="true">♪</span> Everything Sound Academy</div>
+    <h1 class="rec-hook" id="hook"></h1>
+    <section class="rec-card sc-card" id="card"></section>
+    <footer class="rec-foot" id="foot">Free lessons · link in bio</footer>
+  </main>
+
+  <aside class="rec-panel" id="panel">
+    <h2>Scenes</h2>
+    <p class="muted small">One scene for each hook in your TikTok plan. Pick it, start your screen recording, then tap Go. Hidden settings come back when you tap the frame.</p>
+    <label class="field">Scene <select id="scene"></select></label>
+    <p class="small" id="scene-note"></p>
+    <label class="check-row"><input type="checkbox" id="show-hook" checked> Show the hook as big text at the top</label>
+    <label class="check-row"><input type="checkbox" id="auto-next" checked> After each run, move to the next scene</label>
+    <div class="row wrap">
+      <label class="field">Theme <select id="theme"><option value="dark">Dark</option><option value="light">Light</option><option value="brand">Orange</option></select></label>
+      <label class="field">Footer <input id="foot-input" type="text" maxlength="60" value="Free lessons · link in bio"></label>
+    </div>
+    <div class="row wrap">
+      <button type="button" class="btn primary" id="go">Go</button>
+      <button type="button" class="btn ghost" id="hide">Hide settings</button>
+    </div>
+  </aside>
+
+  <script type="module" src="js/scenes.js?v=202611151658"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-# EverythingSound Academy · Music Theory
+# Everything Sound Academy · Music Theory
 
 The course platform: a course home with modules and lessons, lesson pages (video and exercises), a Sandbox where everything is unlocked, and the teacher's marking page. Student accounts come next.
 

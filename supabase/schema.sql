@@ -1,4 +1,4 @@
--- EverythingSound Academy: database setup.
+-- Everything Sound Academy: database setup.
 -- Run once in Supabase: SQL Editor → New query → paste all of this → Run.
 -- It is safe to run again (it only creates what is missing and replaces the security rules).
 
