@@ -1,8 +1,8 @@
 // The composer grid: a chord lane (half-bar slots) and a scale-degree melody grid (8th-note steps).
 
-import { SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, formSections, ghostNotes, letterBars, melodyRows, removeOverlaps, sameRow } from './project.js?v=202611161458';
-import { FUNCTION_NAMES, bassForChordTone, bassOptions, chordInfo, chordVoicing, degreeLabel, midiForDegree, noteName } from './theory.js?v=202611161458';
-import { h, store } from './util.js?v=202611161458';
+import { SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, formSections, ghostNotes, letterBars, melodyRows, removeOverlaps, rowIndexOf } from './project.js?v=202611161641';
+import { FUNCTION_NAMES, SCALES, bassForChordTone, bassOptions, chordInfo, chordVoicing, degreeLabel, midiForDegree, noteName } from './theory.js?v=202611161641';
+import { h, store } from './util.js?v=202611161641';
 
 const ROW_H = 22;
 // Letters offered on the Form lane (any of A–H can also be typed, ' adds a prime).
@@ -15,6 +15,7 @@ export class Composer {
     this.onStartBar = onStartBar; // a click on a bar number: play from there
     this.startBar = 0;
     this.letters = letters; // the Form lane: letters over bars (Sandbox)
+    this.pen = 0; // melody pen: 0 scale notes, 1 sharp, -1 flat
     this.formSel = { from: 0, to: 3 };
     this.formLen = store.get('es.formLen', 4);
     this.showGhost = store.get('es.formGhost', true);
@@ -166,12 +167,15 @@ export class Composer {
     const ROWS = this.rows;
     // The grid is built for a number of rows: rebuild it when the mode changes that number.
     if (this.melodyGrid.querySelectorAll('.row-stripe').length !== ROWS.length) { this.build(); return; }
-    const rowOf = (n) => ROWS.findIndex((r) => sameRow(r, n));
+    const rowOf = (n) => rowIndexOf(n.deg, n.oct, n.acc, p.mode);
+    // Pentatonic scales: the two degrees left out stay playable but faded.
+    const outside = SCALES[p.mode]?.outside || [];
+    this.melodyGrid.querySelectorAll('.row-stripe').forEach((el, i) => el.classList.toggle('outside', outside.includes(ROWS[i].deg) && !ROWS[i].acc));
 
     // Row labels (depend on key)
     this.rowLabels.replaceChildren(
       ...ROWS.map((r) =>
-        h('div', { class: `row-label${r.deg === 1 ? ' tonic' : ''}${r.acc ? ' raised' : ''}`, style: { height: `${ROW_H}px` }, title: r.acc ? (r.deg === 7 ? 'Raised 7th (leading note): the 3rd of V' : 'Raised 6th (melodic minor, going up to the raised 7th)') : null },
+        h('div', { class: `row-label${r.deg === 1 ? ' tonic' : ''}${r.acc ? ' raised' : ''}${outside.includes(r.deg) && !r.acc ? ' outside' : ''}`, style: { height: `${ROW_H}px` }, title: r.acc ? (r.deg === 7 ? 'Raised 7th (leading note): the 3rd of V' : 'Raised 6th (melodic minor, going up to the raised 7th)') : outside.includes(r.deg) ? 'Not in the pentatonic scale: you can still use it' : null },
           h('b', { class: `deg deg-${r.deg}` }, degreeLabel(r.deg, r.acc)), ' ', noteName(p.key, p.mode, r.deg, r.acc))),
     );
 
@@ -227,7 +231,7 @@ export class Composer {
       ...notes.map((n) => {
         const row = rowOf(n);
         return h('div', {
-          class: `note deg-${n.deg}${n.acc ? ' raised' : ''}${n === this.pending ? ' pending' : ''}`,
+          class: `note deg-${n.deg}${n.acc ? ' raised' : ''}${n.acc === -1 ? ' flat' : ''}${n === this.pending ? ' pending' : ''}`,
           style: { left: pct(n.start), width: pct(n.len), top: `${row * ROW_H + 2}px`, height: `${ROW_H - 4}px` },
           title: `Degree ${degreeLabel(n.deg, n.acc)} · ${noteName(p.key, p.mode, n.deg, n.acc)}`,
         }, n.len >= 1 ? degreeLabel(n.deg, n.acc) : '');
@@ -243,9 +247,11 @@ export class Composer {
     // An exercise can explain why something is locked (e.g. "the melody unlocks when the chords are right").
     const note = this.lock.note && !this.readOnly ? h('p', { class: 'lock-note' }, this.lock.note) : '';
     const formRow = this.formPalette();
+    const penRow = this.penPalette();
     if (!this.chordsEditable) {
       this.palette.replaceChildren(
         formRow,
+        penRow,
         note || (this.lock.chords && !this.readOnly ? h('p', { class: 'hint' }, 'The chords are given in this exercise. Write your melody over them.') : ''),
       );
       return;
@@ -292,6 +298,7 @@ export class Composer {
       h('span', { class: 'dot fn-T' }), 'Tonic ', h('span', { class: 'dot fn-PD' }), 'Pre-dominant ', h('span', { class: 'dot fn-D' }), 'Dominant');
     this.palette.replaceChildren(
       formRow,
+      penRow,
       note,
       h('div', { class: 'palette-row' }, ...buttons),
       bassRow,
@@ -304,6 +311,22 @@ export class Composer {
   setStartBar(b) {
     this.startBar = b;
     this.build();
+  }
+
+  /** The melody pen: draw scale notes, or sharpen or flatten the next notes you draw (any degree, any scale). */
+  penPalette() {
+    if (!this.melodyEditable) return '';
+    const b = (val, label, title) => h('button', {
+      type: 'button', class: this.pen === val ? 'on' : '', 'aria-pressed': String(this.pen === val), title,
+      onclick: () => { this.pen = val; this.renderPalette(); },
+    }, label);
+    return h('div', { class: 'palette-row small pen-row' },
+      h('span', { class: 'tb-label' }, 'Melody'),
+      h('div', { class: 'seg', role: 'group', 'aria-label': 'Melody pen' },
+        b(0, 'Scale notes', 'Draw notes of the scale'),
+        b(1, '♯ Sharp', 'The notes you draw next are sharpened'),
+        b(-1, '♭ Flat', 'The notes you draw next are flattened')),
+      h('span', { class: 'hint' }, this.pen ? `Drawing ${this.pen > 0 ? 'sharp' : 'flat'} notes: they show ${this.pen > 0 ? '♯' : '♭'} on the note. Switch back to Scale notes when you’re done.` : 'Need a note outside the scale? Pick ♯ or ♭, then draw it on its degree.'));
   }
 
   // ---------- Form lane: letters over bars ----------
@@ -504,15 +527,18 @@ export class Composer {
     if (e.button !== 0) return;
     const { step, row } = this.cellAt(e);
     const r = this.rows[row];
-    const hit = this.project.melody.find((n) => sameRow(r, n) && n.start <= step && step < n.start + n.len);
+    const p = this.project;
+    const hit = p.melody.find((n) => rowIndexOf(n.deg, n.oct, n.acc, p.mode) === row && n.start <= step && step < n.start + n.len);
     if (hit) {
       this.project.melody = this.project.melody.filter((n) => n !== hit);
       this.emit();
       return;
     }
-    this.pending = { start: step, len: 1, deg: r.deg, oct: r.oct, ...(r.acc ? { acc: r.acc } : {}) };
+    // A raised row (♯7 in minor) is already sharp; elsewhere the pen decides.
+    const acc = r.acc || this.pen;
+    this.pending = { start: step, len: 1, deg: r.deg, oct: r.oct, ...(acc ? { acc } : {}) };
     this.melodyGrid.setPointerCapture(e.pointerId);
-    this.player?.previewNote(midiForDegree(this.project.key, this.project.mode, r.deg, r.oct, r.acc));
+    this.player?.previewNote(midiForDegree(p.key, p.mode, r.deg, r.oct, acc));
     this.renderLayers();
   }
 

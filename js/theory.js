@@ -4,10 +4,32 @@
 export const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 const LETTER_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
-export const MODES = {
-  major: [0, 2, 4, 5, 7, 9, 11],
-  minor: [0, 2, 3, 5, 7, 8, 10], // natural minor; V and vii° borrow the raised 7th (harmonic minor)
+/**
+ * Every scale has 7 degrees, so pieces are always stored as degrees 1–7.
+ * sig: the scale whose notes make the key signature (harmonic and melodic minor use the natural minor's).
+ * outside: degrees left out of a pentatonic scale (still playable, shown faded).
+ */
+export const SCALES = {
+  major: { label: 'Major', steps: [0, 2, 4, 5, 7, 9, 11] },
+  minor: { label: 'Minor', steps: [0, 2, 3, 5, 7, 8, 10], minor: true }, // natural minor; V and vii° borrow the raised 7th
+  'harmonic-minor': { label: 'Harmonic minor', steps: [0, 2, 3, 5, 7, 8, 11], sig: 'minor', minor: true },
+  'melodic-minor': { label: 'Melodic minor', steps: [0, 2, 3, 5, 7, 9, 11], sig: 'minor', minor: true },
+  dorian: { label: 'Dorian', steps: [0, 2, 3, 5, 7, 9, 10] },
+  phrygian: { label: 'Phrygian', steps: [0, 1, 3, 5, 7, 8, 10] },
+  lydian: { label: 'Lydian', steps: [0, 2, 4, 6, 7, 9, 11] },
+  mixolydian: { label: 'Mixolydian', steps: [0, 2, 4, 5, 7, 9, 10] },
+  locrian: { label: 'Locrian', steps: [0, 1, 3, 5, 6, 8, 10] },
+  'major-pentatonic': { label: 'Major pentatonic', steps: [0, 2, 4, 5, 7, 9, 11], sig: 'major', outside: [4, 7] },
+  'minor-pentatonic': { label: 'Minor pentatonic', steps: [0, 2, 3, 5, 7, 8, 10], sig: 'minor', outside: [2, 6], minor: true },
 };
+
+export const MODES = Object.fromEntries(Object.entries(SCALES).map(([id, s]) => [id, s.steps]));
+
+export const modeLabel = (mode) => SCALES[mode]?.label || mode;
+/** "E minor", "D Dorian", "C major pentatonic" */
+export const keyText = (key, mode) => `${key} ${['major', 'minor'].includes(mode) ? mode : modeLabel(mode).replace(/^(Major|Minor|Harmonic|Melodic) /, (m) => m.toLowerCase())}`;
+
+const CANDIDATE_TONICS = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'];
 
 export const KEY_OPTIONS = {
   major: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'F', 'Bb', 'Eb', 'Ab', 'Db'],
@@ -48,30 +70,60 @@ function raiseName(name) {
   return name.endsWith('b') ? name.slice(0, -1) : name + '#';
 }
 
+function lowerName(name) {
+  return name.endsWith('#') ? name.slice(0, -1) : name + 'b';
+}
+
+/** The notes that make the key signature (for modes: the scale itself; for harmonic and melodic minor: natural minor). */
+export function signatureNames(key, mode) {
+  return scaleNames(key, SCALES[mode]?.sig || mode);
+}
+
+// Tonics offered for the other scales: those spelled with at most 6 sharps or flats and no double sharps or flats.
+for (const mode of Object.keys(SCALES)) {
+  if (KEY_OPTIONS[mode]) continue;
+  const ok = CANDIDATE_TONICS
+    .map((k) => ({ k, names: signatureNames(k, mode), own: scaleNames(k, mode) }))
+    .filter((x) => [...x.names, ...x.own].every((n) => !/##|bb/.test(n)))
+    .map((x) => ({ k: x.k, sf: x.names.reduce((a, n) => a + accidentalOffset(n), 0) }))
+    .filter((x) => Math.abs(x.sf) <= 6);
+  // One spelling per pitch: the one with fewer accidentals.
+  const best = new Map();
+  for (const x of ok) {
+    const pc = pcOf(x.k);
+    if (!best.has(pc) || Math.abs(x.sf) < Math.abs(best.get(pc).sf)) best.set(pc, x);
+  }
+  // Listed by tonic round the circle of fifths: C G D A E B F# … then F Bb Eb …
+  KEY_OPTIONS[mode] = [...best.values()].sort((a, b) => CANDIDATE_TONICS.indexOf(a.k) - CANDIDATE_TONICS.indexOf(b.k)).map((x) => x.k);
+}
+
+/** Natural minor (and minor pentatonic): V and vii° borrow the raised 7th, and the melody gets ♯6 and ♯7 rows. */
+export const borrowsLeadingNote = (mode) => mode === 'minor' || mode === 'minor-pentatonic';
+
 /** Name of a scale degree (1..7). `raised` raises the 7th in minor (leading tone). */
 export function degreeName(key, mode, deg, raised = false) {
   const n = scaleNames(key, mode)[deg - 1];
-  return raised && mode === 'minor' && deg === 7 ? raiseName(n) : n;
+  return raised && borrowsLeadingNote(mode) && deg === 7 ? raiseName(n) : n;
 }
 
 export function degreePc(key, mode, deg, raised = false) {
-  const extra = raised && mode === 'minor' && deg === 7 ? 1 : 0;
+  const extra = raised && borrowsLeadingNote(mode) && deg === 7 ? 1 : 0;
   return (pcOf(key) + MODES[mode][deg - 1] + extra) % 12;
 }
 
-/** MIDI pitch for a melody degree; octave 0 is the octave starting on the tonic above middle C. acc 1 raises it (♯6, ♯7 in minor). */
+/** MIDI pitch for a melody degree; octave 0 is the octave starting on the tonic above middle C. acc 1 sharpens it, -1 flattens it. */
 export function midiForDegree(key, mode, deg, oct = 0, acc = 0) {
   return 60 + pcOf(key) + MODES[mode][deg - 1] + 12 * oct + (acc || 0);
 }
 
-/** A melody note's name: the scale degree's name, raised when acc is 1 (in E minor, ♯7 is D#, in G minor ♯6 is E). */
+/** A melody note's name: the scale degree's name, sharpened (acc 1) or flattened (acc -1): in E minor ♯7 is D#, in G minor ♯6 is E. */
 export function noteName(key, mode, deg, acc = 0) {
   const n = scaleNames(key, mode)[deg - 1];
-  return acc === 1 ? raiseName(n) : n;
+  return acc === 1 ? raiseName(n) : acc === -1 ? lowerName(n) : n;
 }
 
-/** Label for a melody row or note: "7", or "♯7" when raised. */
-export const degreeLabel = (deg, acc = 0) => `${acc === 1 ? '♯' : ''}${deg}`;
+/** Label for a melody row or note: "7", "♯7" or "♭7". */
+export const degreeLabel = (deg, acc = 0) => `${acc === 1 ? '♯' : acc === -1 ? '♭' : ''}${deg}`;
 
 /** Scale degrees (1..7) contained in the chord built on `deg`. */
 export function chordDegrees(deg, seventh = false) {
@@ -82,7 +134,7 @@ export function chordDegrees(deg, seventh = false) {
 /** Full description of a diatonic chord: pitch classes, quality, roman numeral, symbol, function. */
 export function chordInfo(key, mode, chord) {
   const { deg, seventh = false } = chord;
-  const raise = mode === 'minor' && (deg === 5 || deg === 7);
+  const raise = borrowsLeadingNote(mode) && (deg === 5 || deg === 7);
   const degs = chordDegrees(deg, seventh);
   const pcs = degs.map((d) => degreePc(key, mode, d, raise));
   const names = degs.map((d) => degreeName(key, mode, d, raise));
@@ -201,18 +253,18 @@ export function chordVoicing(info) {
 /** Key signature as number of sharps (+) or flats (-), for MIDI and notation. */
 export function keySignatureSf(key, mode) {
   let n = 0;
-  for (const name of scaleNames(key, mode)) n += accidentalOffset(name);
+  for (const name of signatureNames(key, mode)) n += accidentalOffset(name);
   return n;
 }
 
 export function keyLabel(key, mode) {
-  return `${key} ${mode}`;
+  return keyText(key, mode);
 }
 
 /** Pitch classes counted as "in key" when analysing MIDI from a DAW. */
 export function inKeyPcs(key, mode) {
   const set = new Set(MODES[mode].map((iv) => (pcOf(key) + iv) % 12));
-  if (mode === 'minor') {
+  if (SCALES[mode]?.minor) {
     set.add((pcOf(key) + 11) % 12); // raised 7th (harmonic minor)
     set.add((pcOf(key) + 9) % 12); // raised 6th (melodic minor)
   }

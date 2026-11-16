@@ -271,6 +271,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .row-label.raised { font-style: italic; }
 .row-label.raised .deg { width: 22px; }
 .row-stripe.raised { background: repeating-linear-gradient(135deg, var(--grid-row) 0 4px, transparent 4px 8px); }
+.row-stripe.outside { background: color-mix(in srgb, var(--ink) 9%, transparent); }
+.row-label.outside { opacity: 0.45; }
+.note.flat { background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.18) 0 4px, transparent 4px 8px) !important; }
+.pen-row .seg button.on { background: var(--ink); color: var(--bg); }
 .note.raised { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.22) 0 4px, transparent 4px 8px); }
 .deg { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; color: #fff; font-size: 0.68rem; }
 .deg-1 { background: var(--deg-1); } .deg-2 { background: var(--deg-2); } .deg-3 { background: var(--deg-3); }

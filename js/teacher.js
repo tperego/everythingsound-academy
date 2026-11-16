@@ -1,15 +1,16 @@
+import { keyText } from './theory.js?v=202611161641';
 // Teacher marking page: open submissions, listen, see checks and DAW analysis, score, send feedback link.
 
-import { runChecks } from './checks.js?v=202611161458';
-import { KIND_LABELS, findExercise } from './lessons.js?v=202611161458';
-import { analyseMidi, readMidi } from './midi.js?v=202611161458';
-import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611161458';
-import { makeFeedback, parseAnswers, parseSubmission } from './submission.js?v=202611161458';
-import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js?v=202611161458';
-import { normalizeProject } from './project.js?v=202611161458';
-import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js?v=202611161458';
-import { Workspace } from './workspace.js?v=202611161458';
-import { Player } from './audio.js?v=202611161458';
+import { runChecks } from './checks.js?v=202611161641';
+import { KIND_LABELS, findExercise } from './lessons.js?v=202611161641';
+import { analyseMidi, readMidi } from './midi.js?v=202611161641';
+import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611161641';
+import { makeFeedback, parseAnswers, parseSubmission } from './submission.js?v=202611161641';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js?v=202611161641';
+import { normalizeProject } from './project.js?v=202611161641';
+import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js?v=202611161641';
+import { Workspace } from './workspace.js?v=202611161641';
+import { Player } from './audio.js?v=202611161641';
 
 const $ = (sel) => document.querySelector(sel);
 const subs = new Map(); // id -> submission
@@ -174,7 +175,7 @@ async function open(id) {
       h('div', {},
         exercise ? h('span', { class: `badge kind-${exercise.kind}` }, KIND_LABELS[exercise.kind]) : h('span', { class: 'badge' }, 'Unknown exercise'),
         h('h2', {}, `${sub.student.name}: ${sub.exerciseTitle || sub.exerciseId}`),
-        h('p', { class: 'muted' }, `${lesson ? lesson.title + ' · ' : ''}submitted ${sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : 'unknown date'} · ${sub.project.key} ${sub.project.mode}, ${sub.project.bpm} BPM, ${sub.project.bars} bars`))),
+        h('p', { class: 'muted' }, `${lesson ? lesson.title + ' · ' : ''}submitted ${sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : 'unknown date'} · ${keyText(sub.project.key, sub.project.mode)}, ${sub.project.bpm} BPM, ${sub.project.bars} bars`))),
     sub.message ? h('blockquote', { class: 'comment' }, sub.message) : '',
     !exercise ? h('p', { class: 'warn' }, 'This exercise isn’t in this copy of the course, so the checks shown are the ones the student saw.') : ''));
 

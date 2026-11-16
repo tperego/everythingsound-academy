@@ -1,7 +1,8 @@
+import { keyText } from './theory.js?v=202611161641';
 // Shared display pieces used on both the student and the teacher page.
 
-import { midiNoteName } from './midi.js?v=202611161458';
-import { h } from './util.js?v=202611161458';
+import { midiNoteName } from './midi.js?v=202611161641';
+import { h } from './util.js?v=202611161641';
 
 export function renderChecks(results) {
   if (!results.length) return h('p', { class: 'muted' }, 'No automatic checks for this exercise.');
@@ -30,7 +31,7 @@ export function renderMidiAnalysis(a, project) {
         h('thead', {}, h('tr', {}, h('th', {}, 'Track'), h('th', {}, 'Notes'), h('th', {}, 'Range'))),
         h('tbody', {}, a.tracks.map((t) => h('tr', {}, h('td', {}, t.name), h('td', {}, String(t.count)), h('td', {}, `${midiNoteName(t.low)} – ${midiNoteName(t.high)}`)))))
       : '',
-    h('p', { class: 'muted small' }, `Chords heard in each bar (in ${project.key} ${project.mode}):`),
+    h('p', { class: 'muted small' }, `Chords heard in each bar (in ${keyText(project.key, project.mode)}):`),
     h('div', { class: 'bar-chips' },
       a.bars.map((b) => h('span', { class: 'chip', title: `Bar ${b.bar}: ${b.symbol} (${Math.round(b.confidence * 100)}% of the notes fit)` },
         h('small', {}, String(b.bar)), b.roman))));

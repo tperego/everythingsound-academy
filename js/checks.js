@@ -1,8 +1,8 @@
 // Auto-checks. Each exercise lists checks as data; each check returns {label, pass, detail}.
 
-import { chordAtBeat, chordEvents } from './project.js?v=202611161458';
-import { chordInfo, midiForDegree } from './theory.js?v=202611161458';
-import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js?v=202611161458';
+import { chordAtBeat, chordEvents } from './project.js?v=202611161641';
+import { chordInfo, midiForDegree, keyText } from './theory.js?v=202611161641';
+import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js?v=202611161641';
 
 const pct = (x) => `${Math.round(x * 100)}%`;
 const listBars = (arr) => arr.join(', ');
@@ -318,7 +318,7 @@ const CHECKS = {
     return {
       label: `Your DAW MIDI stays in key (≤ ${Math.round(maxOutRatio * 100)}% outside notes)`,
       pass: a.outOfKeyRatio <= maxOutRatio,
-      detail: `${a.outOfKeyCount} of ${a.noteCount} notes are outside ${p.key} ${p.mode}.`,
+      detail: `${a.outOfKeyCount} of ${a.noteCount} notes are outside ${keyText(p.key, p.mode)}.`,
     };
   },
   'daw-progression'({ sequence, minMatch = 0.75 }, p, ctx) {

@@ -3,11 +3,12 @@
 // project = {
 //   v: 1, key: 'G', mode: 'major', bpm: 96, bars: 4,
 //   chords: [ {deg, seventh} | null, ... ]   // length bars*2; null = keep the previous chord
-//   melody: [ {start, len, deg, oct, acc?}, ... ]  // start/len in 8th-note steps, deg 1..7, oct -1..1; acc 1 = raised 6th or 7th (minor only)
+//   melody: [ {start, len, deg, oct, acc?}, ... ]  // start/len in 8th-note steps, deg 1..7, oct -1..1; acc 1 sharp, -1 flat
+//   mode: 'major', 'minor', 'harmonic-minor', 'dorian', 'major-pentatonic'… (see SCALES in theory.js)
 //   form: [ {start, len, label}, ... ]       // optional (Sandbox): lettered phrases in bars, e.g. {start: 0, len: 4, label: 'A'}
 // }
 
-import { KEY_OPTIONS, chordInfo, chordVoicing, midiForDegree } from './theory.js?v=202611161458';
+import { KEY_OPTIONS, MODES, borrowsLeadingNote, chordInfo, chordVoicing, midiForDegree, pcOf } from './theory.js?v=202611161641';
 
 export const STEPS_PER_BAR = 8;
 export const SLOTS_PER_BAR = 2;
@@ -26,13 +27,37 @@ const MINOR_ROWS = MELODY_ROWS.flatMap((r) => (r.deg === 7 || r.deg === 6 ? [{ .
 
 /** The melody grid's rows, top to bottom, for a mode. */
 export function melodyRows(mode = 'major') {
-  return mode === 'minor' ? MINOR_ROWS : MELODY_ROWS;
+  return borrowsLeadingNote(mode) ? MINOR_ROWS : MELODY_ROWS;
 }
 
 export const sameRow = (r, n) => r.deg === n.deg && r.oct === n.oct && (r.acc || 0) === (n.acc || 0);
 
+/** The row a note sits on: its own (♯7 in minor), or its degree's row with a ♯ or ♭ on the note. */
 export function rowIndexOf(deg, oct, acc = 0, mode = 'major') {
-  return melodyRows(mode).findIndex((r) => sameRow(r, { deg, oct, acc }));
+  const rows = melodyRows(mode);
+  const exact = rows.findIndex((r) => sameRow(r, { deg, oct, acc }));
+  return exact >= 0 ? exact : rows.findIndex((r) => sameRow(r, { deg, oct, acc: 0 }));
+}
+
+/**
+ * Change the scale. Notes keep their degree, so they move into the new scale; a sharp or flat note whose pitch
+ * the new scale already has becomes a plain note (C major's ♭7 is C Mixolydian's 7).
+ */
+export function changeMode(p, mode, key) {
+  const from = MODES[p.mode];
+  const to = MODES[mode];
+  const melody = p.melody.map((n) => {
+    if (!n.acc) return n;
+    const { acc, ...rest } = n;
+    return from[n.deg - 1] + acc === to[n.deg - 1] ? rest : n;
+  });
+  return normalizeProject({ ...p, mode, key, melody });
+}
+
+/** A key for a new scale: the same tonic when that scale offers it (C# for Db if needed). */
+export function keyForMode(key, mode) {
+  const opts = KEY_OPTIONS[mode];
+  return opts.includes(key) ? key : opts.find((k) => pcOf(k) === pcOf(key)) || opts[0];
 }
 
 export function newProject({ key = 'C', mode = 'major', bpm = 90, bars = 4, progression = null, melody = [] } = {}) {
@@ -64,7 +89,7 @@ const clampInt = (v, lo, hi, dflt) => {
 /** Validate and repair a project (projects can arrive from links and files, so never trust them). */
 export function normalizeProject(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
-  const mode = r.mode === 'minor' ? 'minor' : 'major';
+  const mode = Object.hasOwn(MODES, r.mode) ? r.mode : 'major';
   const key = KEY_OPTIONS[mode].includes(r.key) ? r.key : KEY_OPTIONS[mode][0];
   const bars = clampInt(r.bars, 1, 32, 4);
   const bpm = clampInt(r.bpm, 40, 220, 90);
@@ -86,8 +111,7 @@ export function normalizeProject(raw) {
       len: clampInt(n?.len, 1, steps, 1),
       deg: clampInt(n?.deg, 1, 7, 0),
       oct: clampInt(n?.oct, -1, 1, 0),
-      // Raised notes exist only in minor; in major (or after switching to major) they become the plain degree.
-      ...(n?.acc === 1 && mode === 'minor' && (n.deg === 6 || n.deg === 7) ? { acc: 1 } : {}),
+      ...(n?.acc === 1 || n?.acc === -1 ? { acc: n.acc } : {}),
     }))
     .filter((n) => n.start >= 0 && n.deg > 0 && rowIndexOf(n.deg, n.oct, n.acc, mode) >= 0)
     .map((n) => ({ ...n, len: Math.min(n.len, steps - n.start) }))

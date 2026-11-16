@@ -1,13 +1,17 @@
 // Staff view: turns a project into ABC notation and renders it with abcjs (global `ABCJS`).
 
-import { chordEvents } from './project.js?v=202611161458';
-import { chordInfo, midiForDegree, noteName, accidentalOffset } from './theory.js?v=202611161458';
+import { chordEvents } from './project.js?v=202611161641';
+import { chordInfo, keySignatureSf, midiForDegree, noteName, accidentalOffset, signatureNames } from './theory.js?v=202611161641';
 
 const ABC_ACC = { '-2': '__', '-1': '_', 0: '=', 1: '^', 2: '^^' };
 
+// The major key with the same signature: written in the K: line, so any scale or mode shows the right signature.
+const MAJOR_FOR_SF = { '-7': 'Cb', '-6': 'Gb', '-5': 'Db', '-4': 'Ab', '-3': 'Eb', '-2': 'Bb', '-1': 'F', 0: 'C', 1: 'G', 2: 'D', 3: 'A', 4: 'E', 5: 'B', 6: 'F#', 7: 'C#' };
+
 /**
- * The key signature supplies the accidentals of diatonic notes. A raised 6th or 7th (minor) gets its own sign,
- * and a plain note after it in the same bar gets its sign back. `bar` remembers the signs used in this bar.
+ * The key signature supplies the accidentals of most notes. Any other note (the raised 7th of harmonic minor,
+ * a ♯4 drawn with the sharp pen…) gets its own sign, and a note after it in the same bar gets its sign back.
+ * `bar` remembers the signs used in this bar.
  */
 function abcPitch(p, note, bar = new Map()) {
   const name = noteName(p.key, p.mode, note.deg, note.acc);
@@ -16,11 +20,12 @@ function abcPitch(p, note, bar = new Map()) {
   const letter = name[0];
   const pitch = octave >= 5 ? letter.toLowerCase() + "'".repeat(octave - 5) : letter + ','.repeat(Math.max(0, 4 - octave));
   const acc = accidentalOffset(name);
+  const sigName = signatureNames(p.key, p.mode).find((n) => n[0] === letter);
+  const inSig = sigName ? accidentalOffset(sigName) : 0;
   const slot = letter + octave;
-  let sign = '';
-  if (note.acc) sign = bar.get(slot) === acc ? '' : ABC_ACC[acc];
-  else if (bar.has(slot) && bar.get(slot) !== acc) sign = ABC_ACC[acc];
-  if (sign || bar.has(slot)) bar.set(slot, acc);
+  const current = bar.has(slot) ? bar.get(slot) : inSig;
+  const sign = current === acc ? '' : ABC_ACC[acc];
+  if (sign) bar.set(slot, acc);
   return sign + pitch;
 }
 
@@ -59,7 +64,7 @@ export function projectToAbc(p, title = '') {
       line = [];
     }
   }
-  const key = p.mode === 'minor' ? `${p.key}m` : p.key;
+  const key = p.mode === 'minor' ? `${p.key}m` : p.mode === 'major' ? p.key : MAJOR_FOR_SF[keySignatureSf(p.key, p.mode)] || 'C';
   return [`X:1`, title ? `T:${title.replace(/[\r\n]/g, ' ')}` : '', `M:4/4`, `L:1/8`, `Q:1/4=${p.bpm}`, `K:${key}`, ...lines].filter(Boolean).join('\n');
 }
 

@@ -1,7 +1,7 @@
 // Standard MIDI File writer and reader. Works with Ableton Live, Logic Pro and Pro Tools.
 
-import { buildEvents, formSections } from './project.js?v=202611161458';
-import { detectChord, inKeyPcs, keySignatureSf } from './theory.js?v=202611161458';
+import { buildEvents, formSections } from './project.js?v=202611161641';
+import { SCALES, detectChord, inKeyPcs, keySignatureSf } from './theory.js?v=202611161641';
 
 export const PPQ = 480;
 
@@ -52,7 +52,7 @@ export function writeMidi({ name = 'Everything Sound Academy', bpm, key, mode, t
     { tick: 0, order: 0, data: metaText(0x03, name) },
     { tick: 0, order: 0, data: [0xff, 0x51, 0x03, (mpqn >> 16) & 255, (mpqn >> 8) & 255, mpqn & 255] },
     { tick: 0, order: 0, data: [0xff, 0x58, 0x04, 4, 2, 24, 8] },
-    { tick: 0, order: 0, data: [0xff, 0x59, 0x02, sf & 255, mode === 'minor' ? 1 : 0] },
+    { tick: 0, order: 0, data: [0xff, 0x59, 0x02, sf & 255, SCALES[mode]?.minor ? 1 : 0] },
   ];
   // Markers (A, A′, B…) show as locators in Logic and Pro Tools.
   for (const m of markers) conductor.push({ tick: Math.round(m.beat * PPQ), order: 0, data: metaText(0x06, m.text) });

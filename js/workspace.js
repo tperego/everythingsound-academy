@@ -1,12 +1,12 @@
 // Workspace = toolbar (transport, key, tempo, bars, view, mutes, MIDI out) + composer + staff view.
 
-import { Player, listMidiOutputs } from './audio.js?v=202611161458';
-import { Composer } from './composer.js?v=202611161458';
-import { BAR_OPTIONS, cloneProject, normalizeProject, setBars, sliceProject } from './project.js?v=202611161458';
-import { renderStaff } from './staff.js?v=202611161458';
-import { ChordSheet, PianoView } from './piano.js?v=202611161458';
-import { KEY_OPTIONS } from './theory.js?v=202611161458';
-import { h, store, toast } from './util.js?v=202611161458';
+import { Player, listMidiOutputs } from './audio.js?v=202611161641';
+import { Composer } from './composer.js?v=202611161641';
+import { BAR_OPTIONS, changeMode, cloneProject, keyForMode, normalizeProject, setBars, sliceProject } from './project.js?v=202611161641';
+import { renderStaff } from './staff.js?v=202611161641';
+import { ChordSheet, PianoView } from './piano.js?v=202611161641';
+import { KEY_OPTIONS, SCALES } from './theory.js?v=202611161641';
+import { h, store, toast } from './util.js?v=202611161641';
 
 export class Workspace {
   constructor(root, { readOnly = false, onChange = () => {}, player = null, letters = false } = {}) {
@@ -193,10 +193,12 @@ export class Workspace {
       'aria-label': 'Mode', disabled: ro || this.lock.key,
       onchange: (e) => {
         const mode = e.target.value;
-        const key = KEY_OPTIONS[mode].includes(this.project.key) ? this.project.key : KEY_OPTIONS[mode][0];
-        this.update({ ...this.project, mode, key });
+        this.update(changeMode(this.project, mode, keyForMode(this.project.key, mode)));
       },
-    }, ['major', 'minor'].map((m) => h('option', { value: m, selected: m === p.mode }, m)));
+    }, [['Major and minor', ['major', 'minor', 'harmonic-minor', 'melodic-minor']],
+      ['Modes', ['dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian']],
+      ['Pentatonic', ['major-pentatonic', 'minor-pentatonic']]]
+      .map(([group, modes]) => h('optgroup', { label: group }, modes.map((m) => h('option', { value: m, selected: m === p.mode }, SCALES[m].label.replace(/^(Major|Minor)$/, (x) => x.toLowerCase()))))));
 
     const tempo = h('input', {
       type: 'number', min: 40, max: 220, value: p.bpm, 'aria-label': 'Tempo (BPM)', class: 'num', disabled: ro,

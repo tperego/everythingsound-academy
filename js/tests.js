@@ -1,15 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611161458';
-import { LESSONS } from './lessons.js?v=202611161458';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611161458';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611161458';
-import { projectToAbc } from './staff.js?v=202611161458';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611161458';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611161458';
-import { pack, unpack } from './util.js?v=202611161458';
-import { makeQuestion } from './quiz.js?v=202611161458';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611161458';
+import { runChecks } from './checks.js?v=202611161641';
+import { LESSONS } from './lessons.js?v=202611161641';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611161641';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611161641';
+import { projectToAbc } from './staff.js?v=202611161641';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611161641';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611161641';
+import { pack, unpack } from './util.js?v=202611161641';
+import { makeQuestion } from './quiz.js?v=202611161641';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611161641';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -468,7 +468,8 @@ await test('Minor keys: raised 6th and 7th in the melody (V in E minor has D#)',
   const p = normalizeProject(raw);
   assertEq(p.melody.map((n) => n.acc || 0), [1, 0, 0], 'acc kept in minor');
   assertEq(buildEvents(p).filter((e) => e.track === 'melody').map((e) => e.pitches[0]), [75, 74, 76], 'D#5, D5, E5');
-  assertEq(normalizeProject({ ...raw, mode: 'major', key: 'E' }).melody[0].acc, undefined, 'major drops the raise');
+  const { changeMode } = await import('./project.js');
+  assertEq(changeMode(p, 'major', 'E').melody[0].acc, undefined, 'to E major: D# is already in the scale');
   const abc = projectToAbc(p);
   assert(abc.includes('^d2') && abc.includes('=d2'), `D# written, then D natural restored: ${abc}`);
   const chk = { checks: [{ type: 'melody-chord-tones', minRatio: 0.5 }] }; // D# on beat 1 is a chord tone, E on beat 3 is not
@@ -477,6 +478,31 @@ await test('Minor keys: raised 6th and 7th in the melody (V in E minor has D#)',
   const gmin = normalizeProject({ key: 'G', mode: 'minor', bars: 1, melody: [{ start: 0, len: 2, deg: 6, oct: 0, acc: 1 }, { start: 2, len: 2, deg: 7, oct: 0, acc: 1 }] });
   const abcG = projectToAbc(gmin);
   assert(abcG.includes('=e2') && abcG.includes('^f2'), `G minor: E natural and F# written: ${abcG}`);
+});
+
+await test('Scales and modes, and sharp or flat notes anywhere', async () => {
+  const { KEY_OPTIONS, keySignatureSf, chordInfo: ci, keyText } = await import('./theory.js');
+  const { changeMode, keyForMode } = await import('./project.js');
+  assert(KEY_OPTIONS.dorian.includes('D') && KEY_OPTIONS.mixolydian.includes('G') && KEY_OPTIONS['harmonic-minor'].includes('A'), 'tonics offered');
+  assertEq(keySignatureSf('D', 'dorian'), 0, 'D Dorian has no sharps or flats');
+  assertEq(keySignatureSf('A', 'harmonic-minor'), 0, 'A harmonic minor: signature of A minor');
+  assertEq(ci('D', 'dorian', { deg: 4 }).symbol, 'G', 'IV in Dorian is major');
+  assertEq(ci('G', 'mixolydian', { deg: 7 }).roman, 'VII', 'bVII in Mixolydian: F major');
+  assertEq(keyText('A', 'harmonic-minor'), 'A harmonic minor');
+  const n = (start, deg, acc) => ({ start, len: 2, deg, oct: 0, ...(acc ? { acc } : {}) });
+  const harm = normalizeProject({ key: 'A', mode: 'harmonic-minor', bars: 1, melody: [n(0, 7), n(2, 1)] });
+  const abcH = projectToAbc(harm);
+  assert(/K:C/.test(abcH) && abcH.includes('^g'), `harmonic minor writes G#: ${abcH}`);
+  const dor = projectToAbc(normalizeProject({ key: 'D', mode: 'dorian', bars: 1, melody: [n(0, 6), n(2, 3)] }));
+  assert(/K:C/.test(dor) && !/[\^_=]/.test(dor.split('\n').pop()), `D Dorian: B and F from the signature: ${dor}`);
+  const pen = normalizeProject({ key: 'C', mode: 'major', bars: 1, melody: [n(0, 4, 1), n(2, 4), n(4, 7, -1)] });
+  assertEq(buildEvents(pen).filter((e) => e.track === 'melody').map((e) => e.pitches[0]), [66, 65, 70], 'F#, F, Bb');
+  const abcP = projectToAbc(pen);
+  assert(abcP.includes('^F2 =F2 _B2'), `sharp, natural back, flat: ${abcP}`);
+  const mixo = changeMode(pen, 'mixolydian', 'C');
+  assertEq(mixo.melody.map((x) => x.acc || 0), [1, 0, 0], 'C major ♭7 is plain 7 in C Mixolydian');
+  assertEq(keyForMode('Db', 'dorian'), KEY_OPTIONS.dorian.find((k) => ['Db', 'C#'].includes(k)), 'same tonic pitch');
+  assertEq(normalizeProject({ key: 'D', mode: 'nonsense' }).mode, 'major', 'unknown scale');
 });
 
 const failed = results.filter((r) => !r.ok);
