@@ -1,9 +1,9 @@
 // Piano view: a keyboard showing the chord (left hand bass + right hand chord, with finger numbers)
 // and the melody note, following the playhead. Plus a chord sheet with a mini keyboard per chord.
 
-import { STEPS_PER_BAR, chordAtBeat, chordEvents } from './project.js?v=202611161410';
-import { bassName, chordInfo, chordVoicing, degreeName, midiForDegree } from './theory.js?v=202611161410';
-import { h } from './util.js?v=202611161410';
+import { STEPS_PER_BAR, chordAtBeat, chordEvents } from './project.js?v=202611161458';
+import { bassName, chordInfo, chordVoicing, degreeLabel, midiForDegree, noteName as scaleNoteName } from './theory.js?v=202611161458';
+import { h } from './util.js?v=202611161458';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
@@ -110,9 +110,9 @@ export class PianoView {
     }
     let melText = '';
     if (mel) {
-      const m = midiForDegree(p.key, p.mode, mel.deg, mel.oct);
+      const m = midiForDegree(p.key, p.mode, mel.deg, mel.oct, mel.acc);
       addMark(marks, m, 'mel', null);
-      melText = `Melody: ${spelled(degreeName(p.key, p.mode, mel.deg), m)} (degree ${mel.deg})`;
+      melText = `Melody: ${spelled(scaleNoteName(p.key, p.mode, mel.deg, mel.acc), m)} (degree ${degreeLabel(mel.deg, mel.acc)})`;
     }
     const bar = Math.floor(step / STEPS_PER_BAR) + 1;
     const beat = Math.floor((step % STEPS_PER_BAR) / 2) + 1;

@@ -1,12 +1,12 @@
 // Workspace = toolbar (transport, key, tempo, bars, view, mutes, MIDI out) + composer + staff view.
 
-import { Player, listMidiOutputs } from './audio.js?v=202611161410';
-import { Composer } from './composer.js?v=202611161410';
-import { BAR_OPTIONS, cloneProject, normalizeProject, setBars, sliceProject } from './project.js?v=202611161410';
-import { renderStaff } from './staff.js?v=202611161410';
-import { ChordSheet, PianoView } from './piano.js?v=202611161410';
-import { KEY_OPTIONS } from './theory.js?v=202611161410';
-import { h, store, toast } from './util.js?v=202611161410';
+import { Player, listMidiOutputs } from './audio.js?v=202611161458';
+import { Composer } from './composer.js?v=202611161458';
+import { BAR_OPTIONS, cloneProject, normalizeProject, setBars, sliceProject } from './project.js?v=202611161458';
+import { renderStaff } from './staff.js?v=202611161458';
+import { ChordSheet, PianoView } from './piano.js?v=202611161458';
+import { KEY_OPTIONS } from './theory.js?v=202611161458';
+import { h, store, toast } from './util.js?v=202611161458';
 
 export class Workspace {
   constructor(root, { readOnly = false, onChange = () => {}, player = null, letters = false } = {}) {
@@ -35,10 +35,12 @@ export class Workspace {
       onPick: (ev) => { this.cursorStep = ev.start * 2; if (!this.views.piano) this.toggleView('piano', true); else this.renderPiano(); },
     });
 
+    this.startBar = 0; // Play starts here: click a bar number to choose it
     this.composer = new Composer(this.composerEl, {
       player: this.player,
       readOnly,
       letters,
+      onStartBar: (b) => this.setStartBar(b),
       onChange: (p) => this.update(p, { fromComposer: true }),
       onSelect: (slot) => {
         if (this.player.playing) return;
@@ -68,6 +70,8 @@ export class Workspace {
   setProject(project, { lock = {}, title = '', phraseBars = 0, phraseLabels = [] } = {}) {
     this.player.stop();
     this.project = normalizeProject(project);
+    this.startBar = 0;
+    this.composer.startBar = 0;
     this.lock = lock;
     this.title = title;
     this.phraseBars = phraseBars;
@@ -107,22 +111,39 @@ export class Workspace {
 
   update(p, { fromComposer = false, rebuild = false } = {}) {
     this.project = normalizeProject(p);
+    if (this.startBar >= this.project.bars) { this.startBar = 0; this.composer.startBar = 0; rebuild = !fromComposer; }
     if (!fromComposer) {
       if (rebuild) this.composer.setProject(this.project, this.lock, this.phraseBars, this.phraseLabels);
       else { this.composer.project = cloneProject(this.project); this.composer.renderLayers(); }
       this.renderToolbar();
     }
-    if (this.player.playing && !this.player.once) this.player.schedule(this.project);
+    if (this.player.playing && !this.player.once) this.player.schedule(this.playable());
     this.renderView();
     this.onChange(this.getProject());
+  }
+
+  /** Choose the bar Play starts from; while playing, jump there. */
+  setStartBar(b) {
+    this.startBar = Math.max(0, Math.min(this.project.bars - 1, b));
+    this.composer.setStartBar(this.startBar);
+    if (this.player.playing && !this.player.once) {
+      this.stepOffset = this.startBar * 8;
+      this.player.play(this.playable()).catch(() => {});
+    }
+    this.renderToolbar();
+  }
+
+  /** What Play plays: the whole piece, or the piece from the start bar on (it loops back to that bar). */
+  playable() {
+    return this.startBar > 0 ? sliceProject(this.project, this.startBar, this.project.bars - this.startBar) : this.project;
   }
 
   async togglePlay() {
     if (this.player.playing) this.player.stop();
     else {
-      this.stepOffset = 0;
+      this.stepOffset = this.startBar * 8;
       try {
-        await this.player.play(this.project);
+        await this.player.play(this.playable());
       } catch (err) {
         toast('Could not start audio: ' + (err.message || err));
       }
@@ -159,8 +180,10 @@ export class Workspace {
     const ro = this.readOnly;
     const playing = this.player.playing;
 
-    const playBtn = h('button', { type: 'button', class: 'btn primary play', onclick: () => this.togglePlay(), 'aria-label': playing ? 'Stop' : 'Play', title: 'Play / stop (Space)' },
-      playing ? '■ Stop' : '▶ Play');
+    const from = this.startBar > 0;
+    const playBtn = h('button', { type: 'button', class: 'btn primary play', onclick: () => this.togglePlay(), 'aria-label': playing ? 'Stop' : from ? `Play from bar ${this.startBar + 1}` : 'Play', title: 'Play / stop (Space). Click a bar number above the grid to play from there.' },
+      playing ? '■ Stop' : from ? `▶ Play from bar ${this.startBar + 1}` : '▶ Play');
+    const fromReset = from ? h('button', { type: 'button', class: 'btn ghost small', title: 'Play from the beginning', onclick: () => this.setStartBar(0) }, '⏮ Bar 1') : '';
     const loop = h('label', { class: 'toggle' },
       h('input', { type: 'checkbox', checked: this.player.loop, onchange: (e) => this.player.setLoop(e.target.checked) }), ' Loop');
 
@@ -198,7 +221,7 @@ export class Workspace {
       this.player.midiOut ? `MIDI → ${this.player.midiOut.name}` : 'Live MIDI out…');
 
     this.toolbar.replaceChildren(
-      h('div', { class: 'tb-group' }, playBtn, loop),
+      h('div', { class: 'tb-group' }, playBtn, fromReset, loop),
       h('div', { class: 'tb-group' }, h('span', { class: 'tb-label' }, 'Key'), keySel, modeSel),
       h('div', { class: 'tb-group' }, h('span', { class: 'tb-label' }, 'BPM'), tempo, barsSel),
       h('div', { class: 'tb-group' }, h('span', { class: 'tb-label' }, 'Show'), viewSeg),

@@ -1,15 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611161410';
-import { LESSONS } from './lessons.js?v=202611161410';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611161410';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611161410';
-import { projectToAbc } from './staff.js?v=202611161410';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611161410';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611161410';
-import { pack, unpack } from './util.js?v=202611161410';
-import { makeQuestion } from './quiz.js?v=202611161410';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611161410';
+import { runChecks } from './checks.js?v=202611161458';
+import { LESSONS } from './lessons.js?v=202611161458';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611161458';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611161458';
+import { projectToAbc } from './staff.js?v=202611161458';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611161458';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611161458';
+import { pack, unpack } from './util.js?v=202611161458';
+import { makeQuestion } from './quiz.js?v=202611161458';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611161458';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -441,7 +441,7 @@ await test('new checks: chord colours, gravity, inversions, durations', () => {
 });
 
 await test('Form letters over bars: phrases kept, cut, ghosts and MIDI markers', async () => {
-  const { formSections, ghostNotes, letterBars, setBars, sliceProject } = await import('./project.js?v=202611151949');
+  const { formSections, ghostNotes, letterBars, setBars, sliceProject } = await import('./project.js');
   const n = (start, deg) => ({ start, len: 2, deg, oct: 0 });
   const form = [{ start: 0, len: 2, label: 'A' }, { start: 2, len: 2, label: 'A' }, { start: 4, len: 2, label: 'B' }, { start: 6, len: 2, label: 'A′' }, { start: 7, len: 1, label: 'Z' }];
   const p = normalizeProject({ key: 'C', bars: 8, form, melody: [n(0, 1), n(8, 3), n(32, 5)] });
@@ -457,6 +457,26 @@ await test('Form letters over bars: phrases kept, cut, ghosts and MIDI markers',
   let markers = 0;
   for (let i = 0; i < bytes.length - 1; i++) if (bytes[i] === 0xff && bytes[i + 1] === 0x06) markers++;
   assertEq(markers, 4, 'one marker per phrase');
+});
+
+await test('Minor keys: raised 6th and 7th in the melody (V in E minor has D#)', async () => {
+  const { melodyRows } = await import('./project.js');
+  const { runChecks: rc } = await import('./checks.js');
+  assertEq(melodyRows('major').length, 13, 'major rows unchanged');
+  assertEq(melodyRows('minor').length, 17, 'minor adds ♯7 and ♯6 in two octaves');
+  const raw = { key: 'E', mode: 'minor', bars: 1, chords: [{ deg: 5 }], melody: [{ start: 0, len: 2, deg: 7, oct: 0, acc: 1 }, { start: 2, len: 2, deg: 7, oct: 0 }, { start: 4, len: 4, deg: 1, oct: 1 }] };
+  const p = normalizeProject(raw);
+  assertEq(p.melody.map((n) => n.acc || 0), [1, 0, 0], 'acc kept in minor');
+  assertEq(buildEvents(p).filter((e) => e.track === 'melody').map((e) => e.pitches[0]), [75, 74, 76], 'D#5, D5, E5');
+  assertEq(normalizeProject({ ...raw, mode: 'major', key: 'E' }).melody[0].acc, undefined, 'major drops the raise');
+  const abc = projectToAbc(p);
+  assert(abc.includes('^d2') && abc.includes('=d2'), `D# written, then D natural restored: ${abc}`);
+  const chk = { checks: [{ type: 'melody-chord-tones', minRatio: 0.5 }] }; // D# on beat 1 is a chord tone, E on beat 3 is not
+  assert(rc(chk, p)[0].pass, 'D# on beat 1 over B major is a chord tone');
+  assert(!rc(chk, { ...p, melody: [{ start: 0, len: 2, deg: 7, oct: 0 }] })[0].pass, 'plain D over B major is not');
+  const gmin = normalizeProject({ key: 'G', mode: 'minor', bars: 1, melody: [{ start: 0, len: 2, deg: 6, oct: 0, acc: 1 }, { start: 2, len: 2, deg: 7, oct: 0, acc: 1 }] });
+  const abcG = projectToAbc(gmin);
+  assert(abcG.includes('=e2') && abcG.includes('^f2'), `G minor: E natural and F# written: ${abcG}`);
 });
 
 const failed = results.filter((r) => !r.ok);

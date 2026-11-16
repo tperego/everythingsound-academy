@@ -1,8 +1,8 @@
 // The composer grid: a chord lane (half-bar slots) and a scale-degree melody grid (8th-note steps).
 
-import { MELODY_ROWS, SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, formSections, ghostNotes, letterBars, removeOverlaps } from './project.js?v=202611161410';
-import { FUNCTION_NAMES, bassForChordTone, bassOptions, chordDegrees, chordInfo, chordVoicing, degreeName, midiForDegree } from './theory.js?v=202611161410';
-import { h, store } from './util.js?v=202611161410';
+import { SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, formSections, ghostNotes, letterBars, melodyRows, removeOverlaps, sameRow } from './project.js?v=202611161458';
+import { FUNCTION_NAMES, bassForChordTone, bassOptions, chordInfo, chordVoicing, degreeLabel, midiForDegree, noteName } from './theory.js?v=202611161458';
+import { h, store } from './util.js?v=202611161458';
 
 const ROW_H = 22;
 // Letters offered on the Form lane (any of A–H can also be typed, ' adds a prime).
@@ -11,7 +11,9 @@ const FORM_LEN_OPTIONS = [1, 2, 4, 8];
 const letterBase = (l) => String(l || '').replace(/[′″]/g, '');
 
 export class Composer {
-  constructor(root, { player, onChange = () => {}, onSelect = () => {}, readOnly = false, letters = false } = {}) {
+  constructor(root, { player, onChange = () => {}, onSelect = () => {}, onStartBar = null, readOnly = false, letters = false } = {}) {
+    this.onStartBar = onStartBar; // a click on a bar number: play from there
+    this.startBar = 0;
     this.letters = letters; // the Form lane: letters over bars (Sandbox)
     this.formSel = { from: 0, to: 3 };
     this.formLen = store.get('es.formLen', 4);
@@ -53,8 +55,14 @@ export class Composer {
     this.onChange(cloneProject(this.project));
   }
 
+  /** Melody rows for the current mode (minor adds the raised 6th and 7th). */
+  get rows() {
+    return melodyRows(this.project?.mode);
+  }
+
   build() {
     const p = this.project;
+    const ROWS = this.rows;
     const steps = p.bars * STEPS_PER_BAR;
     this.root.replaceChildren();
     this.root.style.setProperty('--steps', steps);
@@ -64,9 +72,13 @@ export class Composer {
     // Ruler with bar numbers
     // (phrase starts are marked when the exercise is about melodic form)
     const pb = this.phraseBars;
-    const ruler = h('div', { class: 'ruler', 'aria-hidden': 'true' }, Array.from({ length: p.bars }, (_, b) => {
+    const ruler = h('div', { class: 'ruler' + (this.onStartBar ? ' clickable' : ''), 'aria-hidden': 'true' }, Array.from({ length: p.bars }, (_, b) => {
       const phraseStart = pb && b % pb === 0;
-      return h('span', { class: phraseStart ? `phrase-start${(b / pb) % 2 ? ' alt' : ''}` : (pb && Math.floor(b / pb) % 2 ? 'alt' : '') },
+      return h('span', {
+        class: (phraseStart ? `phrase-start${(b / pb) % 2 ? ' alt' : ''}` : (pb && Math.floor(b / pb) % 2 ? 'alt' : '')) + (b === this.startBar && b > 0 ? ' play-from' : ''),
+        title: this.onStartBar ? (b === this.startBar && b > 0 ? 'Playing from here. Click again to play from the start.' : `Play from bar ${b + 1}`) : null,
+        onclick: this.onStartBar ? () => this.onStartBar(b === this.startBar ? 0 : b) : null,
+      },
         String(b + 1), phraseStart ? h('b', {}, ` Phrase ${b / pb + 1}`) : '',
         phraseStart && this.phraseLabels[b / pb] ? h('span', { class: 'phrase-letter' }, this.phraseLabels[b / pb]) : '');
     }));
@@ -92,11 +104,11 @@ export class Composer {
     // Melody grid
     this.melodyGrid = h('div', {
       class: 'melody-grid' + (this.melodyEditable ? ' editable' : ''),
-      style: { height: `${MELODY_ROWS.length * ROW_H}px` },
+      style: { height: `${ROWS.length * ROW_H}px` },
       'aria-label': 'Melody grid',
     });
-    MELODY_ROWS.forEach((r, i) => {
-      this.melodyGrid.append(h('div', { class: `row-stripe${r.deg === 1 ? ' tonic' : ''}${i % 2 ? ' odd' : ''}`, style: { top: `${i * ROW_H}px`, height: `${ROW_H}px` } }));
+    ROWS.forEach((r, i) => {
+      this.melodyGrid.append(h('div', { class: `row-stripe${r.deg === 1 ? ' tonic' : ''}${i % 2 ? ' odd' : ''}${r.acc ? ' raised' : ''}`, style: { top: `${i * ROW_H}px`, height: `${ROW_H}px` } }));
     });
     this.guideLayer = h('div', { class: 'layer' });
     this.noteLayer = h('div', { class: 'layer' });
@@ -111,7 +123,7 @@ export class Composer {
     }
 
     // Row labels
-    this.rowLabels = h('div', { class: 'row-labels', style: { height: `${MELODY_ROWS.length * ROW_H}px` } });
+    this.rowLabels = h('div', { class: 'row-labels', style: { height: `${ROWS.length * ROW_H}px` } });
 
     // Form lane: letters over bars
     this.formLane = null;
@@ -151,12 +163,16 @@ export class Composer {
     const steps = p.bars * STEPS_PER_BAR;
     const pct = (s) => `${(s / steps) * 100}%`;
     const events = chordEvents(p);
+    const ROWS = this.rows;
+    // The grid is built for a number of rows: rebuild it when the mode changes that number.
+    if (this.melodyGrid.querySelectorAll('.row-stripe').length !== ROWS.length) { this.build(); return; }
+    const rowOf = (n) => ROWS.findIndex((r) => sameRow(r, n));
 
     // Row labels (depend on key)
     this.rowLabels.replaceChildren(
-      ...MELODY_ROWS.map((r) =>
-        h('div', { class: `row-label${r.deg === 1 ? ' tonic' : ''}`, style: { height: `${ROW_H}px` } },
-          h('b', { class: `deg deg-${r.deg}` }, String(r.deg)), ' ', degreeName(p.key, p.mode, r.deg))),
+      ...ROWS.map((r) =>
+        h('div', { class: `row-label${r.deg === 1 ? ' tonic' : ''}${r.acc ? ' raised' : ''}`, style: { height: `${ROW_H}px` }, title: r.acc ? (r.deg === 7 ? 'Raised 7th (leading note): the 3rd of V' : 'Raised 6th (melodic minor, going up to the raised 7th)') : null },
+          h('b', { class: `deg deg-${r.deg}` }, degreeLabel(r.deg, r.acc)), ' ', noteName(p.key, p.mode, r.deg, r.acc))),
     );
 
     // Chord lane: slots + chord blocks
@@ -181,25 +197,25 @@ export class Composer {
     lane.push(this.chordPlayhead);
     this.chordLane.replaceChildren(...lane);
 
-    // Chord-tone guides
+    // Chord-tone guides: rows that sound a note of the chord (over V in minor, the raised 7th)
     const guides = [];
     for (const ev of events) {
-      const degs = chordDegrees(ev.chord.deg, ev.chord.seventh);
-      MELODY_ROWS.forEach((r, i) => {
-        if (degs.includes(r.deg)) {
-          guides.push(h('div', { class: `guide fn-${chordInfo(p.key, p.mode, ev.chord).func}`, style: { left: pct(ev.start * 2), width: pct(ev.len * 2), top: `${i * ROW_H}px`, height: `${ROW_H}px` } }));
+      const info = chordInfo(p.key, p.mode, { deg: ev.chord.deg, seventh: ev.chord.seventh });
+      ROWS.forEach((r, i) => {
+        if (info.pcs.includes(midiForDegree(p.key, p.mode, r.deg, r.oct, r.acc) % 12)) {
+          guides.push(h('div', { class: `guide fn-${info.func}`, style: { left: pct(ev.start * 2), width: pct(ev.len * 2), top: `${i * ROW_H}px`, height: `${ROW_H}px` } }));
         }
       });
     }
     // Ghost: the melody of an earlier phrase with the same letter, faded, where it would repeat.
     if (this.letters && this.showGhost) {
       for (const n of ghostNotes(p)) {
-        const row = MELODY_ROWS.findIndex((r) => r.deg === n.deg && r.oct === n.oct);
+        const row = rowOf(n);
         if (row < 0) continue;
         guides.push(h('div', {
           class: `ghost-note deg-${n.deg}`,
           style: { left: pct(n.start), width: pct(n.len), top: `${row * ROW_H + 2}px`, height: `${ROW_H - 4}px` },
-        }, n.len >= 1 ? String(n.deg) : ''));
+        }, n.len >= 1 ? degreeLabel(n.deg, n.acc) : ''));
       }
     }
     this.guideLayer.replaceChildren(...guides);
@@ -209,12 +225,12 @@ export class Composer {
     const notes = this.pending ? previewMerge(p.melody, this.pending) : p.melody;
     this.noteLayer.replaceChildren(
       ...notes.map((n) => {
-        const row = MELODY_ROWS.findIndex((r) => r.deg === n.deg && r.oct === n.oct);
+        const row = rowOf(n);
         return h('div', {
-          class: `note deg-${n.deg}${n === this.pending ? ' pending' : ''}`,
+          class: `note deg-${n.deg}${n.acc ? ' raised' : ''}${n === this.pending ? ' pending' : ''}`,
           style: { left: pct(n.start), width: pct(n.len), top: `${row * ROW_H + 2}px`, height: `${ROW_H - 4}px` },
-          title: `Degree ${n.deg} · ${degreeName(p.key, p.mode, n.deg)}`,
-        }, n.len >= 1 ? String(n.deg) : '');
+          title: `Degree ${degreeLabel(n.deg, n.acc)} · ${noteName(p.key, p.mode, n.deg, n.acc)}`,
+        }, n.len >= 1 ? degreeLabel(n.deg, n.acc) : '');
       }),
     );
 
@@ -282,6 +298,12 @@ export class Composer {
       h('div', { class: 'palette-row small' }, seventh, clear, legend,
         h('span', { class: 'hint' }, `Selected: bar ${Math.floor(this.selected / 2) + 1}${this.selected % 2 ? ', beat 3' : ''}. An empty slot keeps the chord before it.`)),
     );
+  }
+
+  /** Mark the bar playback starts from (0 = the beginning). */
+  setStartBar(b) {
+    this.startBar = b;
+    this.build();
   }
 
   // ---------- Form lane: letters over bars ----------
@@ -474,23 +496,23 @@ export class Composer {
     const rect = this.melodyGrid.getBoundingClientRect();
     const steps = this.project.bars * STEPS_PER_BAR;
     const step = Math.max(0, Math.min(steps - 1, Math.floor(((e.clientX - rect.left) / rect.width) * steps)));
-    const row = Math.max(0, Math.min(MELODY_ROWS.length - 1, Math.floor((e.clientY - rect.top) / ROW_H)));
+    const row = Math.max(0, Math.min(this.rows.length - 1, Math.floor((e.clientY - rect.top) / ROW_H)));
     return { step, row };
   }
 
   onMelodyDown(e) {
     if (e.button !== 0) return;
     const { step, row } = this.cellAt(e);
-    const r = MELODY_ROWS[row];
-    const hit = this.project.melody.find((n) => n.deg === r.deg && n.oct === r.oct && n.start <= step && step < n.start + n.len);
+    const r = this.rows[row];
+    const hit = this.project.melody.find((n) => sameRow(r, n) && n.start <= step && step < n.start + n.len);
     if (hit) {
       this.project.melody = this.project.melody.filter((n) => n !== hit);
       this.emit();
       return;
     }
-    this.pending = { start: step, len: 1, deg: r.deg, oct: r.oct };
+    this.pending = { start: step, len: 1, deg: r.deg, oct: r.oct, ...(r.acc ? { acc: r.acc } : {}) };
     this.melodyGrid.setPointerCapture(e.pointerId);
-    this.player?.previewNote(midiForDegree(this.project.key, this.project.mode, r.deg, r.oct));
+    this.player?.previewNote(midiForDegree(this.project.key, this.project.mode, r.deg, r.oct, r.acc));
     this.renderLayers();
   }
 
@@ -506,7 +528,7 @@ export class Composer {
 
   onMelodyUp() {
     if (!this.pending) return;
-    this.project.melody = previewMerge(this.project.melody, this.pending).map((n) => ({ start: n.start, len: n.len, deg: n.deg, oct: n.oct }));
+    this.project.melody = previewMerge(this.project.melody, this.pending).map((n) => ({ start: n.start, len: n.len, deg: n.deg, oct: n.oct, ...(n.acc ? { acc: n.acc } : {}) }));
     this.pending = null;
     this.emit();
   }

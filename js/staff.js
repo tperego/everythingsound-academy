@@ -1,16 +1,27 @@
 // Staff view: turns a project into ABC notation and renders it with abcjs (global `ABCJS`).
 
-import { chordEvents } from './project.js?v=202611161410';
-import { chordInfo, degreeName, midiForDegree, accidentalOffset } from './theory.js?v=202611161410';
+import { chordEvents } from './project.js?v=202611161458';
+import { chordInfo, midiForDegree, noteName, accidentalOffset } from './theory.js?v=202611161458';
 
-function abcPitch(p, note) {
-  const name = degreeName(p.key, p.mode, note.deg);
-  const midi = midiForDegree(p.key, p.mode, note.deg, note.oct);
+const ABC_ACC = { '-2': '__', '-1': '_', 0: '=', 1: '^', 2: '^^' };
+
+/**
+ * The key signature supplies the accidentals of diatonic notes. A raised 6th or 7th (minor) gets its own sign,
+ * and a plain note after it in the same bar gets its sign back. `bar` remembers the signs used in this bar.
+ */
+function abcPitch(p, note, bar = new Map()) {
+  const name = noteName(p.key, p.mode, note.deg, note.acc);
+  const midi = midiForDegree(p.key, p.mode, note.deg, note.oct, note.acc);
   const octave = Math.floor((midi - accidentalOffset(name)) / 12) - 1; // scientific octave of the letter
   const letter = name[0];
-  // The key signature supplies the accidentals, since every note is diatonic.
-  if (octave >= 5) return letter.toLowerCase() + "'".repeat(octave - 5);
-  return letter + ','.repeat(Math.max(0, 4 - octave));
+  const pitch = octave >= 5 ? letter.toLowerCase() + "'".repeat(octave - 5) : letter + ','.repeat(Math.max(0, 4 - octave));
+  const acc = accidentalOffset(name);
+  const slot = letter + octave;
+  let sign = '';
+  if (note.acc) sign = bar.get(slot) === acc ? '' : ABC_ACC[acc];
+  else if (bar.has(slot) && bar.get(slot) !== acc) sign = ABC_ACC[acc];
+  if (sign || bar.has(slot)) bar.set(slot, acc);
+  return sign + pitch;
 }
 
 const dur = (n) => (n === 1 ? '' : String(n));
@@ -32,13 +43,14 @@ export function projectToAbc(p, title = '') {
     }
     const sorted = [...points].sort((a, b2) => a - b2);
     const toks = [];
+    const signs = new Map(); // accidentals written in this bar
     for (let i = 0; i < sorted.length - 1; i++) {
       const a = sorted[i];
       const q = sorted[i + 1];
       const ch = chords.find((c) => c.step === a);
       const sym = ch ? abcChord(ch.symbol) : '';
       const note = p.melody.find((n) => n.start <= a && a < n.start + n.len);
-      if (note) toks.push(sym + abcPitch(p, note) + dur(q - a) + (note.start + note.len > q ? '-' : ''));
+      if (note) toks.push(sym + abcPitch(p, note, signs) + dur(q - a) + (note.start + note.len > q ? '-' : ''));
       else toks.push(sym + 'z' + dur(q - a));
     }
     line.push(toks.join(' '));

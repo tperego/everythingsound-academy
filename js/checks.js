@@ -1,8 +1,8 @@
 // Auto-checks. Each exercise lists checks as data; each check returns {label, pass, detail}.
 
-import { chordAtBeat, chordEvents } from './project.js?v=202611161410';
-import { chordDegrees, chordInfo } from './theory.js?v=202611161410';
-import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js?v=202611161410';
+import { chordAtBeat, chordEvents } from './project.js?v=202611161458';
+import { chordInfo, midiForDegree } from './theory.js?v=202611161458';
+import { baseLetter, comparePhrases, phraseCount, phraseNotes } from './form.js?v=202611161458';
 
 const pct = (x) => `${Math.round(x * 100)}%`;
 const listBars = (arr) => arr.join(', ');
@@ -90,7 +90,8 @@ const CHECKS = {
     let hits = 0;
     for (const n of strong) {
       const ev = chordAtBeat(p, n.start / 2);
-      if (ev && chordDegrees(ev.chord.deg, ev.chord.seventh).includes(n.deg)) hits++;
+      // By sound: over V in minor the chord tone is the raised 7th, not the plain one.
+      if (ev && chordInfo(p.key, p.mode, { deg: ev.chord.deg, seventh: ev.chord.seventh }).pcs.includes(midiForDegree(p.key, p.mode, n.deg, n.oct, n.acc) % 12)) hits++;
     }
     const ratio = strong.length ? hits / strong.length : 0;
     return {

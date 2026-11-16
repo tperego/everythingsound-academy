@@ -59,10 +59,19 @@ export function degreePc(key, mode, deg, raised = false) {
   return (pcOf(key) + MODES[mode][deg - 1] + extra) % 12;
 }
 
-/** MIDI pitch for a melody degree; octave 0 is the octave starting on the tonic above middle C. */
-export function midiForDegree(key, mode, deg, oct = 0) {
-  return 60 + pcOf(key) + MODES[mode][deg - 1] + 12 * oct;
+/** MIDI pitch for a melody degree; octave 0 is the octave starting on the tonic above middle C. acc 1 raises it (♯6, ♯7 in minor). */
+export function midiForDegree(key, mode, deg, oct = 0, acc = 0) {
+  return 60 + pcOf(key) + MODES[mode][deg - 1] + 12 * oct + (acc || 0);
 }
+
+/** A melody note's name: the scale degree's name, raised when acc is 1 (in E minor, ♯7 is D#, in G minor ♯6 is E). */
+export function noteName(key, mode, deg, acc = 0) {
+  const n = scaleNames(key, mode)[deg - 1];
+  return acc === 1 ? raiseName(n) : n;
+}
+
+/** Label for a melody row or note: "7", or "♯7" when raised. */
+export const degreeLabel = (deg, acc = 0) => `${acc === 1 ? '♯' : ''}${deg}`;
 
 /** Scale degrees (1..7) contained in the chord built on `deg`. */
 export function chordDegrees(deg, seventh = false) {

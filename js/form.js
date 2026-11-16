@@ -1,6 +1,6 @@
 // Melodic form: split a melody into phrases and compare them for rhythm and pitch.
 
-import { STEPS_PER_BAR } from './project.js?v=202611161410';
+import { STEPS_PER_BAR } from './project.js?v=202611161458';
 
 export const FORM_LABELS = ['A', 'A′', 'A″', 'B', 'B′', 'C', 'C′', 'D'];
 
@@ -10,7 +10,7 @@ export function phraseNotes(p, i, phraseBars) {
   const e = s + phraseBars * STEPS_PER_BAR;
   return p.melody
     .filter((n) => n.start >= s && n.start < e)
-    .map((n) => ({ start: n.start - s, len: Math.min(n.len, e - n.start), deg: n.deg, oct: n.oct }));
+    .map((n) => ({ start: n.start - s, len: Math.min(n.len, e - n.start), deg: n.deg, oct: n.oct, acc: n.acc || 0 }));
 }
 
 export function phraseCount(p, phraseBars) {
@@ -29,7 +29,7 @@ export function comparePhrases(a, b) {
   const rb = new Set(b.map(key));
   const sharedR = [...ra].filter((k) => rb.has(k)).length;
   const rhythm = sharedR / Math.max(ra.size, rb.size);
-  const pk = (n) => `${n.start}:${n.len}:${n.deg}:${n.oct}`;
+  const pk = (n) => `${n.start}:${n.len}:${n.deg}:${n.oct}:${n.acc || 0}`;
   const pa = new Set(a.map(pk));
   const pb = new Set(b.map(pk));
   const sharedP = [...pa].filter((k) => pb.has(k)).length;

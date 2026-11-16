@@ -3,11 +3,11 @@
 // project = {
 //   v: 1, key: 'G', mode: 'major', bpm: 96, bars: 4,
 //   chords: [ {deg, seventh} | null, ... ]   // length bars*2; null = keep the previous chord
-//   melody: [ {start, len, deg, oct}, ... ]  // start/len in 8th-note steps, deg 1..7, oct -1..1
+//   melody: [ {start, len, deg, oct, acc?}, ... ]  // start/len in 8th-note steps, deg 1..7, oct -1..1; acc 1 = raised 6th or 7th (minor only)
 //   form: [ {start, len, label}, ... ]       // optional (Sandbox): lettered phrases in bars, e.g. {start: 0, len: 4, label: 'A'}
 // }
 
-import { KEY_OPTIONS, chordInfo, chordVoicing, midiForDegree } from './theory.js?v=202611161410';
+import { KEY_OPTIONS, chordInfo, chordVoicing, midiForDegree } from './theory.js?v=202611161458';
 
 export const STEPS_PER_BAR = 8;
 export const SLOTS_PER_BAR = 2;
@@ -21,8 +21,18 @@ export const MELODY_ROWS = [
   { deg: 7, oct: -1 }, { deg: 6, oct: -1 }, { deg: 5, oct: -1 },
 ];
 
-export function rowIndexOf(deg, oct) {
-  return MELODY_ROWS.findIndex((r) => r.deg === deg && r.oct === oct);
+// In minor keys the melody also gets the raised 7th (leading note, as in V and vii°) and the raised 6th (melodic minor).
+const MINOR_ROWS = MELODY_ROWS.flatMap((r) => (r.deg === 7 || r.deg === 6 ? [{ ...r, acc: 1 }, r] : [r]));
+
+/** The melody grid's rows, top to bottom, for a mode. */
+export function melodyRows(mode = 'major') {
+  return mode === 'minor' ? MINOR_ROWS : MELODY_ROWS;
+}
+
+export const sameRow = (r, n) => r.deg === n.deg && r.oct === n.oct && (r.acc || 0) === (n.acc || 0);
+
+export function rowIndexOf(deg, oct, acc = 0, mode = 'major') {
+  return melodyRows(mode).findIndex((r) => sameRow(r, { deg, oct, acc }));
 }
 
 export function newProject({ key = 'C', mode = 'major', bpm = 90, bars = 4, progression = null, melody = [] } = {}) {
@@ -38,7 +48,7 @@ export function newProject({ key = 'C', mode = 'major', bpm = 90, bars = 4, prog
       });
     });
   }
-  p.melody = melody.map((n) => ({ start: n.start, len: n.len, deg: n.deg, oct: n.oct ?? 0 }));
+  p.melody = melody.map((n) => ({ start: n.start, len: n.len, deg: n.deg, oct: n.oct ?? 0, ...(n.acc ? { acc: n.acc } : {}) }));
   return normalizeProject(p);
 }
 
@@ -76,8 +86,10 @@ export function normalizeProject(raw) {
       len: clampInt(n?.len, 1, steps, 1),
       deg: clampInt(n?.deg, 1, 7, 0),
       oct: clampInt(n?.oct, -1, 1, 0),
+      // Raised notes exist only in minor; in major (or after switching to major) they become the plain degree.
+      ...(n?.acc === 1 && mode === 'minor' && (n.deg === 6 || n.deg === 7) ? { acc: 1 } : {}),
     }))
-    .filter((n) => n.start >= 0 && n.deg > 0 && rowIndexOf(n.deg, n.oct) >= 0)
+    .filter((n) => n.start >= 0 && n.deg > 0 && rowIndexOf(n.deg, n.oct, n.acc, mode) >= 0)
     .map((n) => ({ ...n, len: Math.min(n.len, steps - n.start) }))
     .sort((a, b) => a.start - b.start);
   const out = { v: 1, key, mode, bpm, bars, chords, melody: removeOverlaps(melody) };
@@ -132,7 +144,7 @@ export function ghostNotes(p) {
     const shift = (sec.start - src.start) * STEPS_PER_BAR;
     for (const n of p.melody) {
       if (n.start < from || n.start >= to) continue;
-      out.push({ start: n.start + shift, len: Math.min(n.len, to - n.start), deg: n.deg, oct: n.oct, from: src.label });
+      out.push({ start: n.start + shift, len: Math.min(n.len, to - n.start), deg: n.deg, oct: n.oct, acc: n.acc || 0, from: src.label });
     }
   });
   return out;
@@ -191,7 +203,7 @@ export function buildEvents(p) {
   for (const n of p.melody) {
     events.push({
       track: 'melody',
-      pitches: [midiForDegree(p.key, p.mode, n.deg, n.oct)],
+      pitches: [midiForDegree(p.key, p.mode, n.deg, n.oct, n.acc)],
       start: n.start / 2,
       dur: n.len / 2,
       vel: 0.8,

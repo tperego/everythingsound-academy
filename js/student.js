@@ -1,17 +1,17 @@
 // Student lesson page: video, exercises, composer, checks, DAW round-trip, submission, feedback.
 
-import { chordsFound, runChecks } from './checks.js?v=202611161410';
-import { FORM_LABELS } from './form.js?v=202611161410';
-import { QuizView } from './quiz.js?v=202611161410';
-import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js?v=202611161410';
-import { COURSE, courseLessons, lessonNeighbours } from './course.js?v=202611161410';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611161410';
-import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611161410';
-import { newProject, normalizeProject, setBars } from './project.js?v=202611161410';
-import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js?v=202611161410';
-import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js?v=202611161410';
-import { Workspace } from './workspace.js?v=202611161410';
-import { awardXp, getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js?v=202611161410';
+import { chordsFound, runChecks } from './checks.js?v=202611161458';
+import { FORM_LABELS } from './form.js?v=202611161458';
+import { QuizView } from './quiz.js?v=202611161458';
+import { KIND_LABELS, LESSONS, findExercise, findLesson } from './lessons.js?v=202611161458';
+import { COURSE, courseLessons, lessonNeighbours } from './course.js?v=202611161458';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611161458';
+import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611161458';
+import { newProject, normalizeProject, setBars } from './project.js?v=202611161458';
+import { MAX_ATTACHMENT_BYTES, makeSubmission, parseAnswers, parseFeedback, submissionFileName } from './submission.js?v=202611161458';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, readFileBytes, slug, store, toast, unpack } from './util.js?v=202611161458';
+import { Workspace } from './workspace.js?v=202611161458';
+import { awardXp, getSubmission, myProfile, myProgress, renderAccountWidget, saveProgress, submitOnline } from './auth.js?v=202611161458';
 
 const $ = (sel) => document.querySelector(sel);
 const params = new URLSearchParams(location.search);
