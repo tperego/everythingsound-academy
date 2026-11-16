@@ -1,13 +1,21 @@
 // The composer grid: a chord lane (half-bar slots) and a scale-degree melody grid (8th-note steps).
 
-import { MELODY_ROWS, SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, removeOverlaps } from './project.js?v=202611151949';
-import { FUNCTION_NAMES, bassForChordTone, bassOptions, chordDegrees, chordInfo, chordVoicing, degreeName, midiForDegree } from './theory.js?v=202611151949';
-import { h } from './util.js?v=202611151949';
+import { MELODY_ROWS, SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, formSections, ghostNotes, letterBars, removeOverlaps } from './project.js?v=202611161410';
+import { FUNCTION_NAMES, bassForChordTone, bassOptions, chordDegrees, chordInfo, chordVoicing, degreeName, midiForDegree } from './theory.js?v=202611161410';
+import { h, store } from './util.js?v=202611161410';
 
 const ROW_H = 22;
+// Letters offered on the Form lane (any of A–H can also be typed, ' adds a prime).
+const FORM_PAD = ['A', 'A′', 'A″', 'B', 'B′', 'B″', 'C', 'C′', 'D'];
+const FORM_LEN_OPTIONS = [1, 2, 4, 8];
+const letterBase = (l) => String(l || '').replace(/[′″]/g, '');
 
 export class Composer {
-  constructor(root, { player, onChange = () => {}, onSelect = () => {}, readOnly = false } = {}) {
+  constructor(root, { player, onChange = () => {}, onSelect = () => {}, readOnly = false, letters = false } = {}) {
+    this.letters = letters; // the Form lane: letters over bars (Sandbox)
+    this.formSel = { from: 0, to: 3 };
+    this.formLen = store.get('es.formLen', 4);
+    this.showGhost = store.get('es.formGhost', true);
     this.root = root;
     this.player = player;
     this.onChange = onChange;
@@ -27,6 +35,8 @@ export class Composer {
     this.phraseBars = phraseBars || 0;
     this.phraseLabels = phraseLabels || [];
     this.selected = Math.min(this.selected, this.project.chords.length - 1);
+    const last = this.project.bars - 1;
+    this.formSel = { from: Math.min(this.formSel.from, last), to: Math.min(this.formSel.to, last) };
     this.build();
   }
 
@@ -103,9 +113,27 @@ export class Composer {
     // Row labels
     this.rowLabels = h('div', { class: 'row-labels', style: { height: `${MELODY_ROWS.length * ROW_H}px` } });
 
+    // Form lane: letters over bars
+    this.formLane = null;
+    if (this.letters) {
+      this.formLane = h('div', {
+        class: 'form-lane' + (this.readOnly ? '' : ' editable'),
+        tabindex: this.readOnly ? null : '0',
+        'aria-label': 'Form lane. Tap a bar or drag across bars, then pick a letter. Keys A to H set a letter, apostrophe adds a prime, Backspace clears.',
+      });
+      if (!this.readOnly) {
+        this.formLane.addEventListener('pointerdown', (e) => this.onFormDown(e));
+        this.formLane.addEventListener('pointermove', (e) => this.onFormMove(e));
+        this.formLane.addEventListener('pointerup', () => this.onFormUp());
+        this.formLane.addEventListener('pointercancel', () => { this.formDrag = null; });
+        this.formLane.addEventListener('keydown', (e) => this.onFormKey(e));
+      }
+    }
+
     const grid = h('div', { class: 'comp-grid' },
       h('div', { class: 'lbl' }),
       ruler,
+      ...(this.formLane ? [h('div', { class: 'lbl chord-lbl' }, 'Form'), this.formLane] : []),
       h('div', { class: 'lbl chord-lbl' }, 'Chords'),
       this.chordLane,
       this.rowLabels,
@@ -163,7 +191,19 @@ export class Composer {
         }
       });
     }
+    // Ghost: the melody of an earlier phrase with the same letter, faded, where it would repeat.
+    if (this.letters && this.showGhost) {
+      for (const n of ghostNotes(p)) {
+        const row = MELODY_ROWS.findIndex((r) => r.deg === n.deg && r.oct === n.oct);
+        if (row < 0) continue;
+        guides.push(h('div', {
+          class: `ghost-note deg-${n.deg}`,
+          style: { left: pct(n.start), width: pct(n.len), top: `${row * ROW_H + 2}px`, height: `${ROW_H - 4}px` },
+        }, n.len >= 1 ? String(n.deg) : ''));
+      }
+    }
     this.guideLayer.replaceChildren(...guides);
+    this.renderFormLane();
 
     // Notes
     const notes = this.pending ? previewMerge(p.melody, this.pending) : p.melody;
@@ -186,8 +226,10 @@ export class Composer {
     const p = this.project;
     // An exercise can explain why something is locked (e.g. "the melody unlocks when the chords are right").
     const note = this.lock.note && !this.readOnly ? h('p', { class: 'lock-note' }, this.lock.note) : '';
+    const formRow = this.formPalette();
     if (!this.chordsEditable) {
       this.palette.replaceChildren(
+        formRow,
         note || (this.lock.chords && !this.readOnly ? h('p', { class: 'hint' }, 'The chords are given in this exercise. Write your melody over them.') : ''),
       );
       return;
@@ -233,12 +275,137 @@ export class Composer {
     const legend = h('div', { class: 'legend' },
       h('span', { class: 'dot fn-T' }), 'Tonic ', h('span', { class: 'dot fn-PD' }), 'Pre-dominant ', h('span', { class: 'dot fn-D' }), 'Dominant');
     this.palette.replaceChildren(
+      formRow,
       note,
       h('div', { class: 'palette-row' }, ...buttons),
       bassRow,
       h('div', { class: 'palette-row small' }, seventh, clear, legend,
         h('span', { class: 'hint' }, `Selected: bar ${Math.floor(this.selected / 2) + 1}${this.selected % 2 ? ', beat 3' : ''}. An empty slot keeps the chord before it.`)),
     );
+  }
+
+  // ---------- Form lane: letters over bars ----------
+
+  renderFormLane() {
+    if (!this.formLane) return;
+    const p = this.project;
+    const pct = (b) => `${(b / p.bars) * 100}%`;
+    const { from, to } = this.formSel;
+    const kids = [];
+    if (!this.readOnly) kids.push(h('div', { class: 'form-sel', style: { left: pct(from), width: pct(to - from + 1) } }));
+    for (const sec of formSections(p)) {
+      kids.push(h('div', {
+        class: `form-block fl-${letterBase(sec.label)}${sec.label.length > 1 ? ' prime' : ''}`,
+        style: { left: pct(sec.start), width: pct(sec.len) },
+        title: `${sec.label}: bar${sec.len > 1 ? 's' : ''} ${sec.start + 1}${sec.len > 1 ? `–${sec.start + sec.len}` : ''}`,
+      }, sec.label));
+    }
+    this.formLane.replaceChildren(...kids);
+  }
+
+  formPalette() {
+    if (!this.letters || this.readOnly) return '';
+    const p = this.project;
+    const { from, to } = this.formSel;
+    const sel = from === to ? `bar ${from + 1}` : `bars ${from + 1}–${to + 1}`;
+    return h('div', { class: 'palette-row small form-row' },
+      h('span', { class: 'tb-label' }, 'Form'),
+      ...FORM_PAD.map((l) => h('button', {
+        type: 'button', class: `form-btn fl-${letterBase(l)}${l.length > 1 ? ' prime' : ''}`, title: `Mark ${sel} as ${l}`,
+        onclick: () => this.setLetter(l),
+      }, l)),
+      h('button', { type: 'button', class: 'btn ghost small', onclick: () => this.setLetter(null) }, 'Clear'),
+      h('label', { class: 'field inline' }, 'Tap selects',
+        h('select', {
+          'aria-label': 'Bars selected by a tap on the Form lane',
+          onchange: (e) => {
+            this.formLen = Number(e.target.value);
+            store.set('es.formLen', this.formLen);
+            this.selectBars(this.formSel.from, this.formSel.from + this.formLen - 1);
+          },
+        }, FORM_LEN_OPTIONS.map((n) => h('option', { value: n, selected: n === this.formLen }, `${n} bar${n > 1 ? 's' : ''}`)))),
+      h('label', { class: 'toggle' },
+        h('input', { type: 'checkbox', checked: this.showGhost, onchange: (e) => { this.showGhost = e.target.checked; store.set('es.formGhost', this.showGhost); this.renderLayers(); } }),
+        ' Show ghosts'),
+      h('span', { class: 'hint' }, `Selected: ${sel}. A later A or A′ shows the first A’s melody faded, as a target.`),
+      p.form?.length ? '' : h('span', { class: 'hint' }, 'Tap a bar on the Form lane (or drag across bars), then pick a letter.'));
+  }
+
+  barAt(e) {
+    const rect = this.formLane.getBoundingClientRect();
+    const bars = this.project.bars;
+    return Math.max(0, Math.min(bars - 1, Math.floor(((e.clientX - rect.left) / rect.width) * bars)));
+  }
+
+  selectBars(a, b) {
+    const last = this.project.bars - 1;
+    const from = Math.max(0, Math.min(last, Math.min(a, b)));
+    const to = Math.max(from, Math.min(last, Math.max(a, b)));
+    this.formSel = { from, to };
+    this.renderFormLane();
+    this.renderPalette();
+  }
+
+  onFormDown(e) {
+    if (e.button !== 0) return;
+    const b = this.barAt(e);
+    this.formDrag = { start: b, moved: false };
+    this.formLane.setPointerCapture(e.pointerId);
+    this.formLane.focus({ preventScroll: true });
+    this.selectBars(b, b);
+  }
+
+  onFormMove(e) {
+    if (!this.formDrag) return;
+    const b = this.barAt(e);
+    if (b !== this.formDrag.start) this.formDrag.moved = true;
+    if (this.formDrag.moved) this.selectBars(this.formDrag.start, b);
+  }
+
+  onFormUp() {
+    if (!this.formDrag) return;
+    // A tap selects a whole phrase (the "Tap selects" length); a drag selects exactly the bars dragged over.
+    if (!this.formDrag.moved) this.selectBars(this.formDrag.start, this.formDrag.start + this.formLen - 1);
+    this.formDrag = null;
+  }
+
+  onFormKey(e) {
+    const { from, to } = this.formSel;
+    const len = to - from + 1;
+    if (/^[a-h]$/i.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      this.setLetter(e.key.toUpperCase());
+      e.preventDefault();
+    } else if (e.key === "'" || e.key === '′' || e.key === '’') {
+      // Add a prime to the selected phrase, or the one just lettered: A → A′ → A″ → A.
+      const secs = formSections(this.project);
+      const sec = secs.find((f) => f.start === from) || (this.lastLettered && secs.find((f) => f.start === this.lastLettered.from));
+      if (sec) {
+        const l = sec.label;
+        const next = l.endsWith('″') ? letterBase(l) : l.endsWith('′') ? `${letterBase(l)}″` : `${l}′`;
+        this.setLetter(next, { from: sec.start, to: sec.start + sec.len - 1 }, false);
+      }
+      e.preventDefault();
+    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+      this.setLetter(null);
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+      this.selectBars(from + len, to + len);
+      e.preventDefault();
+    } else if (e.key === 'ArrowLeft') {
+      this.selectBars(Math.max(0, from - len), Math.max(0, from - len) + len - 1);
+      e.preventDefault();
+    }
+  }
+
+  /** Letter the selected bars as one phrase, then move on to the next phrase of the same length (so A A B A is four taps). */
+  setLetter(label, range = this.formSel, advance = true) {
+    const p = this.project;
+    p.form = letterBars(p.form, range.from, range.to, label);
+    this.lastLettered = { ...range };
+    const len = range.to - range.from + 1;
+    if (advance && label && range.to + 1 < p.bars) this.formSel = { from: range.to + 1, to: Math.min(p.bars - 1, range.to + len) };
+    this.emit();
+    this.formLane?.focus({ preventScroll: true });
   }
 
   slotAt(e) {

@@ -1,15 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611151949';
-import { LESSONS } from './lessons.js?v=202611151949';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611151949';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611151949';
-import { projectToAbc } from './staff.js?v=202611151949';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611151949';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611151949';
-import { pack, unpack } from './util.js?v=202611151949';
-import { makeQuestion } from './quiz.js?v=202611151949';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611151949';
+import { runChecks } from './checks.js?v=202611161410';
+import { LESSONS } from './lessons.js?v=202611161410';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611161410';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611161410';
+import { projectToAbc } from './staff.js?v=202611161410';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611161410';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611161410';
+import { pack, unpack } from './util.js?v=202611161410';
+import { makeQuestion } from './quiz.js?v=202611161410';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611161410';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -438,6 +438,25 @@ await test('new checks: chord colours, gravity, inversions, durations', () => {
   const p = { ...newProject(dur.start), melody: [q(0, 8), q(8, 4), q(12, 2), q(14, 1), q(15, 1), q(16, 8), q(24, 8, 1)] };
   assert(runChecks(dur, p).every((r) => r.pass), JSON.stringify(runChecks(dur, p)));
   assert(!runChecks(dur, { ...p, melody: p.melody.filter((n) => n.len !== 1) })[0].pass, 'needs eighths');
+});
+
+await test('Form letters over bars: phrases kept, cut, ghosts and MIDI markers', async () => {
+  const { formSections, ghostNotes, letterBars, setBars, sliceProject } = await import('./project.js?v=202611151949');
+  const n = (start, deg) => ({ start, len: 2, deg, oct: 0 });
+  const form = [{ start: 0, len: 2, label: 'A' }, { start: 2, len: 2, label: 'A' }, { start: 4, len: 2, label: 'B' }, { start: 6, len: 2, label: 'A′' }, { start: 7, len: 1, label: 'Z' }];
+  const p = normalizeProject({ key: 'C', bars: 8, form, melody: [n(0, 1), n(8, 3), n(32, 5)] });
+  assertEq(formSections(p).map((f) => f.label), ['A', 'A', 'B', 'A′'], 'bad letters dropped, two A phrases stay two');
+  assertEq(ghostNotes(p).map((x) => [x.start, x.deg]), [[16, 1], [24, 3], [48, 1], [56, 3]], 'second A and A′ show the first A');
+  assert(!('form' in normalizeProject({ key: 'C', bars: 4, form: [] })), 'no letters, no form field');
+  assertEq(setBars(p, 5).form, [{ start: 0, len: 2, label: 'A' }, { start: 2, len: 2, label: 'A' }, { start: 4, len: 1, label: 'B' }], 'fewer bars cut the letters');
+  assertEq(letterBars(p.form, 1, 2, 'C').map((f) => [f.start, f.len, f.label]), [[0, 1, 'A'], [1, 2, 'C'], [3, 1, 'A'], [4, 2, 'B'], [6, 2, 'A′']], 'lettering over phrases cuts them');
+  assertEq(letterBars(p.form, 0, 3, null).map((f) => f.label), ['B', 'A′'], 'clear');
+  assertEq(sliceProject(p, 4, 4).form, [{ start: 0, len: 2, label: 'B' }, { start: 2, len: 2, label: 'A′' }], 'one phrase played alone keeps its letters');
+  const bytes = projectToMidi(p);
+  assert(readMidi(bytes), 'MIDI with markers still reads');
+  let markers = 0;
+  for (let i = 0; i < bytes.length - 1; i++) if (bytes[i] === 0xff && bytes[i + 1] === 0x06) markers++;
+  assertEq(markers, 4, 'one marker per phrase');
 });
 
 const failed = results.filter((r) => !r.ok);

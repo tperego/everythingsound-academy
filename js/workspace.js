@@ -1,15 +1,15 @@
 // Workspace = toolbar (transport, key, tempo, bars, view, mutes, MIDI out) + composer + staff view.
 
-import { Player, listMidiOutputs } from './audio.js?v=202611151949';
-import { Composer } from './composer.js?v=202611151949';
-import { BAR_OPTIONS, cloneProject, normalizeProject, setBars, sliceProject } from './project.js?v=202611151949';
-import { renderStaff } from './staff.js?v=202611151949';
-import { ChordSheet, PianoView } from './piano.js?v=202611151949';
-import { KEY_OPTIONS } from './theory.js?v=202611151949';
-import { h, store, toast } from './util.js?v=202611151949';
+import { Player, listMidiOutputs } from './audio.js?v=202611161410';
+import { Composer } from './composer.js?v=202611161410';
+import { BAR_OPTIONS, cloneProject, normalizeProject, setBars, sliceProject } from './project.js?v=202611161410';
+import { renderStaff } from './staff.js?v=202611161410';
+import { ChordSheet, PianoView } from './piano.js?v=202611161410';
+import { KEY_OPTIONS } from './theory.js?v=202611161410';
+import { h, store, toast } from './util.js?v=202611161410';
 
 export class Workspace {
-  constructor(root, { readOnly = false, onChange = () => {}, player = null } = {}) {
+  constructor(root, { readOnly = false, onChange = () => {}, player = null, letters = false } = {}) {
     this.root = root;
     this.readOnly = readOnly;
     this.onChange = onChange;
@@ -38,6 +38,7 @@ export class Workspace {
     this.composer = new Composer(this.composerEl, {
       player: this.player,
       readOnly,
+      letters,
       onChange: (p) => this.update(p, { fromComposer: true }),
       onSelect: (slot) => {
         if (this.player.playing) return;

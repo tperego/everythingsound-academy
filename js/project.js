@@ -4,9 +4,10 @@
 //   v: 1, key: 'G', mode: 'major', bpm: 96, bars: 4,
 //   chords: [ {deg, seventh} | null, ... ]   // length bars*2; null = keep the previous chord
 //   melody: [ {start, len, deg, oct}, ... ]  // start/len in 8th-note steps, deg 1..7, oct -1..1
+//   form: [ {start, len, label}, ... ]       // optional (Sandbox): lettered phrases in bars, e.g. {start: 0, len: 4, label: 'A'}
 // }
 
-import { KEY_OPTIONS, chordInfo, chordVoicing, midiForDegree } from './theory.js?v=202611151949';
+import { KEY_OPTIONS, chordInfo, chordVoicing, midiForDegree } from './theory.js?v=202611161410';
 
 export const STEPS_PER_BAR = 8;
 export const SLOTS_PER_BAR = 2;
@@ -79,7 +80,62 @@ export function normalizeProject(raw) {
     .filter((n) => n.start >= 0 && n.deg > 0 && rowIndexOf(n.deg, n.oct) >= 0)
     .map((n) => ({ ...n, len: Math.min(n.len, steps - n.start) }))
     .sort((a, b) => a.start - b.start);
-  return { v: 1, key, mode, bpm, bars, chords, melody: removeOverlaps(melody) };
+  const out = { v: 1, key, mode, bpm, bars, chords, melody: removeOverlaps(melody) };
+  const form = [];
+  for (const f of (Array.isArray(r.form) ? r.form : [])
+    .map((x) => ({ start: clampInt(x?.start, 0, bars - 1, -1), len: clampInt(x?.len, 1, bars, 0), label: x?.label }))
+    .filter((x) => x.start >= 0 && x.len > 0 && typeof x.label === 'string' && FORM_LETTER.test(x.label))
+    .sort((a, b) => a.start - b.start)) {
+    const prev = form[form.length - 1];
+    if (prev && prev.start + prev.len > f.start) continue; // overlapping phrases: keep the first
+    form.push({ start: f.start, len: Math.min(f.len, bars - f.start), label: f.label });
+  }
+  if (form.length) out.form = form;
+  return out;
+}
+
+/** A form letter: A to H, optionally with one or two primes (A′, A″). */
+export const FORM_LETTER = /^[A-H][′″]?$/;
+const baseOf = (label) => String(label || '').replace(/[′″']/g, '');
+
+/** The lettered phrases, in order: [{label, start, len}] (start and len in bars). */
+export function formSections(p) {
+  return p.form || [];
+}
+
+/** Letter bars from..to (or clear them, label = null): phrases that overlap are cut back or split. */
+export function letterBars(form, from, to, label) {
+  const out = [];
+  for (const f of form || []) {
+    const end = f.start + f.len - 1;
+    if (end < from || f.start > to) { out.push({ ...f }); continue; }
+    if (f.start < from) out.push({ ...f, len: from - f.start });
+    if (end > to) out.push({ ...f, start: to + 1, len: end - to });
+  }
+  if (label) out.push({ start: from, len: to - from + 1, label });
+  return out.sort((a, b) => a.start - b.start);
+}
+
+/**
+ * For each section that repeats a letter (a second A, or A′ after A), the melody of the first section
+ * with that letter, moved to where it would go: shown faded as a guide, never added to the piece.
+ */
+export function ghostNotes(p) {
+  const secs = formSections(p);
+  const out = [];
+  secs.forEach((sec, i) => {
+    const src = secs.slice(0, i).find((s) => baseOf(s.label) === baseOf(sec.label));
+    if (!src) return;
+    const bars = Math.min(src.len, sec.len);
+    const from = src.start * STEPS_PER_BAR;
+    const to = (src.start + bars) * STEPS_PER_BAR;
+    const shift = (sec.start - src.start) * STEPS_PER_BAR;
+    for (const n of p.melody) {
+      if (n.start < from || n.start >= to) continue;
+      out.push({ start: n.start + shift, len: Math.min(n.len, to - n.start), deg: n.deg, oct: n.oct, from: src.label });
+    }
+  });
+  return out;
 }
 
 /** Keep the melody monophonic: a later note cuts the previous one short. */
@@ -158,6 +214,7 @@ export function sliceProject(p, fromBar, nBars) {
     ...p,
     bars: nBars,
     chords,
+    form: letterBars(letterBars(p.form, 0, fromBar - 1, null), fromBar + nBars, 9999, null).map((f) => ({ ...f, start: f.start - fromBar })),
     melody: p.melody.filter((n) => n.start >= from && n.start < to).map((n) => ({ ...n, start: n.start - from })),
   });
 }

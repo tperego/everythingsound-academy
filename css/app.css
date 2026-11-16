@@ -220,6 +220,31 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .chord-lane:focus { outline: none; }
 .chord-lane:focus-visible .slot.selected { outline: 2px solid var(--accent); }
 .slot { position: absolute; top: 0; bottom: 0; }
+
+/* Form lane: letters over bars (Sandbox) */
+.form-lane {
+  position: relative; height: 32px; border-bottom: 1px solid var(--line); touch-action: none;
+  background-image: linear-gradient(to right, var(--grid-bar) 1px, transparent 1px);
+  background-size: calc(100% / var(--bars)) 100%;
+}
+.form-lane.editable { cursor: pointer; }
+.form-lane:focus { outline: none; }
+.form-sel { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 -3px 0 var(--accent); }
+.form-lane:focus-visible .form-sel { outline: 2px solid var(--accent); }
+.form-block {
+  position: absolute; top: 4px; bottom: 4px; margin-left: 2px; max-width: calc(100% - 4px); pointer-events: none;
+  border-radius: 6px; padding: 0 8px; display: flex; align-items: center; overflow: hidden; white-space: nowrap;
+  color: #fff; font: 800 0.95rem/1 Georgia, "Times New Roman", serif;
+}
+.form-btn { font: 800 0.95rem/1 Georgia, "Times New Roman", serif; min-width: 38px; height: 34px; border: 0; border-radius: 8px; color: #fff; cursor: pointer; }
+.form-block.prime, .form-btn.prime { opacity: 0.8; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.18) 0 6px, transparent 6px 12px); }
+.fl-A { background-color: var(--accent); } .fl-B { background-color: var(--fn-D); } .fl-C { background-color: var(--fn-T); } .fl-D { background-color: var(--fn-PD); }
+.fl-E, .fl-F, .fl-G, .fl-H { background-color: var(--ink-2); }
+.form-row { padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+.ghost-note {
+  position: absolute; border-radius: 5px; margin-left: 1px; opacity: 0.3; border: 1.5px dashed var(--ink);
+  color: #fff; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; padding-left: 5px; overflow: hidden;
+}
 .slot.selected { background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 -3px 0 var(--accent); }
 .chord-block {
   position: absolute; top: 6px; bottom: 6px; margin-left: 2px;

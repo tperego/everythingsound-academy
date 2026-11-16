@@ -1,7 +1,7 @@
 // Standard MIDI File writer and reader. Works with Ableton Live, Logic Pro and Pro Tools.
 
-import { buildEvents } from './project.js?v=202611151949';
-import { detectChord, inKeyPcs, keySignatureSf } from './theory.js?v=202611151949';
+import { buildEvents, formSections } from './project.js?v=202611161410';
+import { detectChord, inKeyPcs, keySignatureSf } from './theory.js?v=202611161410';
 
 export const PPQ = 480;
 
@@ -45,7 +45,7 @@ function encodeTrack(events) {
  * tracks: [{ name, channel (0-15), program (GM, optional), notes: [{pitch, start, dur, vel(0..1)}] }]
  * start/dur in beats (quarter notes).
  */
-export function writeMidi({ name = 'Everything Sound Academy', bpm, key, mode, tracks }) {
+export function writeMidi({ name = 'Everything Sound Academy', bpm, key, mode, tracks, markers = [] }) {
   const mpqn = Math.round(60000000 / bpm);
   const sf = keySignatureSf(key, mode);
   const conductor = [
@@ -54,6 +54,8 @@ export function writeMidi({ name = 'Everything Sound Academy', bpm, key, mode, t
     { tick: 0, order: 0, data: [0xff, 0x58, 0x04, 4, 2, 24, 8] },
     { tick: 0, order: 0, data: [0xff, 0x59, 0x02, sf & 255, mode === 'minor' ? 1 : 0] },
   ];
+  // Markers (A, A′, B…) show as locators in Logic and Pro Tools.
+  for (const m of markers) conductor.push({ tick: Math.round(m.beat * PPQ), order: 0, data: metaText(0x06, m.text) });
   const chunks = [encodeTrack(conductor)];
   for (const t of tracks) {
     const ch = t.channel & 15;
@@ -89,7 +91,8 @@ export function projectToMidi(project, { name = 'Everything Sound Academy', only
         .filter((e) => e.track === id)
         .flatMap((e) => e.pitches.map((pitch) => ({ pitch, start: e.start, dur: e.dur, vel: e.vel }))),
     }));
-  return writeMidi({ name, bpm: project.bpm, key: project.key, mode: project.mode, tracks });
+  const markers = formSections(project).map((sec) => ({ beat: sec.start * 4, text: sec.label }));
+  return writeMidi({ name, bpm: project.bpm, key: project.key, mode: project.mode, tracks, markers });
 }
 
 /** Parse a MIDI file. Returns notes per track in beats. Throws on files that aren't MIDI. */

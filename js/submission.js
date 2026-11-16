@@ -1,8 +1,8 @@
 // Submission and feedback formats. Both travel as files or links, so everything is validated on load.
 
-import { normalizeProject } from './project.js?v=202611151949';
-import { slug, uid } from './util.js?v=202611151949';
-import { FORM_LABELS } from './form.js?v=202611151949';
+import { normalizeProject } from './project.js?v=202611161410';
+import { slug, uid } from './util.js?v=202611161410';
+import { FORM_LABELS } from './form.js?v=202611161410';
 
 export const SUBMISSION_FORMAT = 'everythingsound-submission';
 export const FEEDBACK_FORMAT = 'everythingsound-feedback';
