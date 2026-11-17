@@ -1,9 +1,9 @@
 // Course home: modules, lessons, progress, and a way back into where the student left off.
 
-import { COURSE, courseLessons, lessonProgress } from './course.js?v=202611161641';
-import { h, store } from './util.js?v=202611161641';
-import { myProfile, myProgress, myXpEvents, renderAccountWidget } from './auth.js?v=202611161641';
-import { journeyStrip, summarise } from './game.js?v=202611161641';
+import { COURSE, courseLessons, lessonProgress } from './course.js?v=202611171645';
+import { h, store } from './util.js?v=202611171645';
+import { myProfile, myProgress, myXpEvents, renderAccountWidget } from './auth.js?v=202611171645';
+import { journeyStrip, summarise } from './game.js?v=202611171645';
 
 const $ = (sel) => document.querySelector(sel);
 

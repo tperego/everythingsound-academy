@@ -1,12 +1,12 @@
 // Scenes (record2.html): scripted, vertical scenes for short videos, one per hook in the TikTok plan.
 // Separate from the course: nothing here signs in, saves progress or awards XP.
 
-import { Player } from './audio.js?v=202611161641';
-import { keyboardSvg } from './piano.js?v=202611161641';
-import { SCENES as WEEKS_1_3 } from './scene-list.js?v=202611161641';
-import { SCENES as WEEKS_4_10 } from './scene-list-2.js?v=202611161641';
-import { SCENES as SPECIALS } from './scene-specials.js?v=202611161641';
-import { h } from './util.js?v=202611161641';
+import { Player } from './audio.js?v=202611171645';
+import { keyboardSvg } from './piano.js?v=202611171645';
+import { SCENES as WEEKS_1_3 } from './scene-list.js?v=202611171645';
+import { SCENES as WEEKS_4_10 } from './scene-list-2.js?v=202611171645';
+import { SCENES as SPECIALS } from './scene-specials.js?v=202611171645';
+import { h } from './util.js?v=202611171645';
 
 const $ = (s) => document.querySelector(s);
 const SCENES = [...WEEKS_1_3, ...WEEKS_4_10, ...SPECIALS];

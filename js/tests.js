@@ -1,15 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611161641';
-import { LESSONS } from './lessons.js?v=202611161641';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611161641';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611161641';
-import { projectToAbc } from './staff.js?v=202611161641';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611161641';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611161641';
-import { pack, unpack } from './util.js?v=202611161641';
-import { makeQuestion } from './quiz.js?v=202611161641';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611161641';
+import { runChecks } from './checks.js?v=202611171645';
+import { LESSONS } from './lessons.js?v=202611171645';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611171645';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611171645';
+import { projectToAbc } from './staff.js?v=202611171645';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611171645';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611171645';
+import { pack, unpack } from './util.js?v=202611171645';
+import { makeQuestion } from './quiz.js?v=202611171645';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611171645';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -177,6 +177,10 @@ await test('staff (ABC) export', () => {
   assert(abc.includes('"F"F6 A2- | "C"A2 z6 |]'), abc);
   const minor = projectToAbc(newProject({ key: 'A', mode: 'minor', bars: 1, melody: [{ start: 0, len: 8, deg: 3, oct: 1 }] }));
   assert(minor.includes("K:Am") && minor.includes("c'8"), minor);
+  // Chords are written as notes too: on a bass staff under the melody, or alone when there is no melody.
+  assert(abc.includes('%%score {1 2}') && abc.includes('[F,A,C]8 | [C,E,G,]8 |]'), `chord staff: ${abc}`);
+  const only = projectToAbc(newProject({ key: 'C', bars: 3, progression: [1, null, [5, 1]] }));
+  assert(only.includes('K:C clef=bass') && only.includes('"C"[C,E,G,]8- | [C,E,G,]8 | "G"[G,B,D]4 "C"[C,E,G,]4 |]'), `chords only: ${only}`);
 });
 
 await test('submission + link packing', async () => {

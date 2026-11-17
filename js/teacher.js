@@ -1,16 +1,16 @@
-import { keyText } from './theory.js?v=202611161641';
+import { keyText } from './theory.js?v=202611171645';
 // Teacher marking page: open submissions, listen, see checks and DAW analysis, score, send feedback link.
 
-import { runChecks } from './checks.js?v=202611161641';
-import { KIND_LABELS, findExercise } from './lessons.js?v=202611161641';
-import { analyseMidi, readMidi } from './midi.js?v=202611161641';
-import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611161641';
-import { makeFeedback, parseAnswers, parseSubmission } from './submission.js?v=202611161641';
-import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js?v=202611161641';
-import { normalizeProject } from './project.js?v=202611161641';
-import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js?v=202611161641';
-import { Workspace } from './workspace.js?v=202611161641';
-import { Player } from './audio.js?v=202611161641';
+import { runChecks } from './checks.js?v=202611171645';
+import { KIND_LABELS, findExercise } from './lessons.js?v=202611171645';
+import { analyseMidi, readMidi } from './midi.js?v=202611171645';
+import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611171645';
+import { makeFeedback, parseAnswers, parseSubmission } from './submission.js?v=202611171645';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js?v=202611171645';
+import { normalizeProject } from './project.js?v=202611171645';
+import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js?v=202611171645';
+import { Workspace } from './workspace.js?v=202611171645';
+import { Player } from './audio.js?v=202611171645';
 
 const $ = (sel) => document.querySelector(sel);
 const subs = new Map(); // id -> submission

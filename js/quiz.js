@@ -8,9 +8,9 @@
 //        note-values, time-signature, hear-meter, chord-pull, tendency-tone, hear-cadence,
 //        name-inversion, find-fundamental, common-chord, modulation-fifth
 
-import { keyboardSvg } from './piano.js?v=202611161641';
-import { KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611161641';
-import { h } from './util.js?v=202611161641';
+import { keyboardSvg } from './piano.js?v=202611171645';
+import { KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611171645';
+import { h } from './util.js?v=202611171645';
 
 const NATURAL = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B' };
 const BLACK_PAIRS = { 1: 'C♯ / D♭', 3: 'D♯ / E♭', 6: 'F♯ / G♭', 8: 'G♯ / A♭', 10: 'A♯ / B♭' };
@@ -612,28 +612,43 @@ export const makeQuestion = (type, options = {}) => GEN[type](options);
 // ---------- Sound ----------
 
 let lastNoteAt = 0;
-/** Plays notes one after another; an array inside the list is a chord, played together. */
+let timers = [];
+let sounding = null; // the player whose synths are playing quiz notes
+
+/** Stops whatever the quiz is playing, including notes not started yet. */
+export function stopNotes() {
+  timers.forEach(clearTimeout);
+  timers = [];
+  if (sounding?.ready) {
+    sounding.synths.chords.releaseAll();
+    sounding.synths.melody.triggerRelease();
+  }
+  sounding = null;
+}
+
+/** Plays notes one after another; an array inside the list is a chord, played together. Stops anything still playing first. */
 async function playNotes(player, notes, gap = 0.65) {
+  stopNotes();
   if (!player || !notes?.length) return;
   await player.ensure();
-  const t = Tone.now() + 0.05;
+  sounding = player;
   const f = (m) => 440 * 2 ** ((m - 69) / 12);
-  let at = t;
+  let at = 0;
   notes.forEach((m) => {
-    if (Array.isArray(m)) {
-      player.synths.chords.triggerAttackRelease(m.map(f), 1.0, at, 0.6);
-      at += 1.15;
-    } else {
-      // The melody synth plays one note at a time and can't take a note earlier than one already
-      // scheduled (e.g. a key clicked while the question still plays): those go to the chord synth.
-      if (at > lastNoteAt) {
-        player.synths.melody.triggerAttackRelease(f(m), Math.min(0.55, gap * 0.9), at, 0.8);
-        lastNoteAt = at;
+    // Each note starts on a timer, so stopNotes() can cancel the ones still to come.
+    timers.push(setTimeout(() => {
+      const now = Tone.now();
+      if (Array.isArray(m)) {
+        player.synths.chords.triggerAttackRelease(m.map(f), 1.0, now, 0.6);
+      } else if (now > lastNoteAt) {
+        player.synths.melody.triggerAttackRelease(f(m), Math.min(0.55, gap * 0.9), now, 0.8);
+        lastNoteAt = now;
       } else {
-        player.synths.chords.triggerAttackRelease([f(m)], Math.min(0.55, gap * 0.9), at, 0.6);
+        // The melody synth plays one note at a time: a second note at the very same moment goes to the chord synth.
+        player.synths.chords.triggerAttackRelease([f(m)], Math.min(0.55, gap * 0.9), now, 0.6);
       }
-      at += gap;
-    }
+    }, at * 1000));
+    at += Array.isArray(m) ? 1.15 : gap;
   });
 }
 
@@ -655,11 +670,13 @@ export class QuizView {
   }
 
   destroy() {
+    stopNotes();
     document.removeEventListener('keydown', this.onKey);
     this.root.replaceChildren();
   }
 
   renderStart() {
+    stopNotes();
     const q = this.quiz;
     this.root.replaceChildren(h('div', { class: 'quiz quiz-start' },
       h('div', {},
@@ -688,6 +705,7 @@ export class QuizView {
   }
 
   show() {
+    stopNotes(); // a question that is still playing stops when the next one appears
     const qn = this.questions[this.i];
     this.answered = false;
     this.picked = [];
@@ -702,15 +720,18 @@ export class QuizView {
         h('div', { class: 'quiz-bar' }, h('span', { style: { width: `${(this.i / total) * 100}%` } })),
         h('span', { class: 'small quiz-score' }, `${this.correct} right`)),
       h('p', { class: 'quiz-q' }, qn.text),
+      // Nothing plays by itself: the student presses Play (and again as often as they like).
+      qn.play ? h('div', { class: 'row' }, h('button', {
+        type: 'button', class: `btn${qn.marks ? ' small' : ''}`,
+        onclick: (e) => { e.currentTarget.textContent = '▶ Play again'; playNotes(this.player, qn.play, qn.gap); },
+      }, '▶ Play')) : '',
       this.kbBox,
       this.controls,
       this.feedback,
       h('div', { class: 'row wrap' },
-        qn.play ? h('button', { type: 'button', class: 'btn small', onclick: () => playNotes(this.player, qn.play, qn.gap) }, '▶ Play again') : '',
         this.nextBtn)));
     this.drawKeyboard();
     this.drawControls();
-    if (qn.play) playNotes(this.player, qn.play, qn.gap);
   }
 
   /** Draw the keyboard with the question's keys, the student's clicks and (after answering) the answer. */
@@ -770,7 +791,7 @@ export class QuizView {
         this.picked.forEach((x, k) => { if (x !== qn.sequence[k]) extra.set(x, { cls: 'bad' }); });
         this.drawKeyboard(extra);
         this.drawControls();
-        setTimeout(() => playNotes(this.player, qn.chord ? [...qn.sequence, qn.sequence] : qn.sequence, 0.4), 400);
+        timers.push(setTimeout(() => playNotes(this.player, qn.chord ? [...qn.sequence, qn.sequence] : qn.sequence, 0.4), 400));
       } else {
         this.redrawSequence();
       }
@@ -830,6 +851,7 @@ export class QuizView {
   }
 
   next() {
+    stopNotes();
     if (this.i + 1 < this.questions.length) {
       this.i++;
       this.show();

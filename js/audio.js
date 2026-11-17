@@ -1,6 +1,6 @@
 // Playback with Tone.js (global `Tone` from the CDN script), plus optional live MIDI out to a DAW.
 
-import { buildEvents } from './project.js?v=202611161641';
+import { buildEvents } from './project.js?v=202611171645';
 
 const MIDI_CHANNEL = { chords: 0, bass: 1, melody: 2 };
 
@@ -18,8 +18,10 @@ export class Player {
   }
 
   async ensure() {
+    // The browser can pause our sound at any time (a YouTube video playing, the phone locking, the laptop
+    // sleeping): wake it up again on every press, not only the first one.
+    if (Tone.getContext().state !== 'running') await Tone.start();
     if (this.ready) return;
-    await Tone.start();
     const reverb = new Tone.Reverb({ decay: 2.2, wet: 0.18 }).toDestination();
     this.synths = {
       chords: new Tone.PolySynth(Tone.Synth, {
