@@ -1,6 +1,7 @@
 /* Scenes (record2.html): pieces drawn inside the recording frame. Only used by that page. */
 
 .sc-card { justify-content: center; gap: 14px; }
+.sc-fit { flex: none; display: flex; flex-direction: column; gap: 14px; transform-origin: center center; }
 .sc-vis { display: grid; gap: 12px; }
 .sc-vis:empty { display: none; }
 .sc-kbd { background: var(--rec-card); border-radius: 14px; padding: 10px; }

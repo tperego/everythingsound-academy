@@ -1,12 +1,12 @@
 // Scenes (record2.html): scripted, vertical scenes for short videos, one per hook in the TikTok plan.
 // Separate from the course: nothing here signs in, saves progress or awards XP.
 
-import { Player } from './audio.js?v=202611181323';
-import { keyboardSvg } from './piano.js?v=202611181323';
-import { SCENES as WEEKS_1_3 } from './scene-list.js?v=202611181323';
-import { SCENES as WEEKS_4_10 } from './scene-list-2.js?v=202611181323';
-import { SCENES as SPECIALS } from './scene-specials.js?v=202611181323';
-import { h } from './util.js?v=202611181323';
+import { Player } from './audio.js?v=202611182238';
+import { keyboardSvg } from './piano.js?v=202611182238';
+import { SCENES as WEEKS_1_3 } from './scene-list.js?v=202611182238';
+import { SCENES as WEEKS_4_10 } from './scene-list-2.js?v=202611182238';
+import { SCENES as SPECIALS } from './scene-specials.js?v=202611182238';
+import { h } from './util.js?v=202611182238';
 
 const $ = (s) => document.querySelector(s);
 const SCENES = [...WEEKS_1_3, ...WEEKS_4_10, ...SPECIALS];
@@ -39,6 +39,22 @@ const isBlack = (m) => [1, 3, 6, 8, 10].includes(((m % 12) + 12) % 12);
 
 // ---------- The stage API that scenes use ----------
 
+/** Shrinks the scene's content when it is taller than the card. window.scFit keeps the largest overflow per scene (for checking). */
+function fitCard() {
+  const card = $('#card');
+  const fit = card.querySelector('.sc-fit');
+  if (!fit) return;
+  const need = fit.offsetHeight;
+  const room = card.clientHeight;
+  const k = need > room ? room / need : 1;
+  fit.style.transform = k < 1 ? `scale(${k.toFixed(3)})` : '';
+  const id = select?.value;
+  if (id) (window.scFit ||= {})[id] = Math.max(window.scFit[id] || 1, need / room);
+}
+// Both: a resize (window, fonts) and any change to the scene's content (which also runs when the tab isn't painting).
+const fitObserver = new ResizeObserver(fitCard);
+const fitWatcher = new MutationObserver(fitCard);
+
 class Stage {
   constructor() {
     this.slots = {
@@ -48,7 +64,15 @@ class Stage {
       chips: h('div', { class: 'sc-chips', hidden: true }),
       ask: h('div', { class: 'sc-ask' }),
     };
-    $('#card').replaceChildren(...Object.values(this.slots));
+    // Everything sits in one box that shrinks to fit the card, so a busy scene never spills over the hook or footer.
+    const card = $('#card');
+    const fit = h('div', { class: 'sc-fit' }, ...Object.values(this.slots));
+    card.replaceChildren(fit);
+    fitObserver.disconnect();
+    fitObserver.observe(card);
+    fitObserver.observe(fit);
+    fitWatcher.disconnect();
+    fitWatcher.observe(fit, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['hidden', 'class'] });
     this.kbBox = null;
     this.marks = new Map();
   }
@@ -56,7 +80,12 @@ class Stage {
   wait(s) { return sleep(s); }
 
   // --- text ---
-  cap(text) { this.slots.cap.textContent = text || ''; this.slots.cap.hidden = !text; }
+  cap(text) {
+    // No need to repeat the hook word for word when it is already shown big at the top.
+    const hook = $('#hook');
+    if (text && !hook.hidden && hook.textContent.trim() === text.trim()) text = '';
+    this.slots.cap.textContent = text || ''; this.slots.cap.hidden = !text;
+  }
   tag(text) { this.slots.tag.textContent = text || ''; this.slots.tag.hidden = !text; }
   clearVis() { this.slots.vis.replaceChildren(); this.kbBox = null; this.marks = new Map(); this.roll = null; this.mapEl = null; this.beatsEl = null; }
   /** A placeholder for a clip the presenter films (replace it in CapCut). */
