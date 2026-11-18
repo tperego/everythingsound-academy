@@ -1,7 +1,7 @@
 // Staff view: turns a project into ABC notation and renders it with abcjs (global `ABCJS`).
 
-import { chordEvents } from './project.js?v=202611182238';
-import { chordInfo, chordVoicing, keySignatureSf, midiForDegree, noteName, accidentalOffset, pcOf, signatureNames } from './theory.js?v=202611182238';
+import { chordEvents } from './project.js?v=202611182249';
+import { chordInfo, chordVoicing, keySignatureSf, midiForDegree, noteName, accidentalOffset, pcOf, signatureNames } from './theory.js?v=202611182249';
 
 const ABC_ACC = { '-2': '__', '-1': '_', 0: '=', 1: '^', 2: '^^' };
 

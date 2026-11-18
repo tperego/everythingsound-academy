@@ -1,15 +1,16 @@
 // Scenes (record2.html): scripted, vertical scenes for short videos, one per hook in the TikTok plan.
 // Separate from the course: nothing here signs in, saves progress or awards XP.
 
-import { Player } from './audio.js?v=202611182238';
-import { keyboardSvg } from './piano.js?v=202611182238';
-import { SCENES as WEEKS_1_3 } from './scene-list.js?v=202611182238';
-import { SCENES as WEEKS_4_10 } from './scene-list-2.js?v=202611182238';
-import { SCENES as SPECIALS } from './scene-specials.js?v=202611182238';
-import { h } from './util.js?v=202611182238';
+import { Player } from './audio.js?v=202611182249';
+import { keyboardSvg } from './piano.js?v=202611182249';
+import { SCENES as WEEKS_1_3 } from './scene-list.js?v=202611182249';
+import { SCENES as WEEKS_4_10 } from './scene-list-2.js?v=202611182249';
+import { SCENES as SPECIALS } from './scene-specials.js?v=202611182249';
+import { SCENES as EXTRAS } from './scene-classics.js?v=202611182249';
+import { h } from './util.js?v=202611182249';
 
 const $ = (s) => document.querySelector(s);
-const SCENES = [...WEEKS_1_3, ...WEEKS_4_10, ...SPECIALS];
+const SCENES = [...WEEKS_1_3, ...WEEKS_4_10, ...SPECIALS, ...EXTRAS];
 const player = new Player();
 // ?speed=10 runs scenes faster (for checking them); normal use is 1.
 const SPEED = Math.max(1, Number(new URLSearchParams(location.search).get('speed')) || 1);

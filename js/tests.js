@@ -1,15 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611182238';
-import { LESSONS } from './lessons.js?v=202611182238';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611182238';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611182238';
-import { projectToAbc } from './staff.js?v=202611182238';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611182238';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611182238';
-import { pack, unpack } from './util.js?v=202611182238';
-import { makeQuestion } from './quiz.js?v=202611182238';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611182238';
+import { runChecks } from './checks.js?v=202611182249';
+import { LESSONS } from './lessons.js?v=202611182249';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611182249';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611182249';
+import { projectToAbc } from './staff.js?v=202611182249';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611182249';
+import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611182249';
+import { pack, unpack } from './util.js?v=202611182249';
+import { makeQuestion } from './quiz.js?v=202611182249';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611182249';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);

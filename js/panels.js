@@ -1,8 +1,8 @@
-import { keyText } from './theory.js?v=202611182238';
+import { keyText } from './theory.js?v=202611182249';
 // Shared display pieces used on both the student and the teacher page.
 
-import { midiNoteName } from './midi.js?v=202611182238';
-import { h } from './util.js?v=202611182238';
+import { midiNoteName } from './midi.js?v=202611182249';
+import { h } from './util.js?v=202611182249';
 
 export function renderChecks(results) {
   if (!results.length) return h('p', { class: 'muted' }, 'No automatic checks for this exercise.');
