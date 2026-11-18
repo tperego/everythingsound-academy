@@ -697,3 +697,16 @@ a.btn { text-decoration: none; display: inline-block; }
   .topbar { padding-top: calc(8px + env(safe-area-inset-top)); }
   .chat-page .chat-layout { height: calc(100dvh - 53px - env(safe-area-inset-top) - 62px - env(safe-area-inset-bottom)); }
 }
+
+/* Students page (teacher) */
+.lvl-badge.small-lvl { width: 28px; height: 28px; font-size: 0.8rem; }
+.student-search { width: 100%; }
+.sub-item .waiting { color: var(--accent); }
+.ex-dots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.ex-dots .st { width: 12px; height: 12px; }
+.lesson-card:is(div):hover { border-color: var(--line); }
+.lesson-list.compact { gap: 6px; }
+.lesson-list.compact .lesson-card { padding: 8px 12px; gap: 10px; box-shadow: none; }
+.lesson-list.compact .lesson-num { width: 28px; height: 28px; font-size: 0.85rem; }
+.lesson-list.compact .ex-dots { margin-top: 4px; }
+#detail { scroll-margin-top: 72px; }

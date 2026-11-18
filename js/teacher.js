@@ -1,16 +1,16 @@
-import { keyText } from './theory.js?v=202611171645';
+import { keyText } from './theory.js?v=202611181323';
 // Teacher marking page: open submissions, listen, see checks and DAW analysis, score, send feedback link.
 
-import { runChecks } from './checks.js?v=202611171645';
-import { KIND_LABELS, findExercise } from './lessons.js?v=202611171645';
-import { analyseMidi, readMidi } from './midi.js?v=202611171645';
-import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611171645';
-import { makeFeedback, parseAnswers, parseSubmission } from './submission.js?v=202611171645';
-import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js?v=202611171645';
-import { normalizeProject } from './project.js?v=202611171645';
-import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js?v=202611171645';
-import { Workspace } from './workspace.js?v=202611171645';
-import { Player } from './audio.js?v=202611171645';
+import { runChecks } from './checks.js?v=202611181323';
+import { KIND_LABELS, findExercise } from './lessons.js?v=202611181323';
+import { analyseMidi, readMidi } from './midi.js?v=202611181323';
+import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611181323';
+import { makeFeedback, parseAnswers, parseSubmission } from './submission.js?v=202611181323';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js?v=202611181323';
+import { normalizeProject } from './project.js?v=202611181323';
+import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js?v=202611181323';
+import { Workspace } from './workspace.js?v=202611181323';
+import { Player } from './audio.js?v=202611181323';
 
 const $ = (sel) => document.querySelector(sel);
 const subs = new Map(); // id -> submission
@@ -306,7 +306,11 @@ async function open(id) {
 
 // ---------- Start: a submission link opens straight here ----------
 
-loadInbox();
+// From the Students page: mark.html?open=<submission id> opens that online submission.
+loadInbox().then(() => {
+  const id = new URLSearchParams(location.search).get('open');
+  if (id && subs.has(id)) open(id);
+});
 
 (async () => {
   const s = new URLSearchParams(location.search).get('s');

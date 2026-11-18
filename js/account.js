@@ -1,10 +1,10 @@
 // Account page: sign in / create account, then "My profile": progress, submissions and the teacher's feedback.
 
-import { leaderboard, listPieces, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, resendConfirmation, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611171645';
-import { journeyCard, leaderboardList, summarise } from './game.js?v=202611171645';
-import { COURSE, courseLessons } from './course.js?v=202611171645';
-import { findExercise } from './lessons.js?v=202611171645';
-import { h, store, toast } from './util.js?v=202611171645';
+import { leaderboard, listPieces, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, resendConfirmation, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611181323';
+import { journeyCard, leaderboardList, summarise } from './game.js?v=202611181323';
+import { COURSE, courseLessons } from './course.js?v=202611181323';
+import { findExercise } from './lessons.js?v=202611181323';
+import { h, store, toast } from './util.js?v=202611181323';
 
 const main = document.getElementById('main');
 const next = new URLSearchParams(location.search).get('next');
@@ -201,6 +201,7 @@ async function renderProfile(p) {
       h('p', { class: 'muted' }, p.email)),
     h('div', { class: 'row wrap' },
       p.role === 'teacher' ? h('a', { class: 'btn primary', href: 'mark.html' }, 'Open the submissions inbox') : '',
+      p.role === 'teacher' ? h('a', { class: 'btn', href: 'students.html' }, 'Students’ progress and badges') : '',
       h('button', { type: 'button', class: 'btn ghost', onclick: async () => { await signOut(); toast('Signed out.'); render(); } }, 'Sign out')));
 
   // Progress per lesson
@@ -272,7 +273,7 @@ async function renderProfile(p) {
     boardCard = h('section', { class: 'card' },
       h('h2', {}, teacher ? 'Class activity' : 'Class leaderboard'),
       h('p', { class: 'muted small' }, teacher
-        ? 'Every student’s XP and when they last practised. Students only see classmates who chose to be on the leaderboard.'
+        ? 'Every student’s XP and when they last practised: tap a name to see their progress and badges. Students only see classmates who chose to be on the leaderboard.'
         : 'Only classmates who choose to appear are listed.'),
       h('div', { class: 'seg' }, tab('week_xp', 'This week'), tab('xp', 'All time')),
       listBox,

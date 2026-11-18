@@ -2,8 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611171645';
-import { celebrate, summarise, xpChip } from './game.js?v=202611171645';
+import { h } from './util.js?v=202611181323';
+import { celebrate, summarise, xpChip } from './game.js?v=202611181323';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
@@ -141,6 +141,10 @@ function updateTabbar(p) {
     inbox.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></svg>');
     if (/mark\.html$/.test(location.pathname)) inbox.setAttribute('aria-current', 'page');
     bar.querySelector('[data-tab="me"]')?.before(inbox);
+    const students = h('a', { href: 'students.html', 'data-tab': 'students' }, h('span', { class: 'tab-label' }, 'Students'));
+    students.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14a6.5 6.5 0 0 1 3.5 6"/></svg>');
+    if (/students\.html$/.test(location.pathname)) students.setAttribute('aria-current', 'page');
+    inbox.after(students);
   }
 }
 
@@ -157,6 +161,7 @@ export async function renderAccountWidget(el) {
     h('a', { class: 'btn small', href: 'chat.html', title: 'Course chat and messages with your teacher' }, '💬 Chat', badge),
     h('a', { class: 'btn small', href: 'account.html', title: 'My profile: your work and your teacher’s feedback' }, `👤 ${p.full_name || 'My profile'}`),
     p.role === 'teacher' ? h('a', { class: 'btn small ghost', href: 'mark.html' }, 'Inbox') : '',
+    p.role === 'teacher' ? h('a', { class: 'btn small ghost', href: 'students.html' }, 'Students') : '',
   );
   if (p.role !== 'teacher') {
     myXpEvents().then((ev) => { if (ev) el.prepend(xpChip(summarise(ev))); }).catch(() => {});
@@ -418,4 +423,28 @@ export async function listStudents() {
   const { data, error } = await sb().from('profiles').select('id, full_name, role').eq('role', 'student').order('full_name');
   if (error) throw new Error(friendly(error));
   return data;
+}
+
+// ---------- Teacher: every student's progress (the database lets only the teacher read other people's rows) ----------
+
+/** All rows of a query, 1000 at a time (Supabase returns at most 1000 per request). */
+async function allRows(make) {
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await make().range(from, from + 999);
+    if (error) throw new Error(friendly(error));
+    out.push(...data);
+    if (data.length < 1000) return out;
+  }
+}
+
+/** Teacher: {students, events, progress, subs} for the whole class, each list keyed later by student. */
+export async function classData() {
+  const [students, events, progress, subs] = await Promise.all([
+    allRows(() => sb().from('profiles').select('id, full_name, created_at, show_on_leaderboard').eq('role', 'student').order('id')),
+    allRows(() => sb().from('xp_events').select('id, user_id, kind, ref, xp, created_at').order('id')),
+    allRows(() => sb().from('progress').select('user_id, lesson_id, exercise_id, status, updated_at').order('user_id').order('lesson_id').order('exercise_id')),
+    allRows(() => sb().from('submissions').select('id, student_id, lesson_id, exercise_id, exercise_title, created_at, status, scores, comment, marked_at').order('created_at', { ascending: false }).order('id')),
+  ]);
+  return { students, events, progress, subs };
 }

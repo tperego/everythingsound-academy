@@ -1,8 +1,8 @@
 // Gamification: levels, streaks and badges, worked out from the student's XP events.
 // XP itself is decided by the database (supabase/game.sql); this file only reads and shows it.
 
-import { COURSE } from './course.js?v=202611171645';
-import { h } from './util.js?v=202611171645';
+import { COURSE } from './course.js?v=202611181323';
+import { h } from './util.js?v=202611181323';
 
 export const LEVELS = [
   { xp: 0, name: 'Listener' },
@@ -137,13 +137,13 @@ const KIND_TEXT = {
   marked: 'Teacher feedback',
 };
 
-/** The "My journey" card on the profile page. */
-export function journeyCard(s, events) {
+/** The "My journey" card on the profile page (and, with another title, on the teacher's Students page). */
+export function journeyCard(s, events, { title = 'My journey', id = 'journey' } = {}) {
   const l = s.level;
   const all = badges();
   const recent = [...events].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 8);
-  return h('section', { class: 'card journey', id: 'journey' },
-    h('h2', {}, 'My journey'),
+  return h('section', { class: 'card journey', id },
+    h('h2', {}, title),
     h('div', { class: 'journey-top' },
       h('div', { class: 'lvl-big' }, h('span', { class: 'lvl-badge big' }, String(l.n)),
         h('div', {}, h('strong', {}, `Level ${l.n} · ${l.name}`),
@@ -188,7 +188,8 @@ export function leaderboardList(rows, { by = 'xp', teacher = false } = {}) {
   if (!sorted.length) return h('p', { class: 'muted' }, 'Nobody here yet.');
   return h('ol', { class: 'board' }, sorted.map((r, i) => h('li', { class: r.is_me ? 'me' : '' },
     h('span', { class: 'rank' }, i < 3 && r[by] > 0 ? ['🥇', '🥈', '🥉'][i] : String(i + 1)),
-    h('span', { class: 'who' }, r.is_me ? `${r.name || 'You'} (you)` : r.name || 'Student',
+    h('span', { class: 'who' }, r.is_me ? `${r.name || 'You'} (you)`
+      : teacher && r.student_id ? h('a', { href: `students.html?id=${encodeURIComponent(r.student_id)}` }, r.name || 'Student') : r.name || 'Student',
       r.is_me && !r.listed && !teacher ? h('span', { class: 'muted small' }, ' · only you can see yourself here') : '',
       teacher && r.last_active ? h('span', { class: 'muted small' }, ` · active ${new Date(r.last_active).toLocaleDateString([], { day: 'numeric', month: 'short' })}`) : '',
       teacher && !r.listed ? h('span', { class: 'muted small' }, ' · hidden from classmates') : ''),
