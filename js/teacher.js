@@ -1,16 +1,16 @@
-import { keyText } from './theory.js?v=202611182249';
+import { keyText } from './theory.js?v=202611190054';
 // Teacher marking page: open submissions, listen, see checks and DAW analysis, score, send feedback link.
 
-import { runChecks } from './checks.js?v=202611182249';
-import { KIND_LABELS, findExercise } from './lessons.js?v=202611182249';
-import { analyseMidi, readMidi } from './midi.js?v=202611182249';
-import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611182249';
-import { makeFeedback, parseAnswers, parseSubmission } from './submission.js?v=202611182249';
-import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js?v=202611182249';
-import { normalizeProject } from './project.js?v=202611182249';
-import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js?v=202611182249';
-import { Workspace } from './workspace.js?v=202611182249';
-import { Player } from './audio.js?v=202611182249';
+import { runChecks } from './checks.js?v=202611190054';
+import { KIND_LABELS, findExercise } from './lessons.js?v=202611190054';
+import { analyseMidi, readMidi } from './midi.js?v=202611190054';
+import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611190054';
+import { makeFeedback, parseAnswers, parseSubmission } from './submission.js?v=202611190054';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js?v=202611190054';
+import { normalizeProject } from './project.js?v=202611190054';
+import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js?v=202611190054';
+import { Workspace } from './workspace.js?v=202611190054';
+import { Player } from './audio.js?v=202611190054';
 
 const $ = (sel) => document.querySelector(sel);
 const subs = new Map(); // id -> submission
@@ -52,19 +52,32 @@ document.addEventListener('drop', (e) => { if (!dz.contains(e.target)) { e.preve
 
 let hideMarked = store.get('es.hideMarked', false);
 
+const isMarked = (s) => s.status === 'marked' || !!store.get(marksKey(s.id))?.done;
+const byDate = (a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || '');
+/** Waiting submissions, oldest first: the order to mark them in. */
+const toMark = () => [...subs.values()].filter((s) => !isMarked(s)).sort((a, b) => byDate(b, a));
+
 function renderList() {
-  const list = [...subs.values()]
-    .filter((s) => !(hideMarked && (s.status === 'marked' || store.get(marksKey(s.id))?.done) && s.id !== current?.id))
-    .sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
-  $('#sub-list').replaceChildren(...list.map((s) => {
+  const item = (s) => {
     const m = store.get(marksKey(s.id));
-    const marked = s.status === 'marked' || m?.done;
+    const marked = isMarked(s);
+    const { exercise } = findExercise(s.lessonId, s.exerciseId);
     return h('li', {},
       h('button', { type: 'button', class: `sub-item${current?.id === s.id ? ' on' : ''}`, onclick: () => open(s.id) },
         h('span', { class: `st ${marked ? 'st-submitted' : m ? 'st-tried' : 'st-new'}`, title: marked ? 'Marked' : m ? 'Draft' : 'Not marked' }),
         h('span', { class: 'sub-text' }, h('strong', {}, s.student.name),
-          h('span', { class: 'muted small' }, `${s.exerciseTitle || s.exerciseId}${s.submittedAt ? ' · ' + new Date(s.submittedAt).toLocaleDateString() : ''}`))));
-  }));
+          h('span', { class: 'muted small' }, `${s.exerciseTitle || s.exerciseId}${s.submittedAt ? ' · ' + new Date(s.submittedAt).toLocaleDateString() : ''}`),
+          h('span', { class: 'small' }, marked ? h('span', { class: 'muted' }, '✓ Marked') : h('b', { class: 'waiting' }, m ? 'Draft: not sent yet' : 'To mark'),
+            ['auto', 'quiz', 'form'].includes(exercise?.kind) ? h('span', { class: 'muted' }, ' · checked instantly') : '',
+            s.message ? h('span', { class: 'muted' }, ' · 💬 message') : ''))));
+  };
+  const waiting = toMark().reverse(); // newest first in the list
+  const done = [...subs.values()].filter((s) => isMarked(s) && !(hideMarked && s.id !== current?.id)).sort(byDate);
+  $('#sub-list').replaceChildren(
+    h('li', { class: 'inbox-title' }, `To mark (${waiting.length})`),
+    ...(waiting.length ? waiting.map(item) : [h('li', { class: 'muted small' }, 'Nothing waiting. 🎉')]),
+    done.length ? h('li', { class: 'inbox-title' }, `Marked (${done.length})`) : '',
+    ...done.map(item));
 }
 
 // ---------- Online inbox (teacher account) ----------
@@ -278,7 +291,9 @@ async function open(id) {
             sub.cloudComment = comment.value.trim();
             saved.done = true;
             persist({ done: true });
-            linkOut.replaceChildren(`Feedback saved. ${sub.student.name} can see it in their profile now.`);
+            const nx = nextToMark(sub);
+            linkOut.replaceChildren(`Feedback saved. ${sub.student.name} can see it in their profile now. `,
+              nx ? h('button', { type: 'button', class: 'btn small primary', onclick: () => open(nx.id) }, `Next: ${nx.student.name} →`) : 'Nothing else is waiting. 🎉');
           } catch (err) {
             linkOut.replaceChildren(h('p', { class: 'warn' }, `Not saved: ${err.message}`));
           } finally {
@@ -297,11 +312,24 @@ async function open(id) {
             h('input', { class: 'linkbox', readonly: true, value: url, onfocus: (e) => e.target.select() }));
         },
       }, 'Copy feedback link'),
-      h('button', { type: 'button', class: 'btn', onclick: async () => window.open(await feedbackUrl(), '_blank', 'noopener') }, 'Preview as student')),
+      h('button', { type: 'button', class: 'btn', onclick: async () => window.open(await feedbackUrl(), '_blank', 'noopener') }, 'Preview as student'),
+      h('button', { type: 'button', class: 'btn ghost', onclick: () => {
+        const nx = nextToMark(sub);
+        if (nx) open(nx.id); else toast('Nothing else is waiting to be marked.');
+      } }, 'Next to mark →')),
     linkOut));
 
   updateTotal();
   detail.scrollTop = 0;
+  // The page may be scrolled down (or, on a phone, the list sits above): bring the submission's top into view.
+  const top = detail.getBoundingClientRect().top;
+  if (top < 0 || top > innerHeight * 0.6) detail.scrollIntoView({ block: 'start' });
+}
+
+/** The next submission waiting for a mark after this one (oldest first), or null. */
+function nextToMark(sub) {
+  const list = toMark().filter((s) => s.id !== sub.id);
+  return list[0] || null;
 }
 
 // ---------- Start: a submission link opens straight here ----------

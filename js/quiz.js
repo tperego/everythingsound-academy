@@ -8,9 +8,9 @@
 //        note-values, time-signature, hear-meter, chord-pull, tendency-tone, hear-cadence,
 //        name-inversion, find-fundamental, common-chord, modulation-fifth
 
-import { keyboardSvg } from './piano.js?v=202611182249';
-import { KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611182249';
-import { h } from './util.js?v=202611182249';
+import { keyboardSvg } from './piano.js?v=202611190054';
+import { KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611190054';
+import { h } from './util.js?v=202611190054';
 
 const NATURAL = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B' };
 const BLACK_PAIRS = { 1: 'C♯ / D♭', 3: 'D♯ / E♭', 6: 'F♯ / G♭', 8: 'G♯ / A♭', 10: 'A♯ / B♭' };
@@ -627,7 +627,8 @@ export function stopNotes() {
 }
 
 /** Plays notes one after another; an array inside the list is a chord, played together. Stops anything still playing first. */
-async function playNotes(player, notes, gap = 0.65) {
+/** onNote(midi | midi[]) is called as each note sounds, to light it on the keyboard. */
+async function playNotes(player, notes, gap = 0.65, onNote = null) {
   stopNotes();
   if (!player || !notes?.length) return;
   await player.ensure();
@@ -638,6 +639,7 @@ async function playNotes(player, notes, gap = 0.65) {
     // Each note starts on a timer, so stopNotes() can cancel the ones still to come.
     timers.push(setTimeout(() => {
       const now = Tone.now();
+      onNote?.(m);
       if (Array.isArray(m)) {
         player.synths.chords.triggerAttackRelease(m.map(f), 1.0, now, 0.6);
       } else if (now > lastNoteAt) {
@@ -723,7 +725,7 @@ export class QuizView {
       // Nothing plays by itself: the student presses Play (and again as often as they like).
       qn.play ? h('div', { class: 'row' }, h('button', {
         type: 'button', class: `btn${qn.marks ? ' small' : ''}`,
-        onclick: (e) => { e.currentTarget.textContent = '▶ Play again'; playNotes(this.player, qn.play, qn.gap); },
+        onclick: (e) => { e.currentTarget.textContent = '▶ Play again'; playNotes(this.player, qn.play, qn.gap, (m) => this.flash(m)); },
       }, '▶ Play')) : '',
       this.kbBox,
       this.controls,
@@ -751,14 +753,25 @@ export class QuizView {
     if (this.answered && qn.showAfter) qn.showAfter.forEach((m) => mark(m, 'given'));
     extra.forEach((v, m) => mark(m, v.cls, v.label));
     const svg = keyboardSvg({ low: KB.low, high: KB.high, marks, whiteW: 26, height: 120, fingers: false, labels: true, title: qn.text });
-    if (clickable && !this.answered) {
-      svg.classList.add('clickable');
-      svg.addEventListener('click', (e) => {
-        const k = e.target.closest('[data-midi]');
-        if (k) this.clickKey(Number(k.dataset.midi));
-      });
-    }
+    svg.classList.add('clickable');
+    svg.addEventListener('click', (e) => {
+      const k = e.target.closest('[data-midi]');
+      if (!k) return;
+      const m = Number(k.dataset.midi);
+      if (clickable && !this.answered) this.clickKey(m);
+      else { playNotes(this.player, [m]); this.flash(m); } // any key can be played to compare
+    });
     this.kbBox.replaceChildren(svg);
+  }
+
+  /** Light keys briefly while they sound. */
+  flash(notes) {
+    for (const m of [].concat(notes)) {
+      const key = this.kbBox?.querySelector(`[data-midi="${m}"]`);
+      if (!key) continue;
+      key.classList.add('playing');
+      setTimeout(() => key.classList.remove('playing'), 450);
+    }
   }
 
   drawControls() {

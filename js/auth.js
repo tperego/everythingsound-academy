@@ -2,8 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611182249';
-import { celebrate, summarise, xpChip } from './game.js?v=202611182249';
+import { h } from './util.js?v=202611190054';
+import { celebrate, summarise, xpChip } from './game.js?v=202611190054';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
@@ -319,7 +319,9 @@ export async function saveFeedback(id, { scores, comment }) {
 }
 
 export async function downloadAttachment(path) {
-  const { data, error } = await sb().storage.from(BUCKET).download(path);
+  // Give up after 20 seconds (a blocked or slow connection), so the submission still opens without the file.
+  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('the file took too long to load')), 20000));
+  const { data, error } = await Promise.race([sb().storage.from(BUCKET).download(path), timeout]);
   if (error) throw new Error(friendly(error));
   return new Uint8Array(await data.arrayBuffer());
 }

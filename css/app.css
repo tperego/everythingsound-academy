@@ -553,6 +553,7 @@ a.btn { text-decoration: none; display: inline-block; }
 .kbd.clickable rect:hover { opacity: 0.85; }
 .kbd text, .kbd circle { pointer-events: none; }
 .kbd .given { fill: var(--hand-lh); }
+.kbd rect.playing { fill: var(--accent); }
 .kbd .pick { fill: var(--hand-rh); }
 .kbd .ok { fill: var(--ok); }
 .kbd .bad { fill: var(--bad); }
@@ -702,6 +703,7 @@ a.btn { text-decoration: none; display: inline-block; }
 .lvl-badge.small-lvl { width: 28px; height: 28px; font-size: 0.8rem; }
 .student-search { width: 100%; }
 .sub-item .waiting { color: var(--accent); }
+.sub-list .inbox-title { list-style: none; margin-top: 10px; }
 .ex-dots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .ex-dots .st { width: 12px; height: 12px; }
 .lesson-card:is(div):hover { border-color: var(--line); }

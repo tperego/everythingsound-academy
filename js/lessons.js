@@ -147,7 +147,7 @@ LESSONS.push(
         'Use ▶ Play again as often as you like. Get 8 out of 10 to pass.',
       ], { at: 156 }),
       quizEx('mt01-tone-semitone', '2 · Tone or semitone?', 'tone-semitone', [
-        'Two keys light up and play. Are they a semitone apart (the very next key) or a tone (two semitones)?',
+        'Two keys light up: press ▶ Play to hear them. Are they a semitone apart (the very next key) or a tone (two semitones)?',
         'Listen too: memorise how a tone and a semitone sound.',
       ], { at: 187 }),
       quizEx('mt01-count', '3 · Count the semitones', 'count-semitones', [
@@ -184,7 +184,7 @@ LESSONS.push(
     intro: 'Naming the distance between two notes: seconds, thirds and sixths, sevenths (major or minor), fourths and fifths (perfect, augmented or diminished), the octave, and how intervals turn upside down.',
     exercises: [
       quizEx('mt03-name', '1 · Name the interval', 'name-interval', [
-        'Two keys light up and play. Name the interval between them.',
+        'Two keys light up: press ▶ Play to hear them. Name the interval between them.',
         'Count semitones: minor 2nd 1, major 2nd 2, minor 3rd 3, major 3rd 4, perfect 4th 5, tritone 6, perfect 5th 7, minor 6th 8, major 6th 9, minor 7th 10, major 7th 11, octave 12.',
       ], { pass: 7, options: { set: ALL_INTERVALS }, at: 57 }),
       quizEx('mt03-build', '2 · Build the interval', 'build-interval', [
@@ -348,7 +348,7 @@ LESSONS.push(
         'The keys show m3 or M3 as you go. Major = major 3rd + minor 3rd. Minor = minor 3rd + major 3rd.',
       ], { count: 8, pass: 6, options: { qualities: ['major', 'minor'] }, at: 60 }),
       quizEx('mt07-quality', '2 · Major, minor, diminished or augmented?', 'chord-quality', [
-        'A triad lights up and plays. Name it.',
+        'A triad lights up: press ▶ Play to hear it. Name it.',
         'Major: M3 + m3. Minor: m3 + M3. Diminished: m3 + m3 (all minor). Augmented: M3 + M3 (all major).',
       ], { at: 522 }),
       quizEx('mt07-hear', '3 · Hear major or minor', 'chord-quality', [
@@ -371,7 +371,7 @@ LESSONS.push(
         'Major 7th = 11 semitones above the fundamental, minor 7th = 10.',
       ], { count: 8, pass: 6, options: { kind: 'seventh', qualities: ['major triad + major 7th', 'major triad + minor 7th', 'minor triad + minor 7th', 'diminished triad + minor 7th'] }, at: 41 }),
       quizEx('mt08-quality', '2 · Name the 7th chord', 'chord-quality', [
-        'A 7th chord lights up and plays. Which one is it? First find the triad, then the 7th.',
+        'A 7th chord lights up: press ▶ Play to hear it. Which one is it? First find the triad, then the 7th.',
       ], { options: { kind: 'seventh', qualities: ['major triad + major 7th', 'major triad + minor 7th', 'minor triad + minor 7th', 'diminished triad + minor 7th', 'diminished triad + diminished 7th'] }, at: 179 }),
       quizEx('mt08-hear', '3 · Major 7th or minor 7th?', 'chord-quality', [
         'Listen to a major triad with a 7th on top. Is the 7th major (dreamy) or minor (it wants to move)?',
