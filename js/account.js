@@ -1,10 +1,10 @@
 // Account page: sign in / create account, then "My profile": progress, submissions and the teacher's feedback.
 
-import { joinCourse, leaderboard, listPieces, myCourses, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, resendConfirmation, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611200111';
-import { journeyCard, leaderboardList, summarise } from './game.js?v=202611200111';
-import { COURSE, courseLessons } from './course.js?v=202611200111';
-import { findExercise } from './lessons.js?v=202611200111';
-import { h, store, toast } from './util.js?v=202611200111';
+import { joinCourse, leaderboard, listPieces, myCourses, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, resendConfirmation, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611200113';
+import { journeyCard, leaderboardList, summarise } from './game.js?v=202611200113';
+import { COURSE, courseLessons } from './course.js?v=202611200113';
+import { findExercise } from './lessons.js?v=202611200113';
+import { h, store, toast } from './util.js?v=202611200113';
 
 const main = document.getElementById('main');
 const next = new URLSearchParams(location.search).get('next');
