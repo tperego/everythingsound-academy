@@ -1,8 +1,8 @@
 // The course: modules in order, each listing lesson ids from js/lessons.js.
 // Add your lessons to js/lessons.js, then list them here in the order students should take them.
 
-import { LESSONS, findLesson } from './lessons.js?v=202611190054';
-import { store } from './util.js?v=202611190054';
+import { LESSONS, findLesson } from './lessons.js?v=202611200102';
+import { store } from './util.js?v=202611200102';
 
 export const COURSE = {
   id: 'music-theory',

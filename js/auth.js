@@ -2,8 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611190054';
-import { celebrate, summarise, xpChip } from './game.js?v=202611190054';
+import { h } from './util.js?v=202611200102';
+import { celebrate, summarise, xpChip } from './game.js?v=202611200102';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
@@ -183,7 +183,7 @@ export function myXpEvents(refresh = false) {
     xpPromise = (async () => {
       const user = await currentUser();
       if (!user) return null;
-      const { data, error } = await sb().from('xp_events').select('kind, ref, xp, created_at').eq('user_id', user.id).order('created_at');
+      const { data, error } = await sb().from('xp_events').select('kind, ref, xp, created_at').eq('user_id', user.id).eq('course_id', COURSE_ID).order('created_at');
       if (error) return null;
       return data;
     })();
@@ -444,7 +444,7 @@ async function allRows(make) {
 export async function classData() {
   const [students, events, progress, subs] = await Promise.all([
     allRows(() => sb().from('profiles').select('id, full_name, created_at, show_on_leaderboard').eq('role', 'student').order('id')),
-    allRows(() => sb().from('xp_events').select('id, user_id, kind, ref, xp, created_at').order('id')),
+    allRows(() => sb().from('xp_events').select('id, user_id, kind, ref, xp, created_at').eq('course_id', COURSE_ID).order('id')),
     allRows(() => sb().from('progress').select('user_id, lesson_id, exercise_id, status, updated_at').order('user_id').order('lesson_id').order('exercise_id')),
     allRows(() => sb().from('submissions').select('id, student_id, lesson_id, exercise_id, exercise_title, created_at, status, scores, comment, marked_at').order('created_at', { ascending: false }).order('id')),
   ]);

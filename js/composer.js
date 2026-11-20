@@ -1,8 +1,8 @@
 // The composer grid: a chord lane (half-bar slots) and a scale-degree melody grid (8th-note steps).
 
-import { SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, formSections, ghostNotes, letterBars, melodyRows, removeOverlaps, rowIndexOf } from './project.js?v=202611190054';
-import { FUNCTION_NAMES, SCALES, bassForChordTone, bassOptions, chordInfo, chordVoicing, degreeLabel, midiForDegree, noteName } from './theory.js?v=202611190054';
-import { h, store } from './util.js?v=202611190054';
+import { SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, formSections, ghostNotes, letterBars, melodyRows, removeOverlaps, rowIndexOf } from './project.js?v=202611200102';
+import { FUNCTION_NAMES, SCALES, bassForChordTone, bassOptions, chordInfo, chordVoicing, degreeLabel, midiForDegree, noteName } from './theory.js?v=202611200102';
+import { h, store } from './util.js?v=202611200102';
 
 const ROW_H = 22;
 // Letters offered on the Form lane (any of A–H can also be typed, ' adds a prime).

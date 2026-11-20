@@ -2,11 +2,11 @@
 // Separate from the course: it only reads the lesson list and the question generators.
 // Nothing here signs in, saves progress or awards XP.
 
-import { Player } from './audio.js?v=202611190054';
-import { LESSONS } from './lessons.js?v=202611190054';
-import { keyboardSvg } from './piano.js?v=202611190054';
-import { makeQuestion } from './quiz.js?v=202611190054';
-import { h } from './util.js?v=202611190054';
+import { Player } from './audio.js?v=202611200102';
+import { LESSONS } from './lessons.js?v=202611200102';
+import { keyboardSvg } from './piano.js?v=202611200102';
+import { makeQuestion } from './quiz.js?v=202611200102';
+import { h } from './util.js?v=202611200102';
 
 const $ = (s) => document.querySelector(s);
 const player = new Player();

@@ -8,7 +8,7 @@
 //   form: [ {start, len, label}, ... ]       // optional (Sandbox): lettered phrases in bars, e.g. {start: 0, len: 4, label: 'A'}
 // }
 
-import { KEY_OPTIONS, MODES, borrowsLeadingNote, chordInfo, chordVoicing, midiForDegree, pcOf } from './theory.js?v=202611190054';
+import { KEY_OPTIONS, MODES, borrowsLeadingNote, chordInfo, chordVoicing, midiForDegree, pcOf } from './theory.js?v=202611200102';
 
 export const STEPS_PER_BAR = 8;
 export const SLOTS_PER_BAR = 2;

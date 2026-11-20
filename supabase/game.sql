@@ -1,6 +1,7 @@
 -- Everything Sound Academy: XP, levels, streaks, badges and the class leaderboard.
 -- Run once in Supabase: SQL Editor → New query → paste all of this → Run. Safe to run again.
 -- Run it after schema.sql and chat.sql.
+-- Once courses.sql has been run, do NOT run this file again: courses.sql replaces its XP rules with per-course ones.
 --
 -- How XP works: the website asks for XP with award_xp(kind, ref) and the database decides how much,
 -- once per exercise, with daily limits, so a student can't give themselves points from the browser.
