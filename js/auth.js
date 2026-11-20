@@ -2,8 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611200102';
-import { celebrate, summarise, xpChip } from './game.js?v=202611200102';
+import { h } from './util.js?v=202611200111';
+import { celebrate, summarise, xpChip } from './game.js?v=202611200111';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
@@ -225,6 +225,22 @@ export async function leaderboard() {
   const { data, error } = await sb().rpc('leaderboard');
   if (error) throw new Error(friendly(error));
   return data || [];
+}
+
+/** The course ids the signed-in user is enrolled in, e.g. ['music-theory', 'recording']. */
+export async function myCourses() {
+  const p = await myProfile();
+  if (!p) return [];
+  const { data, error } = await sb().from('enrolments').select('course_id').eq('user_id', p.id);
+  if (error) return [];
+  return data.map((r) => r.course_id);
+}
+
+/** Join another course with its class code (for students who already have an account). Returns the course id. */
+export async function joinCourse(code) {
+  const { data, error } = await sb().rpc('join_course', { p_code: code });
+  if (error) throw new Error(/invalid class code/i.test(error.message) ? 'That class code isn’t right. Check it with your teacher.' : friendly(error));
+  return data;
 }
 
 export async function setLeaderboardOptIn(on) {

@@ -1,10 +1,10 @@
 // Account page: sign in / create account, then "My profile": progress, submissions and the teacher's feedback.
 
-import { leaderboard, listPieces, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, resendConfirmation, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611200102';
-import { journeyCard, leaderboardList, summarise } from './game.js?v=202611200102';
-import { COURSE, courseLessons } from './course.js?v=202611200102';
-import { findExercise } from './lessons.js?v=202611200102';
-import { h, store, toast } from './util.js?v=202611200102';
+import { joinCourse, leaderboard, listPieces, myCourses, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, resendConfirmation, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611200111';
+import { journeyCard, leaderboardList, summarise } from './game.js?v=202611200111';
+import { COURSE, courseLessons } from './course.js?v=202611200111';
+import { findExercise } from './lessons.js?v=202611200111';
+import { h, store, toast } from './util.js?v=202611200111';
 
 const main = document.getElementById('main');
 const next = new URLSearchParams(location.search).get('next');
@@ -280,8 +280,33 @@ async function renderProfile(p) {
       optIn);
   }
 
+  // My courses: one account for every Academy course. Join another course with its class code.
+  const REC = 'https://recording.everythingsoundacademy.com/';
+  const inRec = teacher || (await myCourses().catch(() => [])).includes('recording');
+  const joinStatus = h('span', { class: 'status', role: 'status' });
+  const joinForm = h('form', { class: 'row wrap' },
+    h('input', { type: 'text', name: 'code', required: true, autocomplete: 'off', placeholder: 'Recording class code', 'aria-label': 'Recording class code' }),
+    h('button', { type: 'submit', class: 'btn primary' }, 'Join Recording'), joinStatus);
+  joinForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    joinStatus.textContent = 'Checking…';
+    try {
+      const c = await joinCourse(joinForm.code.value.trim());
+      joinStatus.replaceChildren(c === 'recording' ? h('span', {}, 'You’re in! ', h('a', { href: REC }, 'Open Recording →')) : 'You joined another course with that code.');
+    } catch (err) { joinStatus.textContent = err.message; }
+  });
+  const coursesCard = h('section', { class: 'card' },
+    h('h2', {}, 'My courses'),
+    h('p', { class: 'muted' }, 'One account for every Everything Sound Academy course. Each course keeps its own XP, levels and badges.'),
+    h('ul', { class: 'small' },
+      h('li', {}, h('strong', {}, 'Music Theory'), ' · you are here'),
+      h('li', {}, h('strong', {}, 'Recording and Signal Flow'), inRec ? h('span', {}, ' · ', h('a', { href: REC }, 'open the course →')) : h('span', { class: 'muted' }, ' · the Live room module is free; the rest needs the class code from your teacher'))),
+    inRec ? '' : joinForm,
+    inRec ? '' : h('p', { class: 'muted small' }, 'On the Recording site, sign in with this same email and password.'));
+
   main.replaceChildren(
     head,
+    coursesCard,
     !teacher && events ? h('div', { class: 'cols' }, journeyCard(summarise(events), events), boardCard) : '',
     h('section', { class: 'card' }, h('h2', {}, 'My feedback'), subList),
     teacher ? boardCard : '',
