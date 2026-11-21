@@ -1,11 +1,11 @@
 // Teacher: every student's level, badges, streak, lesson progress and submissions.
 // The database only lets the teacher account read other students' rows (supabase/schema.sql, game.sql).
 
-import { classData, myProfile, renderAccountWidget } from './auth.js?v=202611210057';
-import { courseLessons } from './course.js?v=202611210057';
-import { earnedBadges, journeyCard, summarise } from './game.js?v=202611210057';
-import { findExercise } from './lessons.js?v=202611210057';
-import { h, store, toast } from './util.js?v=202611210057';
+import { classData, myProfile, renderAccountWidget } from './auth.js?v=202611210141';
+import { courseLessons } from './course.js?v=202611210141';
+import { earnedBadges, journeyCard, summarise } from './game.js?v=202611210141';
+import { findExercise } from './lessons.js?v=202611210141';
+import { h, store, toast } from './util.js?v=202611210141';
 
 const listEl = document.getElementById('student-list');
 const detailEl = document.getElementById('detail');
@@ -95,6 +95,8 @@ function renderList() {
   };
   drawItems();
   listEl.replaceChildren(
+    h('div', { class: 'seg', role: 'group', 'aria-label': 'Course' }, h('button', { type: 'button', class: 'on', 'aria-pressed': 'true' }, 'Music Theory'),
+      h('a', { class: 'btn small ghost', href: `https://recording.everythingsoundacademy.com/students.html${currentId ? `?id=${encodeURIComponent(currentId)}` : ''}` }, 'Recording')),
     h('h3', { class: 'inbox-title' }, `${rows.length} student${rows.length === 1 ? '' : 's'}`),
     h('div', { class: 'seg', role: 'group', 'aria-label': 'Sort students' }, tab('active', 'Recent'), tab('xp', 'XP'), tab('name', 'A–Z')),
     rows.length > 6 ? search : '',
