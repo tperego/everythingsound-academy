@@ -728,3 +728,41 @@ a.btn { text-decoration: none; display: inline-block; }
 .course-tabs button { font-weight: 700; }
 .course-panel[hidden] { display: none; }
 .course-switch[hidden] { display: none; }
+
+/* ---------- The Zen Master (zen.html) ---------- */
+.zen-stage { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 20px; align-items: center; }
+@media (max-width: 620px) { .zen-stage { grid-template-columns: 1fr; justify-items: center; text-align: center; } .zen-gates, #zen-actions { justify-content: center; } }
+.zen-master svg { width: 100%; max-width: 220px; height: auto; display: block; }
+.zm-aura { fill: color-mix(in srgb, var(--accent) 10%, transparent); }
+.zen-master.speaking .zm-aura { animation: zen-breathe 2.4s ease-in-out infinite; }
+@keyframes zen-breathe { 50% { fill: color-mix(in srgb, var(--accent) 22%, transparent); } }
+.zm-robe { fill: var(--accent); }
+.zm-robe-fold { stroke: rgba(0,0,0,0.18); stroke-width: 2; fill: none; }
+.zm-hands, .zm-head, .zm-ear { fill: #e9c39b; }
+.zm-hands { stroke: rgba(0,0,0,0.12); }
+.zm-brow, .zm-brow-long, .zm-moustache { stroke: #f4f1ea; stroke-width: 3; fill: none; stroke-linecap: round; }
+.zm-eye { stroke: #3b2f25; stroke-width: 2; fill: none; stroke-linecap: round; }
+.zm-beard { fill: #f4f1ea; stroke: rgba(0,0,0,0.12); }
+.zm-mouth { fill: #3b2f25; transform-origin: 80px 76px; }
+.zen-master.speaking .zm-mouth { animation: zen-talk 0.32s ease-in-out infinite alternate; }
+@keyframes zen-talk { to { transform: scaleY(3); } }
+.zen-words { margin: 6px 0 12px; padding: 14px 18px; border-radius: 16px; background: var(--card-2, color-mix(in srgb, var(--ink) 6%, transparent));
+  font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.15rem, 3.6vw, 1.5rem); font-style: italic; line-height: 1.35; min-height: 2.6em; }
+.zen-words.in { animation: zen-in 0.6s ease-out; }
+@keyframes zen-in { from { opacity: 0; transform: translateY(4px); } }
+.zen-gates { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0 0 12px; }
+.zen-gate { display: flex; align-items: center; gap: 6px; padding: 5px 12px 5px 5px; border-radius: 99px; border: 1px solid var(--line); font-weight: 700; font-size: 0.9rem; opacity: 0.6; }
+.zen-gate-n { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--line); font-size: 0.8rem; }
+.zen-gate.current { opacity: 1; border-color: var(--accent); }
+.zen-gate.current .zen-gate-n { background: var(--accent); color: #fff; }
+.zen-gate.passed { opacity: 1; }
+.zen-gate.passed .zen-gate-n { background: var(--ok, #2e8b57); color: #fff; }
+.zen-gate.failed { border-color: var(--bad, #c0392b); }
+.zen-gate.failed .zen-gate-n { background: var(--bad, #c0392b); }
+#zen-actions { align-items: center; gap: 10px; }
+.zen-voice { margin-top: 10px; display: inline-flex; }
+.zen-won { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 14px; border: 2px solid var(--accent); }
+.zen-won-icon { font-size: 2.2rem; }
+.zen-home { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; }
+.zen-home .zen-master svg { width: 64px; }
+@media (max-width: 560px) { .zen-home { grid-template-columns: 48px 1fr; } .zen-home .btn { grid-column: 1 / -1; } }

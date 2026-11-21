@@ -8,9 +8,9 @@
 //        note-values, time-signature, hear-meter, chord-pull, tendency-tone, hear-cadence,
 //        name-inversion, find-fundamental, common-chord, modulation-fifth
 
-import { keyboardSvg } from './piano.js?v=202611210000';
-import { KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611210000';
-import { h } from './util.js?v=202611210000';
+import { keyboardSvg } from './piano.js?v=202611210006';
+import { KEY_OPTIONS, LETTERS, MODES, chordInfo, chordVoicing, pcOf, scaleNames } from './theory.js?v=202611210006';
+import { h } from './util.js?v=202611210006';
 
 const NATURAL = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B' };
 const BLACK_PAIRS = { 1: 'C♯ / D♭', 3: 'D♯ / E♭', 6: 'F♯ / G♭', 8: 'G♯ / A♭', 10: 'A♯ / B♭' };
@@ -657,18 +657,24 @@ async function playNotes(player, notes, gap = 0.65, onNote = null) {
 // ---------- The quiz view ----------
 
 export class QuizView {
-  /** onResult(correct, total) is called at the end of each round. best = {best, total} from earlier rounds. */
-  constructor(root, { quiz, player, best = null, onResult = () => {} }) {
+  /**
+   * onResult(correct, total) is called at the end of each round. best = {best, total} from earlier rounds.
+   * quiz.mix = [{type, options}] asks one question of each, in order (instead of `count` of one type).
+   * onAnswer(ok, question) after each answer: return false to stop the round there (the Zen Master's gates).
+   */
+  constructor(root, { quiz, player, best = null, onResult = () => {}, onAnswer = null, autostart = false }) {
     this.root = root;
     this.quiz = { count: 10, pass: 8, options: {}, ...quiz };
+    if (this.quiz.mix) this.quiz.count = this.quiz.mix.length;
     this.player = player;
     this.best = best;
     this.onResult = onResult;
+    this.onAnswer = onAnswer;
     this.onKey = (e) => {
       if (e.key === 'Enter' && this.nextBtn && !this.nextBtn.hidden && !e.target.closest('input, textarea, select')) { e.preventDefault(); this.nextBtn.click(); }
     };
     document.addEventListener('keydown', this.onKey);
-    this.renderStart();
+    if (autostart) this.start(); else this.renderStart();
   }
 
   destroy() {
@@ -694,8 +700,9 @@ export class QuizView {
     let last = null;
     for (let i = 0; i < this.quiz.count; i++) {
       let qn;
+      const mixed = this.quiz.mix?.[i];
       for (let tries = 0; tries < 6; tries++) {
-        qn = gen(this.quiz.options || {});
+        qn = mixed ? GEN[mixed.type](mixed.options || {}) : gen(this.quiz.options || {});
         if (!last || qn.text !== last.text || JSON.stringify(qn.marks || qn.play) !== JSON.stringify(last.marks || last.play)) break;
       }
       this.questions.push(qn);
@@ -859,6 +866,7 @@ export class QuizView {
     this.feedback.className = `quiz-feedback ${ok ? 'ok' : 'bad'}`;
     this.feedback.replaceChildren(h('strong', {}, ok ? '✓ Right! ' : '✗ Not quite. '), qn.reveal);
     this.root.querySelector('.quiz-score').textContent = `${this.correct} right`;
+    if (this.onAnswer && this.onAnswer(ok, qn) === false) return; // the round stops here
     this.nextBtn.hidden = false;
     this.nextBtn.focus({ preventScroll: true });
   }

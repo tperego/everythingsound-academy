@@ -1,6 +1,6 @@
 // Playback with Tone.js (global `Tone` from the CDN script), plus optional live MIDI out to a DAW.
 
-import { buildEvents } from './project.js?v=202611210000';
+import { buildEvents } from './project.js?v=202611210006';
 
 const MIDI_CHANNEL = { chords: 0, bass: 1, melody: 2 };
 

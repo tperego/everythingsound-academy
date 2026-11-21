@@ -1,11 +1,11 @@
 // Teacher: every student's level, badges, streak, lesson progress and submissions.
 // The database only lets the teacher account read other students' rows (supabase/schema.sql, game.sql).
 
-import { classData, myProfile, renderAccountWidget } from './auth.js?v=202611210000';
-import { courseLessons } from './course.js?v=202611210000';
-import { earnedBadges, journeyCard, summarise } from './game.js?v=202611210000';
-import { findExercise } from './lessons.js?v=202611210000';
-import { h, store, toast } from './util.js?v=202611210000';
+import { classData, myProfile, renderAccountWidget } from './auth.js?v=202611210006';
+import { courseLessons } from './course.js?v=202611210006';
+import { earnedBadges, journeyCard, summarise } from './game.js?v=202611210006';
+import { findExercise } from './lessons.js?v=202611210006';
+import { h, store, toast } from './util.js?v=202611210006';
 
 const listEl = document.getElementById('student-list');
 const detailEl = document.getElementById('detail');

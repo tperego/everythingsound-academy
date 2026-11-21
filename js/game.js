@@ -1,8 +1,8 @@
 // Gamification: levels, streaks and badges, worked out from the student's XP events.
 // XP itself is decided by the database (supabase/game.sql); this file only reads and shows it.
 
-import { COURSE } from './course.js?v=202611210000';
-import { h } from './util.js?v=202611210000';
+import { COURSE } from './course.js?v=202611210006';
+import { h } from './util.js?v=202611210006';
 
 export const LEVELS = [
   { xp: 0, name: 'Listener' },
@@ -90,6 +90,7 @@ export function badges() {
     { id: 'streak-3', icon: '🔥', name: 'Warming up', how: 'Practise 3 days in a row.', test: (s) => s.best >= 3 },
     { id: 'streak-7', icon: '🔥', name: 'On fire', how: 'Practise 7 days in a row.', test: (s) => s.best >= 7 },
     { id: 'streak-30', icon: '🌋', name: 'Unstoppable', how: 'Practise 30 days in a row.', test: (s) => s.best >= 30 },
+    { id: 'zen', icon: '🧘', name: 'Zen Theory Master', how: 'Finish every lesson, then pass the Zen Master’s four gates without a single mistake.', test: (s) => s.count['zen-master'] >= 1 },
     ...COURSE.modules.map((m, i) => ({
       id: `module-${i + 1}`, icon: '🎓', name: `${m.title}: complete`, how: `Finish every lesson in Module ${i + 1}.`,
       test: (s) => m.lessons.every((id) => s.lessons.has(id)),
@@ -135,6 +136,7 @@ const KIND_TEXT = {
   'quiz-perfect': 'Perfect round',
   daily: 'Daily practice',
   marked: 'Teacher feedback',
+  'zen-master': 'Beat the Zen Master',
 };
 
 /** The "My journey" card on the profile page (and, with another title, on the teacher's Students page). */
@@ -169,7 +171,8 @@ export function journeyCard(s, events, { title = 'My journey', id = 'journey' } 
         h('li', {}, 'Finish a whole lesson: 50 XP'),
         h('li', {}, 'Your teacher’s feedback: 10 XP, plus up to 40 more for your score'),
         h('li', {}, 'Quick-fire practice: 10 XP for a round you pass (5 a day), 3 XP for any other round (10 a day), 15 XP the first time you get them all right'),
-        h('li', {}, 'Your first practice each day: 5 XP, and it keeps your streak going'))),
+        h('li', {}, 'Your first practice each day: 5 XP, and it keeps your streak going'),
+        h('li', {}, 'Beat the Zen Master (after every lesson): 100 XP and the Zen Theory Master badge'))),
     recent.length ? h('details', { class: 'mt' },
       h('summary', {}, 'Recent XP'),
       h('ul', { class: 'xp-log small' }, recent.map((e) => h('li', {},
