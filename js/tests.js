@@ -1,15 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611210006';
-import { LESSONS } from './lessons.js?v=202611210006';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611210006';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611210006';
-import { projectToAbc } from './staff.js?v=202611210006';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611210006';
-import { bassForChordTone, chordInfo, keySignatureSf, relFor, scaleNames } from './theory.js?v=202611210006';
-import { pack, unpack } from './util.js?v=202611210006';
-import { makeQuestion } from './quiz.js?v=202611210006';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611210006';
+import { runChecks } from './checks.js?v=202611210057';
+import { LESSONS } from './lessons.js?v=202611210057';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611210057';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611210057';
+import { projectToAbc } from './staff.js?v=202611210057';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611210057';
+import { bassForChordTone, chordInfo, keySignatureSf, relFor, scaleNames } from './theory.js?v=202611210057';
+import { pack, unpack } from './util.js?v=202611210057';
+import { makeQuestion } from './quiz.js?v=202611210057';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611210057';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);

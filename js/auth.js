@@ -2,8 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611210006';
-import { celebrate, summarise, xpChip } from './game.js?v=202611210006';
+import { h } from './util.js?v=202611210057';
+import { celebrate, summarise, xpChip } from './game.js?v=202611210057';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
@@ -341,7 +341,7 @@ const SUB_FIELDS = 'id, student_id, lesson_id, exercise_id, exercise_title, proj
 export async function mySubmissions() {
   const user = await currentUser();
   if (!user) return [];
-  const { data, error } = await sb().from('submissions').select(SUB_FIELDS).eq('student_id', user.id).order('created_at', { ascending: false });
+  const { data, error } = await sb().from('submissions').select(SUB_FIELDS).eq('student_id', user.id).neq('course_id', 'recording').order('created_at', { ascending: false });
   if (error) throw new Error(friendly(error));
   return data;
 }
@@ -356,6 +356,7 @@ export async function getSubmission(id) {
 export async function inbox() {
   const { data, error } = await sb().from('submissions')
     .select(`${SUB_FIELDS}, student:profiles!submissions_student_id_fkey(full_name)`)
+    .neq('course_id', 'recording') // Recording exams are marked on the Recording site
     .order('created_at', { ascending: false })
     .limit(500);
   if (error) throw new Error(friendly(error));
@@ -498,7 +499,7 @@ export async function classData() {
     allRows(() => sb().from('profiles').select('id, full_name, created_at, show_on_leaderboard').eq('role', 'student').order('id')),
     allRows(() => sb().from('xp_events').select('id, user_id, kind, ref, xp, created_at').eq('course_id', COURSE_ID).order('id')),
     allRows(() => sb().from('progress').select('user_id, lesson_id, exercise_id, status, updated_at').order('user_id').order('lesson_id').order('exercise_id')),
-    allRows(() => sb().from('submissions').select('id, student_id, lesson_id, exercise_id, exercise_title, created_at, status, scores, comment, marked_at').order('created_at', { ascending: false }).order('id')),
+    allRows(() => sb().from('submissions').select('id, student_id, lesson_id, exercise_id, exercise_title, created_at, status, scores, comment, marked_at').neq('course_id', 'recording').order('created_at', { ascending: false }).order('id')),
   ]);
   return { students, events, progress, subs };
 }

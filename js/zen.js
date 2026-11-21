@@ -2,12 +2,12 @@
 // One wrong answer closes the gate: begin it again with new questions. Pass all four for 100 XP
 // and the Zen Theory Master badge. The questions come from the course's own quick-fire types (quiz.js).
 
-import { COURSE, courseLessons, lessonProgress } from './course.js?v=202611210006';
-import { QuizView, stopNotes } from './quiz.js?v=202611210006';
-import { Player } from './audio.js?v=202611210006';
-import { h, store, toast } from './util.js?v=202611210006';
-import { awardZen, myProfile, myProgress, myXpEvents, renderAccountWidget } from './auth.js?v=202611210006';
-import { summarise } from './game.js?v=202611210006';
+import { COURSE, courseLessons, lessonProgress } from './course.js?v=202611210057';
+import { QuizView, stopNotes } from './quiz.js?v=202611210057';
+import { Player } from './audio.js?v=202611210057';
+import { h, store, toast } from './util.js?v=202611210057';
+import { awardZen, myProfile, myProgress, myXpEvents, renderAccountWidget } from './auth.js?v=202611210057';
+import { summarise } from './game.js?v=202611210057';
 
 const $ = (s) => document.querySelector(s);
 const ALL = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
