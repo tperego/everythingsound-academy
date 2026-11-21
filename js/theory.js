@@ -131,8 +131,31 @@ export function chordDegrees(deg, seventh = false) {
   return Array.from({ length: n }, (_, i) => ((deg - 1 + 2 * i) % 7) + 1);
 }
 
-/** Full description of a diatonic chord: pitch classes, quality, roman numeral, symbol, function. */
+// ---------- Chords from another key (modulation, borrowed chords, secondary dominants) ----------
+// A chord may carry rel = {shift: 0..11, mode: 'major' | 'minor'}: it is degree `deg` of the key whose tonic is
+// `shift` semitones above the piece's tonic. Stored relative, so changing the piece's key still transposes everything.
+
+/** The key a chord comes from: {key, mode}. */
+export function chordKey(key, mode, chord) {
+  const r = chord?.rel;
+  if (!r || !['major', 'minor'].includes(r.mode)) return { key, mode };
+  const pc = (pcOf(key) + r.shift) % 12;
+  const k = KEY_OPTIONS[r.mode].find((x) => pcOf(x) === pc) || key;
+  return { key: k, mode: r.mode };
+}
+
+/** Short key name: "G", "Em". */
+export const keyShort = (key, mode) => key + (SCALES[mode]?.minor ? 'm' : '');
+
+/** The rel for a chord taken from `toKey`/`toMode` while the piece is in `key`/`mode` (null when it is the piece's own key). */
+export function relFor(key, mode, toKey, toMode) {
+  const shift = (pcOf(toKey) - pcOf(key) + 12) % 12;
+  return shift === 0 && toMode === mode ? null : { shift, mode: toMode };
+}
+
+/** Full description of a chord: pitch classes, quality, roman numeral, symbol, function. */
 export function chordInfo(key, mode, chord) {
+  if (chord.rel) return foreignChordInfo(key, mode, chord);
   const { deg, seventh = false } = chord;
   const raise = borrowsLeadingNote(mode) && (deg === 5 || deg === 7);
   const degs = chordDegrees(deg, seventh);
@@ -179,6 +202,27 @@ export function chordInfo(key, mode, chord) {
   return chord.bass ? withBass(info, key, mode, chord.bass) : info;
 }
 
+/**
+ * A chord from another key. Its roman numeral is analysed in its own key: V7/V when it is the V (or vii°) of a key
+ * whose tonic is a chord of the piece (a secondary dominant), otherwise with the key in front, "G: V" or "Cm: iv".
+ */
+function foreignChordInfo(key, mode, chord) {
+  const own = chordKey(key, mode, chord);
+  const { rel, bass, ...plain } = chord;
+  const info = chordInfo(own.key, own.mode, plain);
+  const homeDeg = MODES[mode].findIndex((iv) => (pcOf(key) + iv) % 12 === pcOf(own.key)) + 1;
+  let roman;
+  if (homeDeg > 1 && (chord.deg === 5 || chord.deg === 7)) {
+    const target = chordInfo(key, mode, { deg: homeDeg });
+    // Only when that degree's chord matches the key's mode (major chord → major key, minor chord → minor key).
+    const fits = (target.quality === 'maj') === (own.mode === 'major') && target.quality !== 'dim';
+    roman = fits ? `${info.roman}/${target.baseRoman}` : null;
+  }
+  if (!roman) roman = `${keyShort(own.key, own.mode)}: ${info.roman}`;
+  const out = { ...info, roman, baseRoman: `${keyShort(own.key, own.mode)}:${info.baseRoman}`, from: own };
+  return bass ? withBass(out, key, mode, bass) : out;
+}
+
 // ---------- Bass notes: inversions and slash chords ----------
 
 const ACC_SIGN = { '-1': '♭', 0: '', 1: '♯' };
@@ -199,7 +243,17 @@ export const bassDegreeLabel = (bass) => `${ACC_SIGN[bass.acc || 0]}${bass.deg}`
 
 /** The bass note that puts a chord tone (0 root, 1 third, 2 fifth, 3 seventh) in the bass. */
 export function bassForChordTone(key, mode, chord, tone) {
-  const info = chordInfo(key, mode, { deg: chord.deg, seventh: chord.seventh });
+  const info = chordInfo(key, mode, { deg: chord.deg, seventh: chord.seventh, ...(chord.rel ? { rel: chord.rel } : {}) });
+  if (chord.rel) {
+    // A chord from another key: its bass as a degree of the piece's key, spelled like the chord (D7/F#, not D7/Gb).
+    const letter = info.names[tone][0];
+    const d = scaleNames(key, mode).findIndex((n) => n[0] === letter) + 1;
+    let acc = ((info.pcs[tone] - degreePc(key, mode, d)) % 12 + 12) % 12;
+    if (acc > 6) acc -= 12;
+    if (Math.abs(acc) <= 1) return { deg: d, acc };
+    const o = bassOptions(key, mode).find((b) => b.pc === info.pcs[tone]);
+    return { deg: o.deg, acc: o.acc };
+  }
   const deg = info.degs[tone];
   let acc = ((info.pcs[tone] - degreePc(key, mode, deg)) % 12 + 12) % 12;
   if (acc > 6) acc -= 12;
@@ -231,8 +285,10 @@ function withBass(info, key, mode, bass) {
   if (idx > 0) {
     // Inversion: figured-bass numbers (I6, I64, V65, V43, V42).
     const fig = info.seventh ? ['', '65', '43', '42'][idx] : ['', '6', '64'][idx];
-    const core = info.seventh ? info.roman.replace(/7$/, '') : info.roman;
-    return { ...info, roman: core + fig, symbol: slash, bassPc: bpc, inversion: idx };
+    // A secondary dominant keeps its "/V" after the figures: V7/V in first inversion is V65/V.
+    const [head, ...tail] = info.roman.split('/');
+    const core = info.seventh ? head.replace(/7$/, '') : head;
+    return { ...info, roman: [core + fig, ...tail].join('/'), symbol: slash, bassPc: bpc, inversion: idx };
   }
   // A bass note outside the chord (e.g. E/D = I/♭7).
   return { ...info, roman: `${info.roman}/${bassDegreeLabel(bass)}`, symbol: slash, bassPc: bpc, inversion: -1 };

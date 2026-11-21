@@ -2,8 +2,8 @@
 // The URL and publishable key are meant to be public: the database's security rules (supabase/schema.sql)
 // decide what each signed-in person can read or change.
 
-import { h } from './util.js?v=202611200113';
-import { celebrate, summarise, xpChip } from './game.js?v=202611200113';
+import { h } from './util.js?v=202611210000';
+import { celebrate, summarise, xpChip } from './game.js?v=202611210000';
 
 const SUPABASE_URL = 'https://joiozvkdjhgmgrlsbooy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XA9xQHE9c_juWcnk2V7y5g_hTS0pIIb';
@@ -157,7 +157,12 @@ export async function renderAccountWidget(el) {
     return;
   }
   const badge = h('span', { class: 'chat-badge', hidden: true });
+  // Jump to the other course (teachers, and students enrolled in it).
+  const toRec = h('a', { class: 'btn small course-switch', href: RECORDING_URL, title: 'Go to the Recording and Signal Flow course', hidden: true }, '🎚️ Recording');
+  if (p.role === 'teacher') toRec.hidden = false;
+  else myCourses().then((c) => { toRec.hidden = !c.includes('recording'); }).catch(() => {});
   el.replaceChildren(
+    toRec,
     h('a', { class: 'btn small', href: 'chat.html', title: 'Course chat and messages with your teacher' }, '💬 Chat', badge),
     h('a', { class: 'btn small', href: 'account.html', title: 'My profile: your work and your teacher’s feedback' }, `👤 ${p.full_name || 'My profile'}`),
     p.role === 'teacher' ? h('a', { class: 'btn small ghost', href: 'mark.html' }, 'Inbox') : '',
@@ -190,6 +195,17 @@ export function myXpEvents(refresh = false) {
   }
   return xpPromise;
 }
+
+/** This user's XP events in another Academy course (e.g. 'recording'), for the profile's course tabs. */
+export async function courseXpEvents(courseId) {
+  const user = await currentUser();
+  if (!user) return null;
+  const { data, error } = await sb().from('xp_events').select('kind, ref, xp, created_at').eq('user_id', user.id).eq('course_id', courseId).order('created_at');
+  return error ? null : data;
+}
+
+/** Where the other Academy courses live. */
+export const RECORDING_URL = 'https://recording.everythingsoundacademy.com/';
 
 let awardQueue = Promise.resolve();
 /** Ask the database for XP (it decides how much, once per exercise, with daily limits), then celebrate.

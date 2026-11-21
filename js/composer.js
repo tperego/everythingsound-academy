@@ -1,8 +1,8 @@
 // The composer grid: a chord lane (half-bar slots) and a scale-degree melody grid (8th-note steps).
 
-import { SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, formSections, ghostNotes, letterBars, melodyRows, removeOverlaps, rowIndexOf } from './project.js?v=202611200113';
-import { FUNCTION_NAMES, SCALES, bassForChordTone, bassOptions, chordInfo, chordVoicing, degreeLabel, midiForDegree, noteName } from './theory.js?v=202611200113';
-import { h, store } from './util.js?v=202611200113';
+import { SLOTS_PER_BAR, STEPS_PER_BAR, chordEvents, cloneProject, formSections, ghostNotes, letterBars, melodyRows, removeOverlaps, rowIndexOf } from './project.js?v=202611210000';
+import { FUNCTION_NAMES, KEY_OPTIONS, SCALES, bassForChordTone, bassOptions, chordInfo, chordKey, chordVoicing, degreeLabel, keyText, midiForDegree, noteName, relFor } from './theory.js?v=202611210000';
+import { h, store } from './util.js?v=202611210000';
 
 const ROW_H = 22;
 // Letters offered on the Form lane (any of A–H can also be typed, ' adds a prime).
@@ -28,6 +28,7 @@ export class Composer {
     this.lock = {};
     this.selected = 0;
     this.seventh = false;
+    this.fromRel = null; // Sandbox: the palette offers the chords of another key ({shift, mode}), null = the piece's key
     this.pending = null;
     root.classList.add('composer');
   }
@@ -193,9 +194,9 @@ export class Composer {
     for (const ev of events) {
       const info = chordInfo(p.key, p.mode, ev.chord);
       lane.push(h('div', {
-        class: `chord-block fn-${info.func}`,
+        class: `chord-block fn-${info.func}${info.from ? ' foreign' : ''}`,
         style: { left: pct(ev.start * 2), width: pct(ev.len * 2) },
-        title: `${info.roman} · ${info.symbol} · ${FUNCTION_NAMES[info.func]}`,
+        title: `${info.roman} · ${info.symbol} · ${FUNCTION_NAMES[info.func]}${info.from ? ` in ${keyText(info.from.key, info.from.mode)}` : ''}`,
       }, h('span', { class: 'roman' }, info.roman), h('span', { class: 'sym' }, info.symbol)));
     }
     lane.push(this.chordPlayhead);
@@ -204,7 +205,7 @@ export class Composer {
     // Chord-tone guides: rows that sound a note of the chord (over V in minor, the raised 7th)
     const guides = [];
     for (const ev of events) {
-      const info = chordInfo(p.key, p.mode, { deg: ev.chord.deg, seventh: ev.chord.seventh });
+      const info = chordInfo(p.key, p.mode, { deg: ev.chord.deg, seventh: ev.chord.seventh, ...(ev.chord.rel ? { rel: ev.chord.rel } : {}) });
       ROWS.forEach((r, i) => {
         if (info.pcs.includes(midiForDegree(p.key, p.mode, r.deg, r.oct, r.acc) % 12)) {
           guides.push(h('div', { class: `guide fn-${info.func}`, style: { left: pct(ev.start * 2), width: pct(ev.len * 2), top: `${i * ROW_H}px`, height: `${ROW_H}px` } }));
@@ -257,10 +258,11 @@ export class Composer {
       return;
     }
     const buttons = [];
+    const rel = this.letters ? this.fromRel : null;
     for (let deg = 1; deg <= 7; deg++) {
-      const info = chordInfo(p.key, p.mode, { deg, seventh: this.seventh });
+      const info = chordInfo(p.key, p.mode, { deg, seventh: this.seventh, ...(rel ? { rel } : {}) });
       buttons.push(h('button', {
-        class: `chord-btn fn-${info.func}`,
+        class: `chord-btn fn-${info.func}${info.from ? ' foreign' : ''}`,
         type: 'button',
         title: `${FUNCTION_NAMES[info.func]} · key ${deg}`,
         onclick: () => this.assign(deg),
@@ -300,11 +302,78 @@ export class Composer {
       formRow,
       penRow,
       note,
+      this.letters ? this.otherKeyPalette() : '',
       h('div', { class: 'palette-row' }, ...buttons),
       bassRow,
       h('div', { class: 'palette-row small' }, seventh, clear, legend,
         h('span', { class: 'hint' }, `Selected: bar ${Math.floor(this.selected / 2) + 1}${this.selected % 2 ? ', beat 3' : ''}. An empty slot keeps the chord before it.`)),
     );
+  }
+
+  /**
+   * Sandbox: take chords from another key without changing the piece's key, to modulate or borrow a chord,
+   * plus one-click secondary dominants (V7 of ii, iii, IV, V, vi).
+   */
+  otherKeyPalette() {
+    const p = this.project;
+    const cur = this.fromRel ? chordKey(p.key, p.mode, { rel: this.fromRel }) : { key: p.key, mode: p.mode };
+    const opts = [{ rel: null, label: `This piece’s key (${keyText(p.key, p.mode)})` }];
+    const seen = new Set([`0 ${p.mode}`]);
+    const add = (toKey, toMode, why, list) => {
+      const r = relFor(p.key, p.mode, toKey, toMode);
+      const id = r ? `${r.shift} ${r.mode}` : `0 ${p.mode}`;
+      if (seen.has(id)) return;
+      seen.add(id);
+      list.push({ rel: r, label: `${keyText(toKey, toMode)}${why ? ` · ${why}` : ''}` });
+    };
+    // Closely related keys: the key of each major or minor chord in the piece, and the parallel key.
+    const related = [];
+    for (let d = 2; d <= 7; d++) {
+      const info = chordInfo(p.key, p.mode, { deg: d });
+      if (info.quality !== 'maj' && info.quality !== 'min') continue;
+      const m = info.quality === 'maj' ? 'major' : 'minor';
+      const k = KEY_OPTIONS[m].find((x) => chordInfo(x, m, { deg: 1 }).pcs[0] === info.pcs[0]);
+      if (k) add(k, m, `key of ${info.baseRoman}`, related);
+    }
+    const par = SCALES[p.mode]?.minor ? 'major' : 'minor';
+    const pk = KEY_OPTIONS[par].find((x) => chordInfo(x, par, { deg: 1 }).pcs[0] === chordInfo(p.key, p.mode, { deg: 1 }).pcs[0]);
+    if (pk) add(pk, par, 'parallel key (borrowed chords)', related);
+    const all = [];
+    for (const m of ['major', 'minor']) for (const k of KEY_OPTIONS[m]) add(k, m, '', all);
+    const value = (r) => (r ? `${r.shift} ${r.mode}` : '');
+    const sel = h('select', {
+      'aria-label': 'Chords from another key',
+      onchange: (e) => {
+        const [shift, mode] = e.target.value.split(' ');
+        this.fromRel = e.target.value ? { shift: Number(shift), mode } : null;
+        this.renderPalette();
+      },
+    },
+    h('option', { value: '', selected: !this.fromRel }, opts[0].label),
+    h('optgroup', { label: 'Closely related keys' }, related.map((o) => h('option', { value: value(o.rel), selected: value(o.rel) === value(this.fromRel) }, o.label))),
+    h('optgroup', { label: 'Any key' }, all.map((o) => h('option', { value: value(o.rel), selected: value(o.rel) === value(this.fromRel) }, o.label))));
+
+    // Secondary dominants: V7 of each major or minor chord of the piece.
+    const sec = [];
+    for (let d = 2; d <= 7; d++) {
+      const target = chordInfo(p.key, p.mode, { deg: d });
+      if (target.quality !== 'maj' && target.quality !== 'min') continue;
+      const m = target.quality === 'maj' ? 'major' : 'minor';
+      const shift = (target.pcs[0] - chordInfo(p.key, p.mode, { deg: 1 }).pcs[0] + 12) % 12;
+      const chord = { deg: 5, seventh: true, rel: { shift, mode: m } };
+      const info = chordInfo(p.key, p.mode, chord);
+      sec.push(h('button', {
+        type: 'button', class: 'btn small foreign', title: `${info.symbol}: the dominant 7th that leads to ${target.symbol} (${target.baseRoman})`,
+        onclick: () => this.assignChord(chord),
+      }, h('b', {}, info.roman), ` ${info.symbol}`));
+    }
+    return h('div', { class: 'other-keys' },
+      h('div', { class: 'palette-row small' },
+        h('span', { class: 'tb-label' }, 'Chords from'), sel,
+        h('span', { class: 'hint' }, this.fromRel
+          ? `The buttons below are the chords of ${keyText(cur.key, cur.mode)}. The piece stays in ${keyText(p.key, p.mode)}: chords you already placed don’t change. For melody notes outside the key, use the ♯ and ♭ pens.`
+          : 'Modulate or borrow a chord: pick another key here. The chords you already placed stay as they are.')),
+      sec.length ? h('div', { class: 'palette-row small' }, h('span', { class: 'tb-label' }, 'Secondary dominants'), ...sec) : '');
   }
 
   /** Mark the bar playback starts from (0 = the beginning). */
@@ -464,6 +533,8 @@ export class Composer {
     this.selected = this.slotAt(e);
     const c = this.project.chords[this.selected];
     if (c) this.previewChord(c);
+    // Sandbox: the palette follows the key of the chord you click, so a modulated passage is easy to carry on.
+    if (c && this.letters) this.fromRel = c.rel || null;
     this.renderLayers();
     this.chordLane.focus({ preventScroll: true });
   }
@@ -495,7 +566,11 @@ export class Composer {
   }
 
   assign(deg) {
-    const chord = { deg, seventh: this.seventh };
+    const rel = this.letters ? this.fromRel : null;
+    this.assignChord({ deg, seventh: this.seventh, ...(rel ? { rel } : {}) });
+  }
+
+  assignChord(chord) {
     this.project.chords[this.selected] = chord;
     this.lastAssigned = this.selected;
     this.previewChord(chord);

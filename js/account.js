@@ -1,10 +1,10 @@
 // Account page: sign in / create account, then "My profile": progress, submissions and the teacher's feedback.
 
-import { joinCourse, leaderboard, listPieces, myCourses, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, resendConfirmation, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611200113';
-import { journeyCard, leaderboardList, summarise } from './game.js?v=202611200113';
-import { COURSE, courseLessons } from './course.js?v=202611200113';
-import { findExercise } from './lessons.js?v=202611200113';
-import { h, store, toast } from './util.js?v=202611200113';
+import { RECORDING_URL, courseXpEvents, joinCourse, leaderboard, listPieces, myCourses, myProfile, myProgress, mySubmissions, myXpEvents, onPasswordRecovery, renderAccountWidget, requestPasswordReset, resendConfirmation, setLeaderboardOptIn, setNewPassword, signIn, signOut, signUp, updateMyName } from './auth.js?v=202611210000';
+import { bar, journeyCard, leaderboardList, summarise } from './game.js?v=202611210000';
+import { COURSE, courseLessons } from './course.js?v=202611210000';
+import { findExercise } from './lessons.js?v=202611210000';
+import { h, store, toast } from './util.js?v=202611210000';
 
 const main = document.getElementById('main');
 const next = new URLSearchParams(location.search).get('next');
@@ -202,6 +202,7 @@ async function renderProfile(p) {
     h('div', { class: 'row wrap' },
       p.role === 'teacher' ? h('a', { class: 'btn primary', href: 'mark.html' }, 'Open the submissions inbox') : '',
       p.role === 'teacher' ? h('a', { class: 'btn', href: 'students.html' }, 'Students’ progress and badges') : '',
+      h('a', { class: 'btn', href: RECORDING_URL }, '🎚️ Go to Recording'),
       h('button', { type: 'button', class: 'btn ghost', onclick: async () => { await signOut(); toast('Signed out.'); render(); } }, 'Sign out')));
 
   // Progress per lesson
@@ -280,9 +281,11 @@ async function renderProfile(p) {
       optIn);
   }
 
-  // My courses: one account for every Academy course. Join another course with its class code.
-  const REC = 'https://recording.everythingsoundacademy.com/';
+  // My courses: one account for every Academy course, each with its own XP, levels and badges.
+  // Tabs switch between them; the other course is one click away.
+  const REC = RECORDING_URL;
   const inRec = teacher || (await myCourses().catch(() => [])).includes('recording');
+  const recEvents = inRec && !teacher ? await courseXpEvents('recording').catch(() => null) : null;
   const joinStatus = h('span', { class: 'status', role: 'status' });
   const joinForm = h('form', { class: 'row wrap' },
     h('input', { type: 'text', name: 'code', required: true, autocomplete: 'off', placeholder: 'Recording class code', 'aria-label': 'Recording class code' }),
@@ -295,19 +298,42 @@ async function renderProfile(p) {
       joinStatus.replaceChildren(c === 'recording' ? h('span', {}, 'You’re in! ', h('a', { href: REC }, 'Open Recording →')) : 'You joined another course with that code.');
     } catch (err) { joinStatus.textContent = err.message; }
   });
-  const coursesCard = h('section', { class: 'card' },
-    h('h2', {}, 'My courses'),
-    h('p', { class: 'muted' }, 'One account for every Everything Sound Academy course. Each course keeps its own XP, levels and badges.'),
-    h('ul', { class: 'small' },
-      h('li', {}, h('strong', {}, 'Music Theory'), ' · you are here'),
-      h('li', {}, h('strong', {}, 'Recording and Signal Flow'), inRec ? h('span', {}, ' · ', h('a', { href: REC }, 'open the course →')) : h('span', { class: 'muted' }, ' · the Live room module is free; the rest needs the class code from your teacher'))),
-    inRec ? '' : joinForm,
-    inRec ? '' : h('p', { class: 'muted small' }, 'On the Recording site, sign in with this same email and password.'));
+
+  const theoryPanel = h('div', { class: 'course-panel' },
+    !teacher && events ? h('div', { class: 'cols' }, journeyCard(summarise(events), events), boardCard) : '');
+  const recPanel = h('div', { class: 'course-panel' }, h('section', { class: 'card' },
+    h('h2', {}, 'Recording and Signal Flow'),
+    inRec ? recordingSummary(recEvents, teacher) : h('div', {},
+      h('p', { class: 'muted' }, 'The Live room module is free. The rest of the course needs the Recording class code from your teacher:'),
+      joinForm,
+      h('p', { class: 'muted small' }, 'On the Recording site, sign in with this same email and password.')),
+    h('div', { class: 'row wrap mt' },
+      h('a', { class: 'btn primary', href: REC }, inRec ? 'Go to the Recording course →' : 'See the Recording course →'),
+      inRec && !teacher ? h('a', { class: 'btn', href: `${REC}account.html#journey` }, 'All my Recording badges') : '')));
+  let which = store.get('es.profile.course', 'music-theory');
+  const tabs = h('div', { class: 'seg course-tabs', role: 'tablist', 'aria-label': 'Courses' });
+  const showCourse = (id) => {
+    which = id;
+    store.set('es.profile.course', id);
+    theoryPanel.hidden = id !== 'music-theory';
+    recPanel.hidden = id !== 'recording';
+    tabs.querySelectorAll('button').forEach((b) => { const on = b.dataset.course === id; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+  };
+  tabs.append(
+    h('button', { type: 'button', role: 'tab', 'data-course': 'music-theory', onclick: () => showCourse('music-theory') }, '🎼 Music Theory'),
+    h('button', { type: 'button', role: 'tab', 'data-course': 'recording', onclick: () => showCourse('recording') }, '🎚️ Recording'));
+  const coursesCard = h('section', { class: 'card courses-strip', id: 'courses' },
+    h('div', { class: 'courses-strip-head' },
+      h('div', {}, h('h2', {}, 'My courses'),
+        h('p', { class: 'muted small' }, 'One account for every Everything Sound Academy course. Each course keeps its own XP, levels and badges.')),
+      tabs));
+  showCourse(which);
 
   main.replaceChildren(
     head,
     coursesCard,
-    !teacher && events ? h('div', { class: 'cols' }, journeyCard(summarise(events), events), boardCard) : '',
+    theoryPanel,
+    recPanel,
     h('section', { class: 'card' }, h('h2', {}, 'My feedback'), subList),
     teacher ? boardCard : '',
     h('div', { class: 'cols' },
@@ -320,6 +346,28 @@ async function renderProfile(p) {
         h('p', { class: 'muted small' }, 'This is the name your teacher sees.'),
         nameRow)));
   if (location.hash === '#journey') document.getElementById('journey')?.scrollIntoView({ block: 'start' });
+}
+
+// Recording's level names (its own site has the badges; this is the summary shown on the Music Theory profile).
+const RECORDING_LEVELS = [
+  { xp: 0, name: 'Runner' }, { xp: 100, name: 'Cable coiler' }, { xp: 250, name: 'Tape op' }, { xp: 450, name: 'Assistant engineer' },
+  { xp: 700, name: 'Second engineer' }, { xp: 1000, name: 'Recording engineer' }, { xp: 1400, name: 'Mix engineer' },
+  { xp: 1900, name: 'Chief engineer' }, { xp: 2500, name: 'Producer' }, { xp: 3200, name: 'Studio manager' }, { xp: 4000, name: 'Studio legend' },
+];
+function recordingSummary(events, teacher) {
+  if (teacher) return h('p', { class: 'muted' }, 'You teach this course. Students’ Recording XP and badges are on the Recording site.');
+  if (!events) return h('p', { class: 'muted' }, 'Your Recording XP will show here once you start the course.');
+  const s = summarise(events, new Date(), RECORDING_LEVELS);
+  const l = s.level;
+  return h('div', { class: 'journey-top' },
+    h('div', { class: 'lvl-big' }, h('span', { class: 'lvl-badge big' }, String(l.n)),
+      h('div', {}, h('strong', {}, `Level ${l.n} · ${l.name}`),
+        h('div', { class: 'muted small' }, l.next ? `${s.xp} XP · ${l.to - s.xp} more to reach ${l.next}` : `${s.xp} XP · you reached the top level!`),
+        bar(l))),
+    h('div', { class: 'journey-stats' },
+      h('div', { class: 'stat' }, h('strong', {}, `🔥 ${s.current}`), h('span', { class: 'muted small' }, 'day streak')),
+      h('div', { class: 'stat' }, h('strong', {}, `${s.best}`), h('span', { class: 'muted small' }, 'best streak')),
+      h('div', { class: 'stat' }, h('strong', {}, `⚡ ${s.week}`), h('span', { class: 'muted small' }, 'XP this week'))));
 }
 
 onPasswordRecovery(() => { recovering = true; renderNewPassword(); });

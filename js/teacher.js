@@ -1,16 +1,16 @@
-import { keyText } from './theory.js?v=202611200113';
+import { keyText } from './theory.js?v=202611210000';
 // Teacher marking page: open submissions, listen, see checks and DAW analysis, score, send feedback link.
 
-import { runChecks } from './checks.js?v=202611200113';
-import { KIND_LABELS, findExercise } from './lessons.js?v=202611200113';
-import { analyseMidi, readMidi } from './midi.js?v=202611200113';
-import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611200113';
-import { makeFeedback, parseAnswers, parseSubmission } from './submission.js?v=202611200113';
-import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js?v=202611200113';
-import { normalizeProject } from './project.js?v=202611200113';
-import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js?v=202611200113';
-import { Workspace } from './workspace.js?v=202611200113';
-import { Player } from './audio.js?v=202611200113';
+import { runChecks } from './checks.js?v=202611210000';
+import { KIND_LABELS, findExercise } from './lessons.js?v=202611210000';
+import { analyseMidi, readMidi } from './midi.js?v=202611210000';
+import { renderChecks, renderMidiAnalysis } from './panels.js?v=202611210000';
+import { makeFeedback, parseAnswers, parseSubmission } from './submission.js?v=202611210000';
+import { base64ToBytes, bytesToBase64, copyText, downloadBytes, formatBytes, h, pack, store, toast, unpack } from './util.js?v=202611210000';
+import { normalizeProject } from './project.js?v=202611210000';
+import { downloadAttachment, inbox, myProfile, renderAccountWidget, saveFeedback } from './auth.js?v=202611210000';
+import { Workspace } from './workspace.js?v=202611210000';
+import { Player } from './audio.js?v=202611210000';
 
 const $ = (sel) => document.querySelector(sel);
 const subs = new Map(); // id -> submission
@@ -91,7 +91,7 @@ function fromRow(r) {
     lessonId: r.lesson_id,
     exerciseId: r.exercise_id,
     exerciseTitle: r.exercise_title || '',
-    student: { name: r.student?.full_name || 'Student' },
+    student: { id: r.student_id || '', name: r.student?.full_name || 'Student' },
     message: r.message || '',
     project: normalizeProject(r.project),
     checks: (Array.isArray(r.checks) ? r.checks : []).map((c) => ({ label: String(c?.label || ''), pass: !!c?.pass, detail: String(c?.detail || '') })),
@@ -153,11 +153,28 @@ function midiContext(sub) {
 async function open(id) {
   const sub = subs.get(id);
   if (!sub) return;
+  try {
+    await openSub(sub);
+  } catch (err) {
+    // Never leave a blank panel: say what went wrong and still offer the next one.
+    console.error(err);
+    const nx = nextToMark(sub);
+    $('#detail').replaceChildren(h('section', { class: 'card' },
+      h('h2', {}, `${sub.student.name}: ${sub.exerciseTitle || sub.exerciseId}`),
+      sub.message ? h('blockquote', { class: 'comment' }, sub.message) : '',
+      h('p', { class: 'warn' }, `This submission couldn’t be shown: ${err.message || err}. Send this message to Claude so it can be fixed.`),
+      nx ? h('button', { type: 'button', class: 'btn primary', onclick: () => open(nx.id) }, nextLabel(nx)) : ''));
+  }
+}
+
+async function openSub(sub) {
   current = sub;
   renderList();
   // Online submissions: fetch the attached MIDI/audio from private storage the first time.
   if (sub.cloud && !sub.filesLoaded) {
-    $('#detail').replaceChildren(h('p', { class: 'muted' }, sub.attachments.length ? 'Loading the attached files…' : 'Loading…'));
+    $('#detail').replaceChildren(h('section', { class: 'card' }, h('h2', {}, `${sub.student.name}: ${sub.exerciseTitle || sub.exerciseId}`),
+      h('p', { class: 'muted' }, sub.attachments.length ? `Loading ${sub.attachments.length} attached file${sub.attachments.length > 1 ? 's' : ''}…` : 'Loading…')));
+    showTop();
     for (const a of sub.attachments) {
       try {
         a.data = bytesToBase64(await downloadAttachment(a.path));
@@ -293,7 +310,7 @@ async function open(id) {
             persist({ done: true });
             const nx = nextToMark(sub);
             linkOut.replaceChildren(`Feedback saved. ${sub.student.name} can see it in their profile now. `,
-              nx ? h('button', { type: 'button', class: 'btn small primary', onclick: () => open(nx.id) }, `Next: ${nx.student.name} →`) : 'Nothing else is waiting. 🎉');
+              nx ? h('button', { type: 'button', class: 'btn small primary', onclick: () => open(nx.id) }, nextLabel(nx)) : 'Nothing else is waiting. 🎉');
           } catch (err) {
             linkOut.replaceChildren(h('p', { class: 'warn' }, `Not saved: ${err.message}`));
           } finally {
@@ -316,21 +333,28 @@ async function open(id) {
       h('button', { type: 'button', class: 'btn ghost', onclick: () => {
         const nx = nextToMark(sub);
         if (nx) open(nx.id); else toast('Nothing else is waiting to be marked.');
-      } }, 'Next to mark →')),
+      } }, (() => { const nx = nextToMark(sub); return nx ? nextLabel(nx) : 'Next to mark →'; })())),
     linkOut));
 
   updateTotal();
+  showTop();
+}
+
+/** The page may be scrolled down (or, on a phone, the list sits above): bring the submission's top into view. */
+function showTop() {
+  const detail = $('#detail');
   detail.scrollTop = 0;
-  // The page may be scrolled down (or, on a phone, the list sits above): bring the submission's top into view.
   const top = detail.getBoundingClientRect().top;
   if (top < 0 || top > innerHeight * 0.6) detail.scrollIntoView({ block: 'start' });
 }
 
-/** The next submission waiting for a mark after this one (oldest first), or null. */
+/** The next submission waiting for a mark: the same student's next exercise first, then the oldest waiting one. */
 function nextToMark(sub) {
   const list = toMark().filter((s) => s.id !== sub.id);
-  return list[0] || null;
+  const same = (s) => (sub.student.id ? s.student.id === sub.student.id : s.student.name === sub.student.name);
+  return list.find(same) || list[0] || null;
 }
+const nextLabel = (nx) => `Next: ${nx.student.name} · ${nx.exerciseTitle || nx.exerciseId} →`;
 
 // ---------- Start: a submission link opens straight here ----------
 

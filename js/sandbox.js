@@ -1,10 +1,10 @@
 // Sandbox: the whole app with nothing locked. Several named pieces, saved in this browser.
 
-import { projectToMidi } from './midi.js?v=202611200113';
-import { newProject, normalizeProject } from './project.js?v=202611200113';
-import { copyText, downloadBytes, h, pack, slug, store, toast, uid, unpack } from './util.js?v=202611200113';
-import { Workspace } from './workspace.js?v=202611200113';
-import { deletePiece, listPieces, myProfile, renderAccountWidget, savePiece } from './auth.js?v=202611200113';
+import { projectToMidi } from './midi.js?v=202611210000';
+import { newProject, normalizeProject } from './project.js?v=202611210000';
+import { copyText, downloadBytes, h, pack, slug, store, toast, uid, unpack } from './util.js?v=202611210000';
+import { Workspace } from './workspace.js?v=202611210000';
+import { deletePiece, listPieces, myProfile, renderAccountWidget, savePiece } from './auth.js?v=202611210000';
 
 const $ = (sel) => document.querySelector(sel);
 const KEY = 'es.sandbox.pieces';
@@ -12,11 +12,14 @@ const CUR = 'es.sandbox.current';
 
 let pieces = store.get(KEY, []).filter((x) => x && x.id).map((x) => ({ ...x, project: normalizeProject(x.project) }));
 let current = null;
+let cleared = null; // the piece as it was before Clear all
 
 const ws = new Workspace($('#workspace'), {
   letters: true,
   onChange: (p) => {
     if (!current) return;
+    // Once you start writing again, Undo clear would throw that away: it turns back into Clear all.
+    if (cleared && (p.chords.some(Boolean) || p.melody.length || (p.form || []).length)) resetClear();
     current.project = p;
     current.updatedAt = new Date().toISOString();
     save();
@@ -64,6 +67,7 @@ function blankPiece(title = 'Untitled piece') {
 }
 
 function open(id) {
+  if (current?.id !== id) resetClear();
   current = pieces.find((x) => x.id === id) || pieces[0];
   ws.setProject(current.project, { title: current.title });
   $('#piece-title').value = current.title;
@@ -98,6 +102,26 @@ $('#dup-btn').addEventListener('click', () => {
   open(p.id);
   toast('Duplicated. You are now editing the copy.');
 });
+
+// Clear all: an empty grid in the same key, tempo and length. Undo brings it back (until you open another piece).
+$('#clear-btn').addEventListener('click', () => {
+  const btn = $('#clear-btn');
+  if (cleared && cleared.id === current.id) {
+    ws.update(cleared.project, { rebuild: true });
+    cleared = null;
+    btn.textContent = 'Clear all';
+    toast('Brought it back.');
+    return;
+  }
+  const p = ws.getProject();
+  if (!p.chords.some(Boolean) && !p.melody.length && !(p.form || []).length) { toast('This piece is already empty.'); return; }
+  if (!confirm(`Clear every chord, melody note and form letter in “${current.title}”?`)) return;
+  cleared = { id: current.id, project: p };
+  ws.update({ ...p, chords: p.chords.map(() => null), melody: [], form: [] }, { rebuild: true });
+  btn.textContent = '↶ Undo clear';
+  toast('Cleared. Press “Undo clear” to bring it back.');
+});
+function resetClear() { cleared = null; $('#clear-btn').textContent = 'Clear all'; }
 
 $('#del-btn').addEventListener('click', () => {
   if (!confirm(`Delete “${current.title}”? This can’t be undone.`)) return;

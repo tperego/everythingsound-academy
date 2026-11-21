@@ -263,6 +263,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .chord-block.fn-T, .chord-btn.fn-T { background: var(--fn-T); }
 .chord-block.fn-PD, .chord-btn.fn-PD { background: var(--fn-PD); }
 .chord-block.fn-D, .chord-btn.fn-D { background: var(--fn-D); }
+/* A chord from another key (Sandbox): striped, so a modulation or borrowed chord stands out. */
+.chord-block.foreign, .chord-btn.foreign { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.22) 0 6px, transparent 6px 12px); outline: 2px dashed rgba(0,0,0,0.35); outline-offset: -3px; }
+.chord-block.foreign .roman { font-size: 0.8rem; }
+.other-keys { display: grid; gap: 6px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 12px; }
+.other-keys select { max-width: 100%; }
+.other-keys .btn.foreign b { font-family: Georgia, "Times New Roman", serif; }
 
 .row-labels { border-right: 1px solid var(--line); }
 .row-label { display: flex; align-items: center; gap: 4px; padding: 0 8px; font-size: 0.75rem; color: var(--ink-2); }
@@ -714,3 +720,11 @@ a.btn { text-decoration: none; display: inline-block; }
 .lesson-list.compact .lesson-num { width: 28px; height: 28px; font-size: 0.85rem; }
 .lesson-list.compact .ex-dots { margin-top: 4px; }
 #detail { scroll-margin-top: 72px; }
+
+/* Profile: one strip with a tab per course; the course's achievements below it. */
+.courses-strip-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.courses-strip-head h2 { margin: 0; }
+.courses-strip-head p { margin: 4px 0 0; }
+.course-tabs button { font-weight: 700; }
+.course-panel[hidden] { display: none; }
+.course-switch[hidden] { display: none; }

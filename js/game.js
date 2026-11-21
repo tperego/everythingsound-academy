@@ -1,8 +1,8 @@
 // Gamification: levels, streaks and badges, worked out from the student's XP events.
 // XP itself is decided by the database (supabase/game.sql); this file only reads and shows it.
 
-import { COURSE } from './course.js?v=202611200113';
-import { h } from './util.js?v=202611200113';
+import { COURSE } from './course.js?v=202611210000';
+import { h } from './util.js?v=202611210000';
 
 export const LEVELS = [
   { xp: 0, name: 'Listener' },
@@ -19,13 +19,13 @@ export const LEVELS = [
 ];
 
 /** {n, name, xp, from, to, next, pct} for a total XP. */
-export function levelFor(xp) {
+export function levelFor(xp, levels = LEVELS) {
   let i = 0;
-  while (i + 1 < LEVELS.length && xp >= LEVELS[i + 1].xp) i++;
-  const from = LEVELS[i].xp;
-  const nextLevel = LEVELS[i + 1] || null;
+  while (i + 1 < levels.length && xp >= levels[i + 1].xp) i++;
+  const from = levels[i].xp;
+  const nextLevel = levels[i + 1] || null;
   const to = nextLevel ? nextLevel.xp : from;
-  return { n: i + 1, name: LEVELS[i].name, xp, from, to, next: nextLevel?.name || null, pct: nextLevel ? Math.round(((xp - from) / (to - from)) * 100) : 100 };
+  return { n: i + 1, name: levels[i].name, xp, from, to, next: nextLevel?.name || null, pct: nextLevel ? Math.round(((xp - from) / (to - from)) * 100) : 100 };
 }
 
 /** Local calendar day, e.g. "2026-11-12". */
@@ -61,7 +61,7 @@ export function streaks(events, now = new Date()) {
 }
 
 /** Everything the profile, badges and header need, from the raw events. */
-export function summarise(events, now = new Date()) {
+export function summarise(events, now = new Date(), levels = LEVELS) {
   const xp = events.reduce((a, e) => a + (Number(e.xp) || 0), 0);
   const weekAgo = now.getTime() - 7 * 864e5;
   const count = {};
@@ -70,7 +70,7 @@ export function summarise(events, now = new Date()) {
   return {
     xp,
     week: events.filter((e) => new Date(e.created_at).getTime() > weekAgo).reduce((a, e) => a + (Number(e.xp) || 0), 0),
-    level: levelFor(xp),
+    level: levelFor(xp, levels),
     count: new Proxy(count, { get: (o, k) => o[k] || 0 }),
     lessons,
     bestMarked: Math.max(0, ...events.filter((e) => e.kind === 'marked').map((e) => Number(e.xp) || 0)),
@@ -108,7 +108,7 @@ export function xpChip(s) {
     s.current ? h('span', { class: 'streak' }, `🔥 ${s.current}`) : '');
 }
 
-function bar(level) {
+export function bar(level) {
   return h('div', { class: 'xp-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(level.pct), 'aria-label': 'Progress to the next level' },
     h('span', { style: { width: `${level.pct}%` } }));
 }

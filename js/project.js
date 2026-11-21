@@ -2,13 +2,14 @@
 //
 // project = {
 //   v: 1, key: 'G', mode: 'major', bpm: 96, bars: 4,
-//   chords: [ {deg, seventh} | null, ... ]   // length bars*2; null = keep the previous chord
+//   chords: [ {deg, seventh, bass?, rel?} | null, ... ]   // length bars*2; null = keep the previous chord
+//     rel = {shift, mode}: the chord is degree `deg` of another key, `shift` semitones above the tonic (modulation, V/V…)
 //   melody: [ {start, len, deg, oct, acc?}, ... ]  // start/len in 8th-note steps, deg 1..7, oct -1..1; acc 1 sharp, -1 flat
 //   mode: 'major', 'minor', 'harmonic-minor', 'dorian', 'major-pentatonic'… (see SCALES in theory.js)
 //   form: [ {start, len, label}, ... ]       // optional (Sandbox): lettered phrases in bars, e.g. {start: 0, len: 4, label: 'A'}
 // }
 
-import { KEY_OPTIONS, MODES, borrowsLeadingNote, chordInfo, chordVoicing, midiForDegree, pcOf } from './theory.js?v=202611200113';
+import { KEY_OPTIONS, MODES, borrowsLeadingNote, chordInfo, chordVoicing, midiForDegree, pcOf } from './theory.js?v=202611210000';
 
 export const STEPS_PER_BAR = 8;
 export const SLOTS_PER_BAR = 2;
@@ -100,6 +101,11 @@ export function normalizeProject(raw) {
     const deg = clampInt(c.deg, 1, 7, null);
     if (!deg) return null;
     const out = { deg, seventh: !!c.seventh };
+    // A chord from another key (see chordKey in theory.js).
+    if (c.rel && ['major', 'minor'].includes(c.rel.mode)) {
+      const shift = clampInt(c.rel.shift, 0, 11, 0);
+      if (shift || c.rel.mode !== mode) out.rel = { shift, mode: c.rel.mode };
+    }
     const bd = clampInt(c.bass?.deg, 1, 7, null);
     if (bd) out.bass = { deg: bd, acc: clampInt(c.bass.acc, -1, 1, 0) };
     return out;

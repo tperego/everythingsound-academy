@@ -1,15 +1,15 @@
 // Logic tests, run in the browser: open tests.html.
 
-import { runChecks } from './checks.js?v=202611200113';
-import { LESSONS } from './lessons.js?v=202611200113';
-import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611200113';
-import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611200113';
-import { projectToAbc } from './staff.js?v=202611200113';
-import { makeSubmission, parseSubmission } from './submission.js?v=202611200113';
-import { chordInfo, keySignatureSf, scaleNames } from './theory.js?v=202611200113';
-import { pack, unpack } from './util.js?v=202611200113';
-import { makeQuestion } from './quiz.js?v=202611200113';
-import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611200113';
+import { runChecks } from './checks.js?v=202611210000';
+import { LESSONS } from './lessons.js?v=202611210000';
+import { analyseMidi, projectToMidi, readMidi } from './midi.js?v=202611210000';
+import { buildEvents, chordEvents, newProject, normalizeProject, removeOverlaps } from './project.js?v=202611210000';
+import { projectToAbc } from './staff.js?v=202611210000';
+import { makeSubmission, parseSubmission } from './submission.js?v=202611210000';
+import { bassForChordTone, chordInfo, keySignatureSf, relFor, scaleNames } from './theory.js?v=202611210000';
+import { pack, unpack } from './util.js?v=202611210000';
+import { makeQuestion } from './quiz.js?v=202611210000';
+import { earnedBadges, levelFor, streaks, summarise } from './game.js?v=202611210000';
 
 const results = [];
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -55,8 +55,30 @@ await test('chord numerals and symbols', () => {
   assertEq(r('A', 'minor', 7, true).roman, 'vii°7');
 });
 
+await test('chords from another key: secondary dominants, modulation, borrowed', async () => {
+  const c = (chord) => chordInfo('C', 'major', chord);
+  const vOfV = { deg: 5, seventh: true, rel: { shift: 7, mode: 'major' } };
+  assertEq([c(vOfV).roman, c(vOfV).symbol, c(vOfV).pcs], ['V7/V', 'D7', [2, 6, 9, 0]]);
+  assertEq(c({ deg: 5, rel: { shift: 2, mode: 'minor' } }).roman, 'V/ii'); // A major leading to Dm
+  assertEq(c({ deg: 5, rel: { shift: 2, mode: 'minor' } }).symbol, 'A');
+  assertEq(c({ deg: 1, rel: { shift: 7, mode: 'major' } }).roman, 'G: I');
+  assertEq([c({ deg: 6, rel: { shift: 0, mode: 'minor' } }).roman, c({ deg: 6, rel: { shift: 0, mode: 'minor' } }).symbol], ['Cm: VI', 'Ab']);
+  assertEq(relFor('C', 'major', 'G', 'major'), { shift: 7, mode: 'major' });
+  assertEq(relFor('C', 'major', 'C', 'major'), null);
+  // Stored relative to the tonic: the same piece in D gives E7 = V7/V.
+  assertEq(chordInfo('D', 'major', vOfV).symbol, 'E7');
+  // First inversion keeps the /V: V65/V with F# in the bass.
+  const inv = { ...vOfV, bass: bassForChordTone('C', 'major', vOfV, 1) };
+  assertEq([c(inv).roman, c(inv).symbol], ['V65/V', 'D7/F#']);
+  // Saved and loaded: rel survives normalizeProject, a rel equal to the piece's key is dropped.
+  const p = normalizeProject({ key: 'C', mode: 'major', bars: 1, chords: [vOfV, { deg: 1, rel: { shift: 0, mode: 'major' } }] });
+  assertEq(p.chords[0].rel, { shift: 7, mode: 'major' });
+  assertEq(p.chords[1].rel, undefined);
+  assertEq(buildEvents(p)[0].pitches.map((m) => m % 12).sort((a, b) => a - b), [0, 2, 6, 9]);
+});
+
 await test('inversions and slash chords', async () => {
-  const { bassForChordTone, chordVoicing } = await import('./theory.js');
+  const { chordVoicing } = await import('./theory.js');
   const c = (k, m, chord) => chordInfo(k, m, chord);
   const first = { deg: 1, bass: bassForChordTone('C', 'major', { deg: 1 }, 1) };
   assertEq([c('C', 'major', first).roman, c('C', 'major', first).symbol], ['I6', 'C/E']);
